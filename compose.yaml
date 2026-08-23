@@ -3,25 +3,78 @@ name: forkedai
 x-security-defaults: &security-defaults
   security_opt:
     - no-new-privileges:true
-  networks:
-    - forkedai-shared
+
+x-shared-models: &shared-models
+  type: bind
+  source: ${MODEL_ROOT:-/mnt/e/models}
+  target: /shared/models
+  read_only: true
+x-shared-tensors: &shared-tensors
+  type: bind
+  source: ${TENSOR_ROOT:-/mnt/e/data/forkedAI/shared/tensors}
+  target: /shared/tensors
+x-shared-objects: &shared-objects
+  type: bind
+  source: ${SHARED_OBJECT_ROOT:-/mnt/e/data/forkedAI/shared/objects}
+  target: /shared/objects
+x-shared-plugins: &shared-plugins
+  type: bind
+  source: ${PLUGIN_ROOT:-/mnt/e/data/forkedAI/shared/plugins}
+  target: /shared/plugins
+  read_only: true
+x-shared-tools: &shared-tools
+  type: bind
+  source: ${TOOL_ROOT:-/mnt/e/data/forkedAI/shared/tools}
+  target: /shared/tools
+  read_only: true
 
 services:
+  gateway:
+    <<: *security-defaults
+    profiles: ["inference", "rag", "media", "comfy"]
+    image: ${CADDY_IMAGE:-caddy:2.11.4-alpine}
+    init: true
+    restart: unless-stopped
+    read_only: true
+    healthcheck:
+      test: ["CMD", "caddy", "validate", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    ports:
+      - "${FORKEDAI_BIND_ADDRESS:-127.0.0.1}:${FORKEDAI_HTTPS_PORT:-8443}:443"
+    volumes:
+      - {type: bind, source: "${HUB_CONTEXT:-.}/docker/Caddyfile", target: /etc/caddy/Caddyfile, read_only: true}
+      - {type: bind, source: "${RUNTIME_ROOT:-/mnt/e/data/forkedAI/runtime}/caddy/data", target: /data}
+    tmpfs:
+      - /config
+    networks:
+      - forkedai-edge
+      - forkedai-inference
+      - forkedai-media
+
   localai:
     <<: *security-defaults
     profiles: ["inference", "rag"]
     image: ${LOCALAI_IMAGE:-localai/localai:latest-gpu-nvidia-cuda-13}
     init: true
     restart: unless-stopped
-    ports:
-      - "${FORKEDAI_BIND_ADDRESS:-127.0.0.1}:${LOCALAI_PORT:-8080}:8080"
+    expose:
+      - "8080"
+    networks:
+      - forkedai-inference
     environment:
       LOCALAI_ADDRESS: ":8080"
-      LOCALAI_MODELS_PATH: /models
+      LOCALAI_MODELS_PATH: /shared/models/localai
       LOCALAI_VRAM_WARM_LIMIT: "0"
       NVIDIA_DRIVER_CAPABILITIES: compute,utility
     volumes:
-      - {type: bind, source: "${MODEL_ROOT:-/mnt/e/models}/localai", target: /models, read_only: true}
+      - *shared-models
+      - *shared-tensors
+      - *shared-objects
+      - *shared-plugins
+      - *shared-tools
       - {type: bind, source: "${MEDIA_ROOT:-/mnt/e/data/forkedAI/media}/images", target: /tmp/generated/images}
       - {type: bind, source: "${RUNTIME_ROOT:-/mnt/e/data/forkedAI/runtime}/localai/data", target: /data}
       - {type: bind, source: "${RUNTIME_ROOT:-/mnt/e/data/forkedAI/runtime}/localai/backends", target: /backends}
@@ -52,8 +105,10 @@ services:
       start_period: 20s
     depends_on:
       localai: {condition: service_healthy}
-    ports:
-      - "${FORKEDAI_BIND_ADDRESS:-127.0.0.1}:${PRIVATE_GPT_PORT:-8001}:8080"
+    expose:
+      - "8080"
+    networks:
+      - forkedai-inference
     environment:
       OPENAI_API_BASE: http://localai:8080/v1
       OPENAI_EMBEDDING_API_BASE: http://localai:8080/v1
@@ -66,6 +121,11 @@ services:
       PGPT_LOCAL_DATA_FOLDER: /var/lib/private-gpt
       LOCAL_INGESTION_ENABLED: "true"
     volumes:
+      - *shared-models
+      - *shared-tensors
+      - *shared-objects
+      - *shared-plugins
+      - *shared-tools
       - {type: bind, source: "${HF_CACHE_ROOT:-/mnt/e/models/.cache/huggingface}", target: /cache/huggingface}
       - {type: bind, source: "${DOCUMENT_ROOT:-/mnt/e/data/forkedAI/documents}", target: /documents, read_only: true}
       - {type: bind, source: "${RUNTIME_ROOT:-/mnt/e/data/forkedAI/runtime}/private-gpt", target: /var/lib/private-gpt}
@@ -87,19 +147,68 @@ services:
       timeout: 5s
       retries: 60
       start_period: 30s
-    ports:
-      - "${FORKEDAI_BIND_ADDRESS:-127.0.0.1}:${STABLE_DIFFUSION_PORT:-7860}:7860"
+    expose:
+      - "7860"
+    networks:
+      - forkedai-media
     environment:
       NVIDIA_DRIVER_CAPABILITIES: compute,utility
       STABLE_DIFFUSION_REPO: https://github.com/w-e-w/stablediffusion.git
     volumes:
-      - {type: bind, source: "${MODEL_ROOT:-/mnt/e/models}/Stable-diffusion", target: /models/Stable-diffusion, read_only: true}
-      - {type: bind, source: "${MODEL_ROOT:-/mnt/e/models}/VAE", target: /models/VAE, read_only: true}
-      - {type: bind, source: "${MODEL_ROOT:-/mnt/e/models}/Lora", target: /models/Lora, read_only: true}
-      - {type: bind, source: "${MODEL_ROOT:-/mnt/e/models}/embeddings", target: /models/embeddings, read_only: true}
+      - *shared-models
+      - *shared-tensors
+      - *shared-objects
+      - *shared-plugins
+      - *shared-tools
+      - {type: bind, source: "${PLUGIN_ROOT:-/mnt/e/data/forkedAI/shared/plugins}/stable-diffusion", target: /opt/stable-diffusion/extensions, read_only: true}
       - {type: bind, source: "${RUNTIME_ROOT:-/mnt/e/data/forkedAI/runtime}/stable-diffusion/data", target: /data}
       - {type: bind, source: "${RUNTIME_ROOT:-/mnt/e/data/forkedAI/runtime}/stable-diffusion/repositories", target: /opt/stable-diffusion/repositories}
       - {type: bind, source: "${MEDIA_ROOT:-/mnt/e/data/forkedAI/media}/images", target: /data/outputs}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - {driver: nvidia, count: all, capabilities: [gpu]}
+
+  comfy-backend:
+    <<: *security-defaults
+    profiles: ["comfy"]
+    image: forkedai/comfyui:local
+    build:
+      context: ${HUB_CONTEXT:-.}
+      dockerfile: docker/comfyui.Dockerfile
+      additional_contexts:
+        comfy_source: ${COMFY_CONTEXT:-/mnt/e/git/ComfyUI}
+    init: true
+    restart: unless-stopped
+    stop_grace_period: 30s
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8188/system_stats', timeout=5)"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+    expose:
+      - "8188"
+    networks:
+      - forkedai-media
+    environment:
+      HF_HOME: /cache/huggingface
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+      TORCH_HOME: /cache/torch
+    volumes:
+      - *shared-models
+      - *shared-tensors
+      - *shared-objects
+      - *shared-plugins
+      - *shared-tools
+      - {type: bind, source: "${PLUGIN_ROOT:-/mnt/e/data/forkedAI/shared/plugins}/comfyui", target: /opt/comfyui/custom_nodes, read_only: true}
+      - {type: bind, source: "${HF_CACHE_ROOT:-/mnt/e/models/.cache/huggingface}", target: /cache/huggingface}
+      - {type: bind, source: "${RUNTIME_ROOT:-/mnt/e/data/forkedAI/runtime}/comfy/torch", target: /cache/torch}
+      - {type: bind, source: "${RUNTIME_ROOT:-/mnt/e/data/forkedAI/runtime}/comfy/input", target: /data/input}
+      - {type: bind, source: "${MEDIA_ROOT:-/mnt/e/data/forkedAI/media}/images", target: /data/output}
+      - {type: bind, source: "${RUNTIME_ROOT:-/mnt/e/data/forkedAI/runtime}/comfy/temp", target: /data/temp}
+      - {type: bind, source: "${RUNTIME_ROOT:-/mnt/e/data/forkedAI/runtime}/comfy/user", target: /data/user}
     deploy:
       resources:
         reservations:
@@ -123,21 +232,37 @@ services:
       timeout: 5s
       retries: 12
       start_period: 10s
-    extra_hosts:
-      - host.docker.internal:host-gateway
-    ports:
-      - "${FORKEDAI_BIND_ADDRESS:-127.0.0.1}:${COMFY_FRONTEND_PORT:-8189}:80"
+    depends_on:
+      comfy-backend: {condition: service_healthy}
+    expose:
+      - "80"
+    networks:
+      - forkedai-media
     environment:
-      COMFY_BACKEND: ${COMFY_BACKEND:-http://host.docker.internal:8188}
+      COMFY_BACKEND: ${COMFY_BACKEND:-http://comfy-backend:8188}
       NGINX_ENVSUBST_FILTER: COMFY_BACKEND
 
 networks:
-  forkedai-shared:
-    name: ${FORKEDAI_NETWORK_NAME:-forkedai-shared}
+  forkedai-edge:
+    name: ${FORKEDAI_EDGE_NETWORK_NAME:-forkedai-edge}
     driver: bridge
     attachable: false
     internal: false
     driver_opts:
       com.docker.network.bridge.host_binding_ipv4: "127.0.0.1"
     labels:
-      io.forkedai.purpose: local AI service network
+      io.forkedai.purpose: HTTPS ingress
+  forkedai-inference:
+    name: ${FORKEDAI_INFERENCE_NETWORK_NAME:-forkedai-inference}
+    driver: bridge
+    attachable: false
+    internal: false
+    labels:
+      io.forkedai.purpose: inference services
+  forkedai-media:
+    name: ${FORKEDAI_MEDIA_NETWORK_NAME:-forkedai-media}
+    driver: bridge
+    attachable: false
+    internal: false
+    labels:
+      io.forkedai.purpose: media services

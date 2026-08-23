@@ -4,27 +4,39 @@ The root `compose.yaml` is the control plane for the managed forks. It does not 
 
 ## Profiles
 
-| Profile | Services | Host endpoints |
+| Profile | Services | HTTPS gateway endpoint |
 | --- | --- | --- |
-| `inference` | LocalAI CUDA 13 | `http://localhost:8080` |
-| `rag` | LocalAI + PrivateGPT | `http://localhost:8080`, `http://localhost:8001` |
-| `media` | Stable Diffusion WebUI | `http://localhost:7860` |
-| `comfy` | ComfyUI frontend proxy | `http://localhost:8189` |
+| `inference` | LocalAI CUDA 13 | `https://localai.localhost:8443` |
+| `rag` | LocalAI + PrivateGPT | `https://localai.localhost:8443`, `https://private-gpt.localhost:8443` |
+| `media` | Stable Diffusion WebUI | `https://stable-diffusion.localhost:8443` |
+| `comfy` | ComfyUI CUDA backend + frontend proxy | `https://comfy-api.localhost:8443`, `https://comfy.localhost:8443` |
 
-The Comfy frontend expects a ComfyUI backend on host port 8188. Override `COMFY_BACKEND` if the backend is elsewhere.
+The Caddy gateway is the only service with a published host port. It terminates HTTPS on loopback port 8443 and forwards plain HTTP over the appropriate private bridge. The Comfy frontend reaches its backend at `http://comfy-backend:8188`; direct backend ports are not published.
 
-## Shared bridge
+## Segmented bridges
 
-Every service explicitly joins the user-defined `forkedai-shared` bridge. Docker provides service-name DNS on this network, so PrivateGPT reaches LocalAI at `http://localai:8080`; fixed container IP addresses are unnecessary. Compose creates the bridge on first `up` and removes it on `down` after the last attached container is gone.
+Services explicitly join one trust-zone bridge. `localai` and `private-gpt` use `forkedai-inference`; Stable Diffusion and both Comfy services use `forkedai-media`; the gateway joins those networks plus `forkedai-edge`. Docker provides service-name DNS within each network, so fixed container IP addresses are unnecessary. The gateway is the only multi-homed service.
 
-Published ports bind to `127.0.0.1` by default. They are available to applications and browsers on this computer but not intentionally exposed to the LAN. Compose does not opt into standalone attachment, each service runs with `no-new-privileges`, and Docker-daemon access remains a privileged administrative boundary.
+The gateway binds to `127.0.0.1` by default. It is available to applications and browsers on this computer but not intentionally exposed to the LAN. Compose does not opt into standalone attachment, each service runs with `no-new-privileges`, and Docker-daemon access remains a privileged administrative boundary.
 
 ```powershell
-docker network inspect forkedai-shared
+docker network inspect forkedai-edge forkedai-inference forkedai-media
 docker ps --format "table {{.Names}}\t{{.Ports}}\t{{.Networks}}"
 ```
 
-Set `FORKEDAI_NETWORK_NAME` only when a name collision exists. See [Personal-computer network security](network-security.md) before changing `FORKEDAI_BIND_ADDRESS` or exposing an endpoint beyond localhost.
+Set the three `FORKEDAI_*_NETWORK_NAME` variables only when a name collision exists. See [Personal-computer network security](network-security.md) before changing `FORKEDAI_BIND_ADDRESS` or exposing the gateway beyond localhost.
+
+## Trusting the local HTTPS certificate
+
+Caddy creates a private development CA under `RUNTIME_ROOT/caddy/data`. After starting any profile, inspect the CA certificate and then trust it for the current Windows user:
+
+```powershell
+$ca = "E:\data\forkedAI\runtime\caddy\data\caddy\pki\authorities\local\root.crt"
+Get-PfxCertificate -FilePath $ca | Format-List Subject, Thumbprint, NotAfter
+Import-Certificate -FilePath $ca -CertStoreLocation Cert:\CurrentUser\Root
+```
+
+Trust the certificate only after verifying that the path and thumbprint belong to this stack. Removing `RUNTIME_ROOT/caddy/data` rotates the CA and requires trusting the replacement. The CA private key is sensitive runtime state and must not be committed or shared.
 
 ## First run
 
@@ -40,6 +52,9 @@ npm run models -- sync-localai
 npm run stack -- up inference
 npm run stack -- backend
 npm run stack -- up rag
+npm run stack -- build comfy-backend
+npm run stack -- build comfy-frontend
+npm run stack -- up comfy
 ```
 
 `doctor` is read-only. `media init` creates configured directories. `stack:config` renders and validates the complete Compose model. `up` starts containers and waits up to five minutes for health. The backend command installs `localai@cuda13-llama-cpp` only when missing, persists it under the runtime root, and recreates LocalAI once so the backend registry refreshes.
@@ -49,12 +64,15 @@ Build fork-backed images explicitly:
 ```powershell
 npm run stack -- build private-gpt
 npm run stack -- build stable-diffusion
+npm run stack -- build comfy-backend
 npm run stack -- build comfy-frontend
 ```
 
 The hub's root `.dockerignore` is default-deny and admits only `docker/`. The Stable Diffusion and Comfy Dockerfiles separately exclude Git metadata, dotenv files, local environments, dependency caches, models, outputs, and other generated state from their named fork contexts before copying source into build layers.
 
 The Stable Diffusion image pins PyTorch 2.8.0 with CUDA 12.8 for RTX 5090 support while staying closer to this older WebUI fork than newer PyTorch releases.
+
+The ComfyUI image pins the official PyTorch 2.13.0 CUDA 13.0 runtime. Its build keeps the base image's matching Torch packages and installs the remaining ComfyUI requirements. API nodes are disabled by default to prevent workflow nodes from calling external services; override the service command deliberately if those nodes are required.
 
 LocalAI scans GGUF headers on first start, which can take roughly two minutes on the Windows-mounted model directory. The Stable Diffusion image installs the fork's pinned Python dependencies at build time; its first start clones pinned helper repositories into the runtime root. The WebUI uses the public `w-e-w/stablediffusion` mirror for the exact upstream commit formerly hosted in the removed Stability AI repository.
 
@@ -71,12 +89,22 @@ npm run stack -- down
 
 `down` never adds `--volumes`; models, indexes, configuration, and generated media remain on `E:`. No command runs Docker system prune.
 
-## Storage mounts
+## Shared storage mounts
 
-- Models are mounted read-only into inference/media containers; LocalAI sees only `E:\models\localai`.
-- Generated images land in `E:\data\forkedAI\media\images`.
-- PrivateGPT state lives in `E:\data\forkedAI\runtime\private-gpt`.
-- Private documents are mounted read-only from `E:\data\forkedAI\documents`.
-- Hugging Face cache data is centralized under `E:\models\.cache\huggingface`.
+Each backend receives the same five canonical paths:
 
-Override the network name, bind address, ports, or Comfy backend in a local `.env` copied from `.env.example`. Never commit tokens.
+| Container path | Host root | Access | Purpose |
+| --- | --- | --- | --- |
+| `/shared/models` | `MODEL_ROOT` (default `E:/models`) | Read-only | Model weights and LocalAI model definitions |
+| `/shared/tensors` | `TENSOR_ROOT` | Read-write | Serialized tensors, embeddings, checkpoints, and intermediate arrays |
+| `/shared/objects` | `SHARED_OBJECT_ROOT` | Read-write | Workflows, inputs, outputs, and exchange artifacts |
+| `/shared/plugins` | `PLUGIN_ROOT` | Read-only | Reviewed plugins and custom nodes |
+| `/shared/tools` | `TOOL_ROOT` | Read-only | Reviewed helper binaries, scripts, and configuration |
+
+`npm run media -- init` creates all host roots and service-specific plugin directories. Stable Diffusion maps `plugins/stable-diffusion` to its extensions directory, and ComfyUI maps `plugins/comfyui` to `custom_nodes`; both mounts remain read-only at runtime. Add or update reviewed plugin code from the host, then rebuild or restart the affected service.
+
+Shared objects and tensors are filesystem artifacts only. Live CUDA tensors, GPU memory, Python objects, and process memory cannot be shared through these mounts; serialize them to a safe, documented format first. Treat pickle and arbitrary PyTorch checkpoint files as executable content and load them only from trusted sources.
+
+Generated images land in `E:/data/forkedAI/media/images`. ComfyUI input, user state, temporary files, and Torch cache remain under the service-specific runtime root. PrivateGPT state and documents also keep their narrowly scoped mounts, and the Hugging Face cache remains centralized under `E:/models/.cache/huggingface`.
+
+Override storage roots, network names, gateway bind address or HTTPS port, or the Comfy backend in a local `.env` copied from `.env.example`. Never commit tokens, certificates, private keys, or shared artifacts.

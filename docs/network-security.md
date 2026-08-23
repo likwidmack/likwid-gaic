@@ -6,15 +6,15 @@ This is a local AI development stack, not an internet-facing deployment. Its def
 
 | Control | Default | Why |
 | --- | --- | --- |
-| Network | Named user-defined bridge `forkedai-shared` | Service-name DNS and isolation from unrelated Docker networks |
-| Host publishing | IPv4 loopback `127.0.0.1` | Browser and desktop access without intentional LAN exposure |
+| Networks | Named bridges `forkedai-edge`, `forkedai-inference`, and `forkedai-media` | Service-name DNS with inference/media trust-zone separation |
+| Host publishing | Caddy HTTPS gateway on IPv4 loopback `127.0.0.1:8443` | One reviewed ingress point without intentional LAN exposure |
 | Standalone attachment | Not enabled by Compose | Reduces accidental attachment of unrelated containers |
 | Privilege escalation | `no-new-privileges:true` | Blocks gaining additional privileges through setuid/setgid executables |
 | Docker socket | Never mounted | Prevents a compromised AI service from controlling the Docker daemon |
 | Model/document mounts | Read-only where practical | Limits modification of source assets and private documents |
 | Secrets | Outside Git and Compose manifests | Avoids leaking Hugging Face, GitHub, or application credentials |
 
-The shared bridge is a trust boundary around this stack, not between its services. Containers on one user-defined bridge can reach one another's container ports even when those ports are not published. Treat every container attached to it as mutually trusted. Anyone who controls the Docker daemon is already an administrator and can change network membership.
+Each bridge is a trust boundary, not a per-service firewall. Containers sharing one bridge can reach one another’s container ports even when those ports are not published. Treat every container on the same bridge as mutually trusted. The multi-homed gateway is a high-value dependency because it can reach both workload zones. Anyone who controls the Docker daemon is already an administrator and can change network membership.
 
 ## Personal-computer threat model
 
@@ -22,11 +22,50 @@ The most likely risks are accidentally publishing an unauthenticated AI API to t
 
 Use GGUF or safetensors artifacts when possible, pin Hub revisions, verify checksums, and review extensions before enabling them. Do not give model containers the Docker socket, SSH agent, browser profile, home directory, cloud credentials, or broad writable host mounts. Keep Docker Desktop, the NVIDIA driver, base images, and application forks patched.
 
-## Comfy host-gateway exception
+## Shared-storage boundary
 
-Only `comfy-frontend` receives the `host.docker.internal` mapping because this repository currently manages the frontend but not a ComfyUI backend container. Its proxy targets host port 8188. Host-gateway reachability is not authentication; keep the backend bound locally and trusted.
+All backend containers can read the common model, plugin, and tool roots and can exchange files through common tensor and object roots. This intentionally creates a data trust boundary: a compromised backend can read every shared model, plugin, and tool and can replace writable tensors or objects consumed by another backend. The static Comfy frontend receives none of these mounts.
 
-If the backend becomes a managed container, attach it to `forkedai-shared`, set `COMFY_BACKEND=http://comfy-backend:8188`, and remove the `extra_hosts` entry so the frontend uses service DNS instead of a route back to the host.
+Models, plugins, and tools are mounted read-only. Keep service-specific runtime state outside the shared roots, review host-side plugin changes, pin model and plugin revisions, and do not store credentials, personal documents, browser data, or executable secrets in shared objects. Serialized tensors are data exchange, not shared live GPU memory. Avoid pickle-based formats from untrusted sources because deserialization can execute code.
+
+## Comfy service routing
+
+`comfy-frontend` reaches `comfy-backend` through service DNS on `forkedai-media`. Neither service receives a host-gateway mapping or publishes a host port. Trusted local clients use `https://comfy.localhost:8443` for the UI and `https://comfy-api.localhost:8443` for direct API access through the gateway.
+
+ComfyUI model files are mounted read-only. Input, output, user state, temporary files, and caches use narrowly scoped writable mounts; the container does not receive the Docker socket, source repository, home directory, or host credentials.
+
+## HTTPS gateway and authentication follow-up
+
+Caddy is the only host-facing container. It uses an internal development CA for `localai.localhost`, `private-gpt.localhost`, `stable-diffusion.localhost`, `comfy.localhost`, and `comfy-api.localhost`, while backend traffic remains HTTP within its trust-zone bridge. Its admin API is disabled, configuration is mounted read-only, and CA state is persisted under `RUNTIME_ROOT/caddy/data`.
+
+The gateway is deliberately unauthenticated while it remains bound to loopback; HTTPS protects transport and server identity but does not authorize a client. Before binding it to a LAN or VPN address, complete this follow-up:
+
+1. Replace the `.localhost` names with controlled LAN or VPN DNS names and configure certificates trusted by every intended client.
+2. Add reviewed authentication at the gateway, such as an identity-aware forward-auth provider, securely managed hashed basic-auth credentials, or mTLS for API clients.
+3. Restrict Windows Firewall to the required profile, gateway port, interface, and source addresses.
+4. Verify that no backend service has a published port and test both permitted and rejected clients.
+
+Do not place plaintext passwords or CA private keys in Compose, the Caddyfile, `.env`, or Git. Until the follow-up is complete, keep `FORKEDAI_BIND_ADDRESS=127.0.0.1`.
+
+## Preparing an exposure change
+
+Keep the localhost default until the controls required by the selected option are ready. Before changing `.env` or a Compose override:
+
+1. Identify exactly which clients need access and which service ports they need. Choose the least-exposed option that meets that requirement.
+2. Capture the current resolved Compose configuration, published ports, and network membership using the commands under [Operational checks](#operational-checks).
+3. Prepare authentication, TLS, firewall rules, VPN enrollment, proxy routing, or cached dependencies before widening or restricting connectivity.
+4. Define a success test from every intended client and a rejection test from at least one client that should not have access.
+5. Keep a rollback ready: restore `FORKEDAI_BIND_ADDRESS=127.0.0.1`, remove the option-specific override and firewall rules, then recreate the gateway and affected services.
+
+Do not commit `.env`, credentials, private keys, firewall exports, or VPN enrollment material. Record only non-secret architecture decisions and sanitized test results in Git.
+
+| Proposed change | Ready-to-change gate | Rollback trigger |
+| --- | --- | --- |
+| Private LAN | Stable host address, restricted private-profile firewall rules, and authenticated TLS proxy tested locally | An unintended LAN client can connect, or an intended client bypasses authentication |
+| VPN-only | VPN interface and subnet confirmed, intended devices enrolled, and firewall limited to that subnet | Traffic reaches the service outside the VPN, or device revocation does not remove access |
+| Segmented bridges | Service dependency map complete and only the authenticated proxy intentionally multi-homed | A service can reach a network not required by its dependency map |
+| Egress-restricted or offline | Images, models, packages, backends, and update procedure available without runtime egress | Startup or an approved workflow requires an unplanned external endpoint |
+| External shared network | Network owner, name, participating projects, and cleanup responsibility documented | An unapproved project or standalone container joins the trust zone |
 
 ## Exposure choices
 
@@ -38,7 +77,7 @@ Keep:
 FORKEDAI_BIND_ADDRESS=127.0.0.1
 ```
 
-This is the implemented default. Host applications use `http://localhost:<port>`, while containers use service DNS such as `http://localai:8080`.
+This is the implemented default. Host applications use the named `https://*.localhost:8443` gateway endpoints, while containers use service DNS such as `http://localai:8080`.
 
 **Setbacks:** Other computers and phones cannot reach the services, and remote access requires a separate VPN or tunnel. Loopback binding is not authentication: untrusted software running on the computer can still attempt to connect to the published ports.
 
@@ -62,13 +101,13 @@ Prefer a WireGuard or Tailscale-style private VPN over router port forwarding. B
 
 ### 4. Segmented bridges
 
-When running less-trusted extensions or third-party services, replace the single bridge with multiple networks:
+The implemented topology uses multiple networks:
 
-- `ai-edge`: reverse proxy and approved UIs.
-- `ai-inference`: proxy, PrivateGPT, and LocalAI.
-- `ai-media`: proxy and media generators.
+- `forkedai-edge`: HTTPS gateway ingress.
+- `forkedai-inference`: gateway, PrivateGPT, and LocalAI.
+- `forkedai-media`: gateway and media services.
 
-Only a small authenticated proxy should join more than one network. This reduces lateral movement but adds routing and troubleshooting overhead. A single shared bridge cannot provide service-to-service firewall isolation.
+Only the gateway joins more than one network. This reduces lateral movement but adds routing and troubleshooting overhead. Further split a zone if services within it are not mutually trusted; a bridge cannot provide per-service firewall isolation.
 
 **Setbacks:** Multiple networks make Compose configuration, service discovery, health checks, and debugging more complex. The multi-homed proxy becomes a high-value dependency, and incorrect network attachment can silently restore paths the segmentation was meant to remove. Segmentation also does not restrict outbound traffic by itself.
 
@@ -91,11 +130,11 @@ If independently managed Compose projects must communicate, create a network exp
 ```powershell
 npm run stack:config
 npm run stack -- up all
-docker network inspect forkedai-shared
+docker network inspect forkedai-edge forkedai-inference forkedai-media
 docker ps --format "table {{.Names}}\t{{.Ports}}\t{{.Networks}}"
 ```
 
-Expected host bindings begin with `127.0.0.1:`. The network inspection should show only the intended ForkedAI containers. Re-run these checks after adding a service, changing `.env`, or upgrading Docker.
+The only published binding should be the gateway at `127.0.0.1:8443`; backend services should show no host port. The network inspection should show only the intended ForkedAI containers. Re-run these checks after adding a service, changing `.env`, or upgrading Docker.
 
 ## Incident response
 

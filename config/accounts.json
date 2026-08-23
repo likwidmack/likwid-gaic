@@ -12,6 +12,7 @@
         "tamaramack/LocalAI-Prt",
         "tamaramack/private-gpt-tm",
         "tamaramack/stable-diffusion-ui",
+        "tamaramack/ComfyUI",
         "tamaramack/ComfyUI_frontend"
       ],
       "purpose": "Own and synchronize the managed AI forks",

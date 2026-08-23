@@ -18,6 +18,7 @@ media/
 models/
 outputs/
 generated/
+/shared/
 docs/inventory.generated.md
 *.local.json
 *.local.yaml

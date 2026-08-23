@@ -9,6 +9,7 @@ Private GPT, prompting, local-model, image-generation, and Docker operations hub
 | [LocalAI-Prt](https://github.com/tamaramack/LocalAI-Prt) | [LocalAI](https://github.com/mudler/LocalAI) | `E:\git\LocalAI-Prt` | OpenAI-compatible local inference |
 | [private-gpt-tm](https://github.com/tamaramack/private-gpt-tm) | [private-gpt](https://github.com/zylon-ai/private-gpt) | `E:\git\private-gpt-tm` | Private ingestion, RAG, and prompting |
 | [stable-diffusion-ui](https://github.com/tamaramack/stable-diffusion-ui) | [AUTOMATIC1111](https://github.com/AUTOMATIC1111/stable-diffusion-webui) | `E:\git\stable-diffusion-ui` | Image generation UI |
+| [ComfyUI](https://github.com/tamaramack/ComfyUI) | [ComfyUI](https://github.com/Comfy-Org/ComfyUI) | `E:\git\ComfyUI` | ComfyUI backend and workflow execution engine |
 | [ComfyUI_frontend](https://github.com/tamaramack/ComfyUI_frontend) | [ComfyUI_frontend](https://github.com/Comfy-Org/ComfyUI_frontend) | `E:\git\ComfyUI_frontend` | ComfyUI workflow editor and web client |
 
 Paths and remotes are machine-readable in [`config/repos.json`](config/repos.json).
@@ -44,6 +45,7 @@ npm run models -- sync-localai
 npm run stack -- up inference
 npm run stack -- backend
 npm run stack -- up rag
+npm run stack -- up comfy
 npm run models -- inventory
 npm run media -- status
 npm run repos:status
@@ -51,7 +53,7 @@ npm run repos:fetch
 npm run inventory
 ```
 
-The stack profiles are `inference`, `rag`, `media`, and `comfy`; storage roots and fork contexts are machine-readable in `config/`.
+The stack profiles are `inference`, `rag`, `media`, and `comfy`; the Comfy profile runs both the GPU backend and frontend proxy. Storage roots and fork contexts are machine-readable in `config/`.
 
 `repos:fetch` refreshes remote references without changing working files. `repos:update` fetches both remotes and only fast-forwards from the upstream default branch. It refuses dirty or detached worktrees and never resets, rebases, force-pushes, or deletes work.
 

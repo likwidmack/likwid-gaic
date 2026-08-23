@@ -5,7 +5,11 @@
     "huggingFaceCache": {"pathWindows": "E:\\models\\.cache\\huggingface", "pathWsl": "/mnt/e/models/.cache/huggingface"},
     "media": {"pathWindows": "E:\\data\\forkedAI\\media", "pathWsl": "/mnt/e/data/forkedAI/media"},
     "documents": {"pathWindows": "E:\\data\\forkedAI\\documents", "pathWsl": "/mnt/e/data/forkedAI/documents"},
-    "runtime": {"pathWindows": "E:\\data\\forkedAI\\runtime", "pathWsl": "/mnt/e/data/forkedAI/runtime"}
+    "runtime": {"pathWindows": "E:\\data\\forkedAI\\runtime", "pathWsl": "/mnt/e/data/forkedAI/runtime"},
+    "sharedObjects": {"pathWindows": "E:\\data\\forkedAI\\shared\\objects", "pathWsl": "/mnt/e/data/forkedAI/shared/objects"},
+    "tensors": {"pathWindows": "E:\\data\\forkedAI\\shared\\tensors", "pathWsl": "/mnt/e/data/forkedAI/shared/tensors"},
+    "plugins": {"pathWindows": "E:\\data\\forkedAI\\shared\\plugins", "pathWsl": "/mnt/e/data/forkedAI/shared/plugins"},
+    "tools": {"pathWindows": "E:\\data\\forkedAI\\shared\\tools", "pathWsl": "/mnt/e/data/forkedAI/shared/tools"}
   },
   "mediaKinds": {
     "images": [".avif", ".gif", ".jpeg", ".jpg", ".png", ".webp"],

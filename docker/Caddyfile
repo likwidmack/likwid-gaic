@@ -1,0 +1,40 @@
+{
+	admin off
+}
+
+(local_security) {
+	tls internal
+	header {
+		-Server
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer"
+	}
+}
+
+https://localai.localhost {
+	import local_security
+	reverse_proxy localai:8080
+}
+
+https://private-gpt.localhost {
+	import local_security
+	reverse_proxy private-gpt:8080
+}
+
+https://stable-diffusion.localhost {
+	import local_security
+	reverse_proxy stable-diffusion:7860
+}
+
+https://comfy.localhost {
+	import local_security
+	reverse_proxy comfy-frontend:80
+}
+
+https://comfy-api.localhost {
+	import local_security
+	reverse_proxy comfy-backend:8188
+}
+
+# Before binding the gateway to a LAN or VPN address, add authentication here
+# or use a reviewed forward-auth provider. Never commit plaintext credentials.

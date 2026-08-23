@@ -14,8 +14,9 @@ This repository is the portable control plane for a personal Windows, WSL2, Dock
 1. `LocalAI-Prt` supplies the OpenAI-compatible GPU inference API.
 2. `private-gpt-tm` supplies private ingestion, retrieval, prompting, and document workflows.
 3. `stable-diffusion-ui` supplies image generation.
-4. `ComfyUI_frontend` supplies the Comfy workflow editor and proxies to a separately managed backend.
-5. This repository supplies Compose orchestration, pinned model metadata, media indexing, fork tracking, and safety validation.
+4. `ComfyUI` supplies the containerized GPU workflow execution API.
+5. `ComfyUI_frontend` supplies the Comfy workflow editor and proxies to the backend over the shared bridge.
+6. This repository supplies Compose orchestration, pinned model metadata, media indexing, fork tracking, and safety validation.
 
 ## Data and privacy boundary
 

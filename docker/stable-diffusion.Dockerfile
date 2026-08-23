@@ -8,8 +8,8 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends git libgl1 libglib2.0-0 libgoogle-perftools4 libtcmalloc-minimal4 \
     && rm -rf /var/lib/apt/lists/*
 RUN useradd --create-home --uid 1000 app \
-    && mkdir -p /opt/stable-diffusion /data /models \
-    && chown -R app:app /opt/stable-diffusion /data /models
+    && mkdir -p /opt/stable-diffusion /data /shared/models /shared/tensors /shared/objects /shared/plugins /shared/tools \
+    && chown -R app:app /opt/stable-diffusion /data /shared
 WORKDIR /opt/stable-diffusion
 COPY --from=stable_source --chown=app:app \
     --exclude=.git \
@@ -42,4 +42,4 @@ RUN git config --global --add safe.directory '/opt/stable-diffusion/repositories
     && git config --global --add safe.directory '/opt/stable-diffusion/repositories/BLIP'
 EXPOSE 7860
 ENTRYPOINT ["python", "-u", "launch.py"]
-CMD ["--listen", "--api", "--port", "7860", "--data-dir", "/data", "--ckpt-dir", "/models/Stable-diffusion", "--vae-dir", "/models/VAE", "--lora-dir", "/models/Lora", "--embeddings-dir", "/models/embeddings", "--no-download-sd-model", "--skip-version-check"]
+CMD ["--listen", "--api", "--port", "7860", "--data-dir", "/data", "--ckpt-dir", "/shared/models/Stable-diffusion", "--vae-dir", "/shared/models/VAE", "--lora-dir", "/shared/models/Lora", "--embeddings-dir", "/shared/models/embeddings", "--no-download-sd-model", "--skip-version-check"]

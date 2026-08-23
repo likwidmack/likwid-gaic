@@ -5,9 +5,9 @@
 | Account | Responsibility |
 | --- | --- |
 | [likwidmack](https://github.com/likwidmack) | Owns this hub at `likwidmack/forkedAI` |
-| [tamaramack](https://github.com/tamaramack) | Owns `LocalAI-Prt`, `private-gpt-tm`, `stable-diffusion-ui`, and `ComfyUI_frontend` |
+| [tamaramack](https://github.com/tamaramack) | Owns `LocalAI-Prt`, `private-gpt-tm`, `stable-diffusion-ui`, `ComfyUI`, and `ComfyUI_frontend` |
 
-The connected GitHub app was verified as `likwidmack`. The four existing local fork remotes were verified under `tamaramack`.
+The connected GitHub app was verified as `likwidmack`. The five existing local fork remotes were verified under `tamaramack`.
 
 ## Token policy
 

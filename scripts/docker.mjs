@@ -21,12 +21,17 @@ const composeEnv = {
   LOCALAI_CONTEXT: repoPath("LocalAI-Prt"),
   PRIVATE_GPT_CONTEXT: repoPath("private-gpt-tm"),
   STABLE_DIFFUSION_CONTEXT: repoPath("stable-diffusion-ui"),
+  COMFY_CONTEXT: repoPath("ComfyUI"),
   COMFY_FRONTEND_CONTEXT: repoPath("ComfyUI_frontend"),
   MODEL_ROOT: hostPath(storage.roots.models),
   HF_CACHE_ROOT: hostPath(storage.roots.huggingFaceCache),
   MEDIA_ROOT: hostPath(storage.roots.media),
   DOCUMENT_ROOT: hostPath(storage.roots.documents),
-  RUNTIME_ROOT: hostPath(storage.roots.runtime)
+  RUNTIME_ROOT: hostPath(storage.roots.runtime),
+  SHARED_OBJECT_ROOT: hostPath(storage.roots.sharedObjects),
+  TENSOR_ROOT: hostPath(storage.roots.tensors),
+  PLUGIN_ROOT: hostPath(storage.roots.plugins),
+  TOOL_ROOT: hostPath(storage.roots.tools)
 };
 function run(program, args, { capture = false, env = composeEnv } = {}) {
   const result = spawnSync(program, args, { cwd: root, env, encoding: "utf8", stdio: capture ? ["ignore", "pipe", "pipe"] : "inherit" });
