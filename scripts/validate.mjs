@@ -53,7 +53,6 @@ for (const service of stack.services ?? []) {
   if (!repoNames.has(service.repository)) throw new Error(`Unknown repository for ${service.name}`);
 }
 const documentation = [
-  "../AGENT.md",
   "../AGENTS.md",
   "../README.md",
   ...readdirSync(new URL("../docs/", import.meta.url), { withFileTypes: true })
