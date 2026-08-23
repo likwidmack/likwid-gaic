@@ -2,12 +2,13 @@ import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import process from "node:process";
+import { hostPath, pathFlavor, pathModule } from "./paths.mjs";
 
 const modelsUrl = new URL("../config/models.json", import.meta.url);
 const storage = JSON.parse(readFileSync(new URL("../config/storage.json", import.meta.url), "utf8"));
 const manifest = JSON.parse(readFileSync(modelsUrl, "utf8"));
-const windows = process.platform === "win32";
-const hostPath = (entry) => entry[windows ? "pathWindows" : "pathWsl"];
+const flavor = pathFlavor();
+const windows = flavor === "windows";
 const modelRoot = hostPath(storage.roots.models);
 const command = process.argv[2] ?? "list";
 const extensions = new Set([".bin", ".ckpt", ".ggml", ".gguf", ".onnx", ".pt", ".pth", ".safetensors"]);
@@ -16,10 +17,10 @@ function find(alias) {
   if (!item) throw new Error(`Unknown model alias: ${alias}`);
   return item;
 }
-function destination(item, style = windows ? "windows" : "wsl") {
-  const flavor = style === "windows" ? path.win32 : path.posix;
-  const root = storage.roots.models[style === "windows" ? "pathWindows" : "pathWsl"];
-  return flavor.join(root, item.localDir);
+function destination(item, style = flavor) {
+  const module = pathModule(style);
+  const root = hostPath(storage.roots.models, style);
+  return module.join(root, item.localDir);
 }
 function expectedFiles(item) {
   return (item.include ?? []).filter((pattern) => !/[?*\[]/.test(pattern));
@@ -29,12 +30,20 @@ function isPresent(item) {
   return expected.length ? expected.every((file) => existsSync(path.join(destination(item), file))) : existsSync(destination(item));
 }
 function hfRunner() {
-  if (!windows) return { program: "hf", prefix: [], style: "wsl", env: { ...process.env, HF_HOME: storage.roots.huggingFaceCache.pathWsl } };
+  if (windows) {
+    return {
+      program: "wsl.exe",
+      prefix: ["-e", "bash", "-lc", 'export HF_HOME="$1"; shift; exec hf "$@"', "bash", storage.roots.huggingFaceCache.pathWsl],
+      style: "wsl",
+      env: process.env
+    };
+  }
+  const style = flavor;
   return {
-    program: "wsl.exe",
-    prefix: ["-e", "bash", "-lc", 'export HF_HOME="$1"; shift; exec hf "$@"', "bash", storage.roots.huggingFaceCache.pathWsl],
-    style: "wsl",
-    env: process.env
+    program: "hf",
+    prefix: [],
+    style,
+    env: { ...process.env, HF_HOME: hostPath(storage.roots.huggingFaceCache, style) }
   };
 }
 function runHf(args) {
@@ -119,7 +128,7 @@ else if (command === "sync-localai") {
 }
 else if (command === "cache") {
   const runner = hfRunner();
-  const cache = storage.roots.huggingFaceCache[runner.style === "windows" ? "pathWindows" : "pathWsl"];
+  const cache = hostPath(storage.roots.huggingFaceCache, runner.style);
   runHf(["cache", "list", "--cache-dir", cache]);
 }
 else if (command === "inventory") {

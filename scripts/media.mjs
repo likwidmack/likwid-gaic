@@ -1,9 +1,9 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import process from "node:process";
+import { hostPath } from "./paths.mjs";
+
 const storage = JSON.parse(readFileSync(new URL("../config/storage.json", import.meta.url), "utf8"));
-const windows = process.platform === "win32";
-const hostPath = (entry) => entry[windows ? "pathWindows" : "pathWsl"];
 const mediaRoot = hostPath(storage.roots.media);
 const mediaBackupRoot = hostPath(storage.roots.mediaBackup);
 const command = process.argv[2] ?? "status";

@@ -1,0 +1,34 @@
+# CPU compute overlay. Applied by scripts/docker.mjs when FORKEDAI_COMPUTE=cpu
+# (default on macOS). Resets NVIDIA device reservations and LocalAI CUDA pins.
+# media/comfy remain NVIDIA-only and are refused by the npm runner in CPU mode.
+
+services:
+  localai:
+    image: ${LOCALAI_IMAGE:-localai/localai:v4.8.0}
+    environment:
+      LOCALAI_FORCE_META_BACKEND_CAPABILITY: !reset null
+      NVIDIA_VISIBLE_DEVICES: !reset null
+      NVIDIA_DRIVER_CAPABILITIES: !reset null
+      LOCALAI_F16: !reset null
+    deploy:
+      resources:
+        reservations:
+          devices: !reset []
+
+  stable-diffusion:
+    environment:
+      NVIDIA_VISIBLE_DEVICES: !reset null
+      NVIDIA_DRIVER_CAPABILITIES: !reset null
+    deploy:
+      resources:
+        reservations:
+          devices: !reset []
+
+  comfy-backend:
+    environment:
+      NVIDIA_VISIBLE_DEVICES: !reset null
+      NVIDIA_DRIVER_CAPABILITIES: !reset null
+    deploy:
+      resources:
+        reservations:
+          devices: !reset []

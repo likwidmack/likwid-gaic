@@ -1,6 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import process from "node:process";
+import { hostPath } from "./paths.mjs";
 
 const config = JSON.parse(readFileSync(new URL("../config/repos.json", import.meta.url)));
 const action = process.argv[2] ?? "status";
@@ -8,7 +9,7 @@ if (!["status", "fetch", "update"].includes(action)) {
   console.error("Usage: node scripts/repos.mjs <status|fetch|update>");
   process.exit(2);
 }
-const pathFor = (repo) => process.platform === "win32" ? repo.pathWindows : repo.pathWsl;
+const pathFor = (repo) => hostPath(repo);
 function git(path, args, inherit = false) {
   return execFileSync("git", ["-C", path, ...args], {
     encoding: "utf8",

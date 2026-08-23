@@ -1,7 +1,9 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
+import os from "node:os";
 import { fileURLToPath } from "node:url";
 import process from "node:process";
+import { hostPath, resolveComputeMode } from "./paths.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const readJson = (name) => JSON.parse(readFileSync(new URL(`../config/${name}`, import.meta.url), "utf8"));
@@ -10,7 +12,9 @@ const storage = readJson("storage.json");
 const stack = readJson("stack.json");
 const gpuExclusive = stack.gpuExclusive;
 const windows = process.platform === "win32";
-const hostPath = (entry) => entry[windows ? "pathWindows" : "pathWsl"];
+const computeMode = resolveComputeMode();
+const nvidiaOnlyProfiles = new Set(["media", "comfy"]);
+const nvidiaOnlyServices = new Set(["stable-diffusion", "comfy-backend", "comfy-frontend"]);
 const repoPath = (name) => {
   const item = repos.repositories.find((repo) => repo.name === name);
   if (!item) throw new Error(`Unknown repository: ${name}`);
@@ -18,6 +22,7 @@ const repoPath = (name) => {
 };
 const composeEnv = {
   ...process.env,
+  FORKEDAI_COMPUTE: computeMode,
   HUB_CONTEXT: root,
   LOCALAI_CONTEXT: repoPath("LocalAI-Prt"),
   PRIVATE_GPT_CONTEXT: repoPath("private-gpt-tm"),
@@ -36,6 +41,9 @@ const composeEnv = {
   PLUGIN_ROOT: hostPath(storage.roots.plugins),
   TOOL_ROOT: hostPath(storage.roots.tools)
 };
+if (computeMode === "cpu" && !process.env.LOCALAI_IMAGE) {
+  composeEnv.LOCALAI_IMAGE = "localai/localai:v4.8.0";
+}
 function run(program, args, { capture = false, env = composeEnv } = {}) {
   const result = spawnSync(program, args, { cwd: root, env, encoding: "utf8", stdio: capture ? ["ignore", "pipe", "pipe"] : "inherit" });
   if (capture) return { ok: result.status === 0, output: `${result.stdout ?? ""}${result.stderr ?? ""}`.trim() || result.error?.message || "no output" };
@@ -43,6 +51,7 @@ function run(program, args, { capture = false, env = composeEnv } = {}) {
   if (result.status !== 0) process.exit(result.status ?? 1);
 }
 const base = ["compose", "--project-name", stack.projectName, "--file", "compose.yaml"];
+if (computeMode === "cpu") base.push("--file", "compose.cpu.yaml");
 const compose = (args) => run("docker", [...base, ...args]);
 const allProfiles = stack.profiles.flatMap((profile) => ["--profile", profile]);
 const gpuServices = gpuExclusive.services;
@@ -75,11 +84,14 @@ function physicalCoreCount() {
   if (windows) {
     const result = run("powershell.exe", ["-NoProfile", "-Command", "(Get-CimInstance Win32_Processor | Measure-Object -Property NumberOfCores -Sum).Sum"], { capture: true, env: process.env });
     const cores = Number.parseInt(result.output, 10);
-    return Number.isFinite(cores) && cores > 0 ? cores : null;
+    if (Number.isFinite(cores) && cores > 0) return cores;
+  } else {
+    const result = run("bash", ["-lc", "lscpu -p=CORE,ONLINE 2>/dev/null | awk -F, '$2==\"yes\" {print $1}' | sort -u | wc -l"], { capture: true, env: process.env });
+    const cores = Number.parseInt(result.output, 10);
+    if (Number.isFinite(cores) && cores > 0) return cores;
   }
-  const result = run("bash", ["-lc", "lscpu -p=CORE,ONLINE 2>/dev/null | awk -F, '$2==\"yes\" {print $1}' | sort -u | wc -l"], { capture: true, env: process.env });
-  const cores = Number.parseInt(result.output, 10);
-  return Number.isFinite(cores) && cores > 0 ? cores : null;
+  const logical = os.cpus()?.length ?? 0;
+  return logical > 0 ? logical : null;
 }
 
 function suggestedLocalAiThreads() {
@@ -88,7 +100,27 @@ function suggestedLocalAiThreads() {
   return Math.max(1, cores - 4);
 }
 
+function assertCpuAllowsProfile(profile) {
+  if (computeMode !== "cpu") return;
+  if (nvidiaOnlyProfiles.has(profile)) {
+    throw new Error(
+      `Profile "${profile}" requires NVIDIA GPU images and is not supported when FORKEDAI_COMPUTE=cpu. Use inference or rag, or set FORKEDAI_COMPUTE=nvidia on a CUDA host.`
+    );
+  }
+}
+
+function assertCpuAllowsService(service) {
+  if (computeMode !== "cpu") return;
+  if (nvidiaOnlyServices.has(service)) {
+    throw new Error(
+      `Service "${service}" requires NVIDIA GPU images and is not supported when FORKEDAI_COMPUTE=cpu. Build/start it only with FORKEDAI_COMPUTE=nvidia on a CUDA host.`
+    );
+  }
+}
+
 function assertGpuPreflight(profile, { allowShare = false } = {}) {
+  assertCpuAllowsProfile(profile);
+  if (computeMode === "cpu") return;
   if (!gpuExclusiveEnabled()) return;
   if (profile === "all") {
     throw new Error("Starting all profiles on a single GPU host causes VRAM contention. Start one profile at a time or use `npm run stack -- switch PROFILE`.");
@@ -124,8 +156,14 @@ if (command === "doctor") {
     ["Hugging Face CLI", ...hfCheck]
   ];
   let failures = 0;
+  console.log(`Compute mode: ${computeMode}${process.env.FORKEDAI_COMPUTE ? "" : " (default)"}`);
   for (const [label, program, args] of checks) {
     const result = run(program, args, { capture: true, env: process.env });
+    const softGpu = label === "NVIDIA GPU" && computeMode === "cpu";
+    if (softGpu && !result.ok) {
+      console.log(`WARN  ${label}: ${result.output} (optional in CPU mode)`);
+      continue;
+    }
     console.log(`${result.ok ? "OK" : "MISSING"}  ${label}: ${result.output}`);
     if (!result.ok) failures++;
   }
@@ -153,6 +191,7 @@ if (command === "doctor") {
     process.exitCode = 1;
   }
 } else if (command === "resources") {
+  console.log(`Compute mode: ${computeMode}`);
   const gpu = run("nvidia-smi", ["--query-gpu=index,name,memory.total,memory.used,memory.free,utilization.gpu,temperature.gpu", "--format=csv,noheader"], { capture: true, env: process.env });
   console.log(gpu.ok ? `GPU\n${gpu.output}` : `GPU\nunavailable: ${gpu.output}`);
   const activeGpu = runningGpuServices();
@@ -172,9 +211,10 @@ if (command === "doctor") {
   const { profile, flags } = parseProfileCommand(process.argv);
   if (!profile) throw new Error(`Choose a profile: ${stack.profiles.join(", ")}`);
   if (!stack.profiles.includes(profile)) throw new Error(`Unknown profile: ${profile}`);
+  assertCpuAllowsProfile(profile);
   const toStop = gpuConflictsForProfile(profile);
   const toKeep = [...gpuServicesForProfile(profile)];
-  console.log(`Switch plan for profile "${profile}":`);
+  console.log(`Switch plan for profile "${profile}" (compute=${computeMode}):`);
   console.log(`  stop GPU services: ${toStop.length ? toStop.join(", ") : "none"}`);
   console.log(`  keep/start GPU services: ${toKeep.length ? toKeep.join(", ") : "none"}`);
   if (flags.has("dry-run")) process.exit(0);
@@ -196,9 +236,19 @@ else if (command === "up") {
   if (service) {
     const metadata = stack.services.find((item) => item.name === service);
     if (!metadata) throw new Error(`Unknown service: ${service}`);
+    assertCpuAllowsService(service);
+    assertCpuAllowsProfile(metadata.profile);
     compose(["--profile", metadata.profile, "build", service]);
-  } else compose([...allProfiles, "build"]);
+  } else {
+    if (computeMode === "cpu") {
+      throw new Error("Building all services includes NVIDIA-only media/comfy images. Build a single service, or set FORKEDAI_COMPUTE=nvidia on a CUDA host.");
+    }
+    compose([...allProfiles, "build"]);
+  }
 } else if (command === "backend") {
+  if (computeMode === "cpu") {
+    throw new Error("CUDA backend install is NVIDIA-only. With FORKEDAI_COMPUTE=cpu, LocalAI uses the CPU image backends; set FORKEDAI_COMPUTE=nvidia to install localai@cuda13-llama-cpp.");
+  }
   const backend = process.argv[3] ?? "localai@cuda13-llama-cpp";
   if (!/^[a-z0-9@._-]+$/i.test(backend)) throw new Error("Invalid backend identifier");
   const directory = backend.split("@").at(-1);
