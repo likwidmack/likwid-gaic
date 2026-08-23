@@ -272,6 +272,23 @@ The Stable Diffusion image marks its five known helper repository directories as
 
 ## Daily operations
 
+Convenience aliases (thin wrappers around `scripts/docker.mjs`):
+
+| Script                        | Behavior                                                                  |
+| ----------------------------- | ------------------------------------------------------------------------- |
+| `npm run stack:up -- PROFILE` | Raw `up` (refuses GPU conflicts unless `--allow-gpu-share`)               |
+| `npm run stack:down`          | Stop and remove stack services (`down`, no `--volumes`)                   |
+| `npm run stack:status`        | Show Compose status                                                       |
+| `npm run stack:build`         | Build all buildable services (optional: `npm run stack:build -- SERVICE`) |
+| `npm run stack:inference`     | `switch inference` (stops conflicting GPU services first)                 |
+| `npm run stack:rag`           | `switch rag`                                                              |
+| `npm run stack:media`         | `switch media`                                                            |
+| `npm run stack:comfy`         | `switch comfy`                                                            |
+
+Profile scripts use `switch`. Prefer them on a single-GPU host. Keep using
+`npm run stack -- …` for commands without an alias (`pull`, `logs`, `stop`,
+`resources`, `backend`, …).
+
 ```powershell
 npm run stack
 npm run stack -- pull

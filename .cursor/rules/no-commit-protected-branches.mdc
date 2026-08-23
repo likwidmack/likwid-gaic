@@ -1,0 +1,16 @@
+---
+description: Never commit directly to development or main
+alwaysApply: true
+---
+
+# Protected branches
+
+Never create commits on `development` or `main`.
+
+- Create or check out a feature/docs/fix branch first, then commit there.
+- If a commit lands on `development` or `main` by mistake, move it to a topic
+  branch and reset the protected branch to match its remote (only when the
+  mistaken commit is local and unpushed).
+- Pull requests target `development` (integration) or `main` (release) — do not
+  push commits straight onto those branches unless the user explicitly overrides
+  this rule for a specific action.

@@ -21,7 +21,25 @@ if (accounts.accounts?.hubOwner?.login !== "likwidmack") throw new Error("Hub ow
 if (accounts.accounts?.forkOwner?.login !== "tamaramack") throw new Error("Fork owner must be tamaramack");
 if (accounts.credentialPolicy?.storeTokensInRepository !== false) throw new Error("Tokens must never be stored in this repository");
 
-for (const script of ["stack", "models", "media", "repos:status"]) if (!pkg.scripts?.[script]) throw new Error(`Missing npm script: ${script}`);
+const requiredScripts = [
+  "stack",
+  "stack:doctor",
+  "stack:config",
+  "stack:up",
+  "stack:down",
+  "stack:status",
+  "stack:build",
+  "stack:inference",
+  "stack:rag",
+  "stack:media",
+  "stack:comfy",
+  "models",
+  "media",
+  "repos:status",
+];
+for (const script of requiredScripts) {
+  if (!pkg.scripts?.[script]) throw new Error(`Missing npm script: ${script}`);
+}
 for (const [name, root] of Object.entries(storage.roots ?? {})) {
   if (!root.pathWindows || !root.pathWsl || !root.pathPosix) throw new Error(`Storage root ${name} needs Windows, WSL, and POSIX paths`);
   if (!root.pathPosix.startsWith("~/")) throw new Error(`POSIX path for storage root ${name} must start with ~/`);
