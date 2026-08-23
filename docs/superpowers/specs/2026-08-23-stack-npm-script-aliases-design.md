@@ -13,7 +13,7 @@ behavior.
 | Implementation        | Thin `package.json` aliases only (same pattern as `stack:doctor`)       |
 | Profile scripts       | Call `switch PROFILE` (stop conflicting GPU services, then start)       |
 | Raw `up`              | Separate `stack:up` that still invokes `docker.mjs up` with passthrough |
-| Lifecycle alias scope | Minimal: `up`, `down`, `status` only                                    |
+| Lifecycle alias scope | Minimal: `up`, `down`, `status`, plus `build` (all services)            |
 | CLI / GPU policy      | Unchanged; aliases are wrappers                                         |
 
 ## Scripts
@@ -25,10 +25,15 @@ Keep existing: `stack`, `stack:doctor`, `stack:config`.
 | `stack:up`        | `node scripts/docker.mjs up`               |
 | `stack:down`      | `node scripts/docker.mjs down`             |
 | `stack:status`    | `node scripts/docker.mjs status`           |
+| `stack:build`     | `node scripts/docker.mjs build` (all)      |
 | `stack:inference` | `node scripts/docker.mjs switch inference` |
 | `stack:rag`       | `node scripts/docker.mjs switch rag`       |
 | `stack:media`     | `node scripts/docker.mjs switch media`     |
 | `stack:comfy`     | `node scripts/docker.mjs switch comfy`     |
+
+`stack:build` with no args matches existing CLI behavior: build every
+buildable service across all profiles. Optional service passthrough remains
+available (`npm run stack:build -- comfy-backend`).
 
 Argument passthrough follows npm conventions: e.g.
 `npm run stack:up -- inference`, `npm run stack:up -- media --allow-gpu-share`.
@@ -58,6 +63,7 @@ landing page.
 
 - Changing `docker.mjs` command semantics or GPU exclusivity
 - Generating aliases from `config/stack.json`
-- Full command mirror (`logs`, `build`, `pull`, `resources`, `backend`, …)
+- Full command mirror (`logs`, `pull`, `resources`, `backend`, …); only
+  `stack:build` (all / optional service) is added from that set
 - Top-level script names outside the `stack:` namespace
 - Operational stack bring-up on the workstation as part of this change
