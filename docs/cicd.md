@@ -1,13 +1,15 @@
 # Continuous integration
 
-GitHub Actions runs **local parity** on pull requests to `main`. This hub has
+`development` is the default integration branch. `main` is the release branch.
+GitHub Actions runs **local parity** on pull requests to both. This hub has
 no continuous deployment: it does not publish images, deploy environments, or
 re-run a CD pipeline after merge.
 
 ## Flow
 
-```
-PR → main → CI (Local parity: npm ci, npm test)
+```text
+PR → development (default/integration) | main (release)
+  → CI (Local parity: npm ci, npm test)
 ```
 
 Workstation Docker, GPU, and storage checks stay local (`npm run stack:doctor`,
