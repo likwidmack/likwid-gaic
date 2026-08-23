@@ -1,0 +1,170 @@
+{
+  "schemaVersion": 1,
+  "layout": {
+    "models": {
+      "a1111": ["localai", "Stable-diffusion", "VAE", "Lora", "embeddings"],
+      "comfy": [
+        "checkpoints",
+        "clip",
+        "clip_vision",
+        "controlnet",
+        "diffusion_models",
+        "embeddings",
+        "loras",
+        "text_encoders",
+        "unet",
+        "upscale_models",
+        "vae"
+      ]
+    },
+    "tensors": ["checkpoints", "embeddings", "intermediate"],
+    "plugins": ["localai", "private-gpt", "stable-diffusion", "comfyui"]
+  },
+  "profiles": {
+    "inference": {
+      "services": ["localai"],
+      "gateway": "https://localhost:8443",
+      "required": [
+        {
+          "id": "chat-qwen2.5-3b",
+          "kind": "model",
+          "modelAlias": "chat-qwen2.5-3b",
+          "purpose": "LocalAI chat model (GGUF under models/localai)"
+        },
+        {
+          "id": "localai-yaml",
+          "kind": "object",
+          "relativePath": "localai/chat-qwen2.5-3b.yaml",
+          "purpose": "LocalAI model definition from npm run models -- sync-localai"
+        },
+        {
+          "id": "localai-backend",
+          "kind": "object",
+          "purpose": "CUDA llama-cpp backend from npm run stack -- backend (runtime/localai/backends)"
+        }
+      ],
+      "stronglyRecommended": []
+    },
+    "rag": {
+      "services": ["localai", "private-gpt"],
+      "gateway": "https://localhost:8443, https://localhost:8444",
+      "required": [
+        {
+          "id": "chat-qwen2.5-3b",
+          "kind": "model",
+          "modelAlias": "chat-qwen2.5-3b",
+          "purpose": "PrivateGPT default LLM via LocalAI OpenAI-compatible API"
+        },
+        {
+          "id": "embed-nomic-v1.5",
+          "kind": "model",
+          "modelAlias": "embed-nomic-v1.5",
+          "purpose": "PrivateGPT embeddings (768-dim; must match PGPT_EMBED_DIM)"
+        },
+        {
+          "id": "localai-yaml-chat",
+          "kind": "object",
+          "relativePath": "localai/chat-qwen2.5-3b.yaml",
+          "purpose": "LocalAI chat YAML from sync-localai"
+        },
+        {
+          "id": "localai-yaml-embed",
+          "kind": "object",
+          "relativePath": "localai/embed-nomic-v1.5.yaml",
+          "purpose": "LocalAI embedding YAML from sync-localai"
+        },
+        {
+          "id": "documents-root",
+          "kind": "directory",
+          "storageRoot": "documents",
+          "purpose": "Read-only document mount for PrivateGPT ingestion"
+        }
+      ],
+      "stronglyRecommended": [
+        {
+          "id": "sample-documents",
+          "kind": "object",
+          "purpose": "Add reviewed documents under DOCUMENT_ROOT before starting rag"
+        }
+      ]
+    },
+    "media": {
+      "services": ["stable-diffusion"],
+      "gateway": "https://localhost:8445",
+      "required": [
+        {
+          "id": "sd15-starter",
+          "kind": "model",
+          "modelAlias": "sd15-starter",
+          "purpose": "At least one SD 1.5 checkpoint (managed pin lands in checkpoints/; link or copy into Stable-diffusion/ for WebUI)"
+        },
+        {
+          "id": "stable-diffusion-checkpoint-link",
+          "kind": "object",
+          "relativePath": "Stable-diffusion/v1-5-pruned-emaonly-fp16.safetensors",
+          "purpose": "WebUI reads --ckpt-dir Stable-diffusion; use a junction or copy from checkpoints/ after download"
+        }
+      ],
+      "stronglyRecommended": [
+        {
+          "id": "vae-directory",
+          "kind": "directory",
+          "relativePath": "VAE",
+          "purpose": "Optional external VAE files for A1111 --vae-dir"
+        },
+        {
+          "id": "reviewed-extensions",
+          "kind": "plugin",
+          "storageRoot": "plugins",
+          "relativePath": "stable-diffusion",
+          "purpose": "Reviewed extensions only; mount is read-only at runtime"
+        }
+      ]
+    },
+    "comfy": {
+      "services": ["comfy-backend", "comfy-frontend"],
+      "gateway": "https://localhost:8446, https://localhost:8447",
+      "required": [
+        {
+          "id": "sd15-starter",
+          "kind": "model",
+          "modelAlias": "sd15-starter",
+          "purpose": "Starter SD 1.5 checkpoint for Load Checkpoint workflows"
+        },
+        {
+          "id": "comfy-model-layout",
+          "kind": "directory",
+          "relativePath": "checkpoints",
+          "purpose": "ComfyUI model tree under the shared model root (see layout.comfy in this file)"
+        }
+      ],
+      "stronglyRecommended": [
+        {
+          "id": "vae-directory",
+          "kind": "directory",
+          "relativePath": "vae",
+          "purpose": "Optional standalone VAE decoders"
+        },
+        {
+          "id": "upscale-models",
+          "kind": "directory",
+          "relativePath": "upscale_models",
+          "purpose": "Optional upscalers (prefer reviewed safetensors; treat .pth as executable)"
+        },
+        {
+          "id": "reviewed-custom-nodes",
+          "kind": "plugin",
+          "storageRoot": "plugins",
+          "relativePath": "comfyui",
+          "purpose": "Reviewed custom nodes only; ComfyUI-Manager is not required. API nodes stay disabled (--disable-api-nodes)."
+        }
+      ]
+    }
+  },
+  "notes": [
+    "Upstream PrivateGPT quickstart suggests larger Ollama models; this hub keeps Qwen2.5-3B and nomic for single-GPU LocalAI.",
+    "Do not auto-install ComfyUI-Manager, gallery warm-up, or unreviewed extensions.",
+    "At most one GPU service (localai, stable-diffusion, comfy-backend) may run on a single-GPU host.",
+    "Managed stack keeps FORKEDAI_BIND_ADDRESS=127.0.0.1 and does not set LOCALAI_API_KEY until an explicit auth follow-up."
+  ]
+}

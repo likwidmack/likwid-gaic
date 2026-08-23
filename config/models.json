@@ -34,6 +34,15 @@
         "contextSize": 2048,
         "gpuLayers": 999
       }
+    },
+    {
+      "alias": "sd15-starter",
+      "repo": "Comfy-Org/stable-diffusion-v1-5-archive",
+      "revision": "9cfd069101959ca3828bf9c04a4419870832b74f",
+      "localDir": "checkpoints",
+      "include": [
+        "v1-5-pruned-emaonly-fp16.safetensors"
+      ]
     }
   ]
 }

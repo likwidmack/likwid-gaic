@@ -151,8 +151,8 @@ services:
     environment:
       OPENAI_API_BASE: http://localai:8080/v1
       OPENAI_EMBEDDING_API_BASE: http://localai:8080/v1
-      OPENAI_API_KEY: localai
-      OPENAI_EMBEDDING_API_KEY: localai
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-localai}
+      OPENAI_EMBEDDING_API_KEY: ${OPENAI_EMBEDDING_API_KEY:-localai}
       PGPT_LLM_DEFAULT: qwen2.5-3b-instruct:latest
       PGPT_EMBEDDING_DEFAULT: nomic-embed-text-v1.5:latest
       PGPT_EMBED_DIM: "768"
