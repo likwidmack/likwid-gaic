@@ -117,6 +117,10 @@ Official references:
 
 ## Profiles
 
+Quick reference (services, HTTPS ports, compute modes, and start aliases):
+[Profiles](../README.md#profiles) in the root README. npm script catalog:
+[npm scripts](../README.md#npm-scripts).
+
 | Profile     | Services                              | HTTPS gateway endpoint                             | Compute     |
 | ----------- | ------------------------------------- | -------------------------------------------------- | ----------- |
 | `inference` | LocalAI (CUDA 13 or CPU image)        | `https://localhost:8443`                           | nvidia, cpu |
@@ -138,9 +142,12 @@ The gateway binds to `127.0.0.1` by default. It is available to applications and
 
 The five `*_HTTPS_PORT` variables change host-side published ports only; Caddy continues to listen on container ports 8443 through 8447. Changing `FORKEDAI_BIND_ADDRESS` does not by itself configure a usable LAN hostname, certificate, authentication policy, or firewall rule.
 
-See the dedicated [LocalAI setup guide](localai-docker-setup.md) and
+See the dedicated [LocalAI setup guide](localai-docker-setup.md),
+[PrivateGPT setup guide](privategpt-docker-setup.md),
+[Stable Diffusion WebUI setup guide](stable-diffusion-docker-setup.md), and
 [ComfyUI setup guide](comfyui-docker-setup.md) for service-specific requirements
-and troubleshooting.
+and troubleshooting. Workload-to-model mapping:
+[Use cases and models](use-cases-and-models.md).
 
 ```powershell
 docker network inspect forkedai-edge forkedai-inference forkedai-media
@@ -272,7 +279,8 @@ The Stable Diffusion image marks its five known helper repository directories as
 
 ## Daily operations
 
-Convenience aliases (thin wrappers around `scripts/docker.mjs`):
+Convenience aliases (thin wrappers around `scripts/docker.mjs`). Full catalog:
+[npm scripts](../README.md#npm-scripts) in the root README.
 
 | Script                        | Behavior                                                                  |
 | ----------------------------- | ------------------------------------------------------------------------- |

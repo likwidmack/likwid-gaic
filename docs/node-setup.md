@@ -43,4 +43,5 @@ macOS and native Linux, install `hf` on the host PATH. Prefer running the
 Windows Docker Desktop stack from PowerShell rather than an arbitrary WSL
 working directory when using the Windows Docker CLI.
 
-No global npm package is required by this repository.
+No global npm package is required by this repository. Custom script catalog:
+[npm scripts](../README.md#npm-scripts) in the root README.

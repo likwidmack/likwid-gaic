@@ -96,6 +96,58 @@ function downloadArgs(item, dryRun = false) {
   if (dryRun) args.push("--dry-run");
   return args;
 }
+function localAIYamlLines(spec) {
+  const threads = spec.threads ?? process.env.FORKEDAI_CPU_THREADS ?? process.env.LOCALAI_THREADS;
+  switch (spec.type) {
+    case "embedding": {
+      const lines = [
+        `name: ${JSON.stringify(spec.name)}`,
+        "backend: llama-cpp",
+        "parameters:",
+        `  model: ${JSON.stringify(spec.model)}`,
+        `context_size: ${spec.contextSize ?? 4096}`,
+        `gpu_layers: ${spec.gpuLayers ?? 999}`,
+        "f16: true",
+        "embeddings: true"
+      ];
+      if (threads) lines.splice(6, 0, `threads: ${threads}`);
+      return lines;
+    }
+    case "chat": {
+      const lines = [
+        `name: ${JSON.stringify(spec.name)}`,
+        "backend: llama-cpp",
+        "parameters:",
+        `  model: ${JSON.stringify(spec.model)}`,
+        `context_size: ${spec.contextSize ?? 4096}`,
+        `gpu_layers: ${spec.gpuLayers ?? 999}`,
+        "f16: true",
+        "options:",
+        "  - use_jinja:true"
+      ];
+      if (threads) lines.splice(6, 0, `threads: ${threads}`);
+      return lines;
+    }
+    case "transcription":
+      return [
+        `name: ${JSON.stringify(spec.name)}`,
+        `backend: ${spec.backend ?? "whisper"}`,
+        "parameters:",
+        `  model: ${JSON.stringify(spec.model)}`
+      ];
+    case "tts":
+      return [
+        `name: ${JSON.stringify(spec.name)}`,
+        `backend: ${spec.backend ?? "piper"}`,
+        "parameters:",
+        `  model: ${JSON.stringify(spec.model)}`
+      ];
+    default: {
+      const exhaustive = spec.type;
+      throw new Error(`Unsupported LocalAI type for ${spec.name ?? "model"}: ${exhaustive}`);
+    }
+  }
+}
 function walk(root) {
   const files = [];
   if (!existsSync(root)) return files;
@@ -145,19 +197,7 @@ else if (command === "sync-localai") {
     mkdirSync(directory, { recursive: true });
     const target = path.join(directory, spec.configFile);
     const temporary = `${target}.tmp`;
-    const lines = [
-      `name: ${JSON.stringify(spec.name)}`,
-      "backend: llama-cpp",
-      "parameters:",
-      `  model: ${JSON.stringify(spec.model)}`,
-      `context_size: ${spec.contextSize ?? 4096}`,
-      `gpu_layers: ${spec.gpuLayers ?? 999}`,
-      "f16: true"
-    ];
-    const threads = spec.threads ?? process.env.FORKEDAI_CPU_THREADS ?? process.env.LOCALAI_THREADS;
-    if (threads) lines.splice(6, 0, `threads: ${threads}`);
-    if (spec.type === "embedding") lines.push("embeddings: true");
-    else lines.push("options:", "  - use_jinja:true");
+    const lines = localAIYamlLines(spec);
     writeFileSync(temporary, `${lines.join("\n")}\n`);
     renameSync(temporary, target);
     console.log(`Wrote ${target}`);

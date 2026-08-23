@@ -50,17 +50,135 @@ npm run stack:config
 For first-run profiles, compute modes, model downloads, and HTTPS trust, see
 [Container operations](docs/container-operations.md).
 
+## Profiles
+
+Four Compose profiles are defined in [`config/stack.json`](config/stack.json).
+Caddy is the only host-facing service; backends stay on private bridges and are
+reached through local HTTPS. Prefer `npm run stack:PROFILE` on a single-GPU host
+— those aliases call `switch`, which stops conflicting GPU services first.
+
+| Profile     | Services                         | HTTPS endpoints                                    | Compute     | Start                     |
+| ----------- | -------------------------------- | -------------------------------------------------- | ----------- | ------------------------- |
+| `inference` | LocalAI                          | `https://localhost:8443`                           | nvidia, cpu | `npm run stack:inference` |
+| `rag`       | LocalAI + PrivateGPT             | `https://localhost:8443`, `https://localhost:8444` | nvidia, cpu | `npm run stack:rag`       |
+| `media`     | Stable Diffusion WebUI           | `https://localhost:8445`                           | nvidia only | `npm run stack:media`     |
+| `comfy`     | ComfyUI backend + frontend proxy | `https://localhost:8446`, `https://localhost:8447` | nvidia only | `npm run stack:comfy`     |
+
+### What each profile does
+
+- **`inference`** — OpenAI-compatible chat API via LocalAI (CUDA 13 or CPU image).
+  Needs the pinned chat GGUF (`chat-qwen2.5-3b`), LocalAI YAML from
+  `npm run models -- sync-localai`, and (on NVIDIA) the CUDA llama-cpp backend
+  from `npm run stack -- backend`.
+- **`rag`** — PrivateGPT for document ingestion and retrieval, calling LocalAI for
+  LLM and embeddings. Needs the chat model plus `embed-nomic-v1.5`, both YAML
+  definitions, and a documents root. PrivateGPT itself is CPU-side; LocalAI still
+  holds the GPU (or CPU inference) for model work.
+- **`media`** — Automatic1111-style Stable Diffusion WebUI. Needs at least one SD
+  checkpoint under the shared model tree (WebUI reads `Stable-diffusion/`). NVIDIA
+  only.
+- **`comfy`** — ComfyUI workflow API (`8447`) and editor UI (`8446`). Needs a
+  starter checkpoint and the Comfy model directory layout under the shared model
+  root. NVIDIA only; API nodes stay disabled by default.
+
+Minimum artifacts per profile are listed in
+[`config/profile-artifacts.json`](config/profile-artifacts.json). Inspect local
+requirements with `npm run models -- recommendations PROFILE`.
+
+### Single-GPU rule
+
+At most one of `localai`, `stable-diffusion`, or `comfy-backend` may run at a
+time. `rag` shares LocalAI with `inference` and is safe together; do not combine
+`media` or `comfy` with an active LocalAI without deliberately sharing the GPU.
+Details and monitoring: [GPU and CPU resource utilization](docs/resource-utilization.md).
+
+Set `FORKEDAI_COMPUTE=cpu` for inference/RAG without NVIDIA (`media` and `comfy`
+still require a GPU). Lifecycle commands and HTTPS CA trust live in
+[Container operations](docs/container-operations.md).
+
+## npm scripts
+
+List scripts defined in [`package.json`](package.json):
+
+```powershell
+npm run
+```
+
+Pass arguments after `--`. Example: `npm run stack -- logs localai`.
+
+### Stack (Compose)
+
+| Script                        | What it does                                                             |
+| ----------------------------- | ------------------------------------------------------------------------ |
+| `npm run stack`               | Default status (`ps`) for all profiles                                   |
+| `npm run stack:doctor`        | Read-only host checks (Node, Docker, GPU, paths, forks)                  |
+| `npm run stack:config`        | Render Compose for all profiles without starting containers              |
+| `npm run stack:status`        | Show Compose service status                                              |
+| `npm run stack:up -- PROFILE` | Start a profile (`up`; refuses GPU conflicts unless `--allow-gpu-share`) |
+| `npm run stack:down`          | Stop and remove stack services (`down`, never `--volumes`)               |
+| `npm run stack:build`         | Build all buildable images (optional: `npm run stack:build -- SERVICE`)  |
+| `npm run stack:inference`     | `switch inference` — stop conflicting GPU services, then start LocalAI   |
+| `npm run stack:rag`           | `switch rag` — LocalAI + PrivateGPT                                      |
+| `npm run stack:media`         | `switch media` — Stable Diffusion WebUI                                  |
+| `npm run stack:comfy`         | `switch comfy` — ComfyUI backend + frontend                              |
+
+Additional stack subcommands (no dedicated alias):
+
+```powershell
+npm run stack -- profiles
+npm run stack -- resources
+npm run stack -- switch media --dry-run
+npm run stack -- backend
+npm run stack -- pull
+npm run stack -- logs localai
+npm run stack -- stop stable-diffusion
+```
+
+### Models, media, and forks
+
+| Script                                      | What it does                                            |
+| ------------------------------------------- | ------------------------------------------------------- |
+| `npm run models`                            | List managed model pins                                 |
+| `npm run models -- recommendations PROFILE` | Print required artifacts for a profile                  |
+| `npm run models -- plan ALIAS`              | Dry-run download plan for a pin                         |
+| `npm run models -- download ALIAS`          | Download a pinned model                                 |
+| `npm run models -- verify ALIAS`            | Verify selected files against Hub metadata              |
+| `npm run models -- sync-localai`            | Write LocalAI YAML under the shared model root          |
+| `npm run models -- search QUERY`            | Hub search via `hf`                                     |
+| `npm run models -- inventory`               | Summarize recognized files under the model root         |
+| `npm run media -- init`                     | Create configured storage directories (non-destructive) |
+| `npm run media -- status`                   | Read-only storage check                                 |
+| `npm run media -- latest [KIND]`            | Show recent media files                                 |
+| `npm run media -- index`                    | Refresh local media index metadata                      |
+| `npm run repos:status`                      | Read-only managed-fork status                           |
+| `npm run repos:fetch`                       | Fetch remotes only                                      |
+| `npm run repos:update`                      | Fetch + fast-forward-only upstream updates              |
+| `npm run inventory`                         | Write `docs/inventory.generated.md` (Git-ignored)       |
+
+### Validation
+
+| Script              | What it does                                           |
+| ------------------- | ------------------------------------------------------ |
+| `npm test`          | Configuration check plus unit tests                    |
+| `npm run check`     | Validate config, Compose, privacy rules, and doc links |
+| `npm run test:unit` | Path and compute-mode unit tests                       |
+
+Full daily-ops detail: [Container operations](docs/container-operations.md).
+
 ## Documentation
 
-| Area            | Guide                                                                                 |
-| --------------- | ------------------------------------------------------------------------------------- |
-| Index           | [Documentation](docs/README.md)                                                       |
-| System design   | [Architecture](docs/architecture.md)                                                  |
-| Daily operation | [Container operations](docs/container-operations.md)                                  |
-| Service setup   | [LocalAI](docs/localai-docker-setup.md) · [ComfyUI](docs/comfyui-docker-setup.md)     |
-| Data            | [Models and managed media](docs/models.md)                                            |
-| Security        | [Network security](docs/network-security.md) · [GitHub access](docs/github-access.md) |
-| Contributing    | [CONTRIBUTING.md](CONTRIBUTING.md) · [SECURITY.md](SECURITY.md)                       |
+| Area            | Guide                                                                                                                                                                                         |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Index           | [Documentation](docs/README.md)                                                                                                                                                               |
+| Profiles        | [Profiles](#profiles) · [npm scripts](#npm-scripts)                                                                                                                                           |
+| System design   | [Architecture](docs/architecture.md)                                                                                                                                                          |
+| Daily operation | [Container operations](docs/container-operations.md)                                                                                                                                          |
+| Resources       | [GPU and CPU utilization](docs/resource-utilization.md)                                                                                                                                       |
+| Service setup   | [LocalAI](docs/localai-docker-setup.md) · [PrivateGPT](docs/privategpt-docker-setup.md) · [Stable Diffusion](docs/stable-diffusion-docker-setup.md) · [ComfyUI](docs/comfyui-docker-setup.md) |
+| Workloads       | [Use cases and models](docs/use-cases-and-models.md)                                                                                                                                          |
+| Data            | [Models and managed media](docs/models.md)                                                                                                                                                    |
+| Security        | [Network security](docs/network-security.md) · [GitHub access](docs/github-access.md)                                                                                                         |
+| Contributing    | [CONTRIBUTING.md](CONTRIBUTING.md) · [SECURITY.md](SECURITY.md)                                                                                                                               |
 
 ## Privacy
 

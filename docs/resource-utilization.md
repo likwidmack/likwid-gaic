@@ -6,8 +6,10 @@ monitoring commands. GPU exclusivity metadata lives in `config/stack.json`
 under `gpuExclusive`.
 
 See [Container operations](container-operations.md) for profile lifecycle
-commands and [Models and managed media](models.md) for download and LocalAI
-YAML generation.
+commands, [Models and managed media](models.md) for download and LocalAI YAML
+generation, and the root README
+[Profiles](../README.md#profiles) /
+[npm scripts](../README.md#npm-scripts) for the quick reference.
 
 ## Single-GPU exclusivity
 
