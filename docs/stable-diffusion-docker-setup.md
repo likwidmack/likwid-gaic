@@ -35,13 +35,23 @@ npm run models -- download sd15-starter
 npm run models -- verify sd15-starter
 ```
 
-Expose the checkpoint for WebUI without copying multi-gigabyte weights:
+Expose the checkpoint for WebUI without copying multi-gigabyte weights.
+
+PowerShell (Windows):
 
 ```powershell
 $models = "C:\gaic\models"
 $target = Join-Path $models "Stable-diffusion\v1-5-pruned-emaonly-fp16.safetensors"
 $source = Join-Path $models "checkpoints\v1-5-pruned-emaonly-fp16.safetensors"
 New-Item -ItemType HardLink -Path $target -Target $source -Force
+```
+
+bash (WSL; use `~/gaic/models` on macOS/Linux):
+
+```bash
+models="/mnt/c/gaic/models"   # macOS/Linux: models="$HOME/gaic/models"
+ln -f "$models/checkpoints/v1-5-pruned-emaonly-fp16.safetensors" \
+  "$models/Stable-diffusion/v1-5-pruned-emaonly-fp16.safetensors"
 ```
 
 Build and start:
@@ -70,6 +80,14 @@ $models = "C:\gaic\models"
 $target = Join-Path $models "Stable-diffusion\sd_xl_base_1.0.safetensors"
 $source = Join-Path $models "checkpoints\sd_xl_base_1.0.safetensors"
 New-Item -ItemType HardLink -Path $target -Target $source -Force
+```
+
+bash hard link after the same download/verify (WSL path shown):
+
+```bash
+models="/mnt/c/gaic/models"   # macOS/Linux: models="$HOME/gaic/models"
+ln -f "$models/checkpoints/sd_xl_base_1.0.safetensors" \
+  "$models/Stable-diffusion/sd_xl_base_1.0.safetensors"
 ```
 
 Select `sd_xl_base_1.0.safetensors` in the UI and use SDXL-appropriate sizes
