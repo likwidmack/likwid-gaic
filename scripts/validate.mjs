@@ -81,6 +81,9 @@ for (const file of documentation) {
 for (const file of ["../compose.yaml", "../.dockerignore", "../docker/Caddyfile", "../docker/stable-diffusion.Dockerfile", "../docker/comfy-frontend.Dockerfile", "../docker/comfyui.Dockerfile"]) if (!existsSync(new URL(file, import.meta.url))) throw new Error(`Missing container artifact: ${file}`);
 const gitignore = readFileSync(new URL("../.gitignore", import.meta.url), "utf8");
 for (const pattern of [".env.*", "docs/inventory.generated.md", "*.gguf", "*.safetensors", "*.sqlite", "documents/", "media/", "models/", "/shared/"]) if (!gitignore.includes(pattern)) throw new Error("Git privacy rules are missing " + pattern);
+const ciWorkflow = readFileSync(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
+if (!ciWorkflow.includes("name: Local parity")) throw new Error("CI must define a job named Local parity");
+if (!ciWorkflow.includes("npm test")) throw new Error("CI Local parity must run npm test");
 const dockerignore = readFileSync(new URL("../.dockerignore", import.meta.url), "utf8");
 for (const pattern of ["**", "!docker/", "!docker/**"]) if (!dockerignore.includes(pattern)) throw new Error("Docker build-context rules are missing " + pattern);
 const stableDockerfile = readFileSync(new URL("../docker/stable-diffusion.Dockerfile", import.meta.url), "utf8");

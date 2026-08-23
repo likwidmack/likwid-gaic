@@ -56,6 +56,10 @@ gh auth switch --hostname github.com --user likwidmack
 
 Git-over-SSH identity and GitHub CLI API identity are separate checks. Restore the previously active CLI account after a one-off operation.
 
+Pull request CI targets `development` (default integration) and `main`
+(release); see [Continuous integration](cicd.md). This hub does not run a
+GitHub Actions deploy pipeline.
+
 ## Token and key policy
 
 - Keep one account-scoped credential and SSH key per GitHub identity.

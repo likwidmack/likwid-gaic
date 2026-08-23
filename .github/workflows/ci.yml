@@ -1,0 +1,57 @@
+# Local parity CI — PR-only. No CD workflows in this repository.
+name: CI
+
+on:
+  pull_request:
+    branches: [development, main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  local-parity:
+    name: Local parity
+    runs-on: ubuntu-latest
+    env:
+      HUSKY: "0"
+    steps:
+      - name: Detect skip-CI PR
+        id: skip_gate
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+        run: |
+          SKIP=false
+          case "${HEAD_REF}" in
+            ci/version-bump-*) SKIP=true ;;
+          esac
+          case "${PR_TITLE}" in
+            *'[skip ci]'*|*'[ci skip]'*) SKIP=true ;;
+          esac
+          case "${PR_LABELS}" in
+            *'"skip-ci"'*) SKIP=true ;;
+          esac
+          echo "skip_ci=${SKIP}" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v7
+        if: steps.skip_gate.outputs.skip_ci != 'true'
+
+      - name: Use Node.js 22
+        if: steps.skip_gate.outputs.skip_ci != 'true'
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        if: steps.skip_gate.outputs.skip_ci != 'true'
+        run: npm ci
+
+      - name: Test
+        if: steps.skip_gate.outputs.skip_ci != 'true'
+        run: npm test
