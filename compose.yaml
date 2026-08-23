@@ -153,9 +153,9 @@ services:
       OPENAI_EMBEDDING_API_BASE: http://localai:8080/v1
       OPENAI_API_KEY: ${OPENAI_API_KEY:-localai}
       OPENAI_EMBEDDING_API_KEY: ${OPENAI_EMBEDDING_API_KEY:-localai}
-      PGPT_LLM_DEFAULT: qwen2.5-3b-instruct:latest
-      PGPT_EMBEDDING_DEFAULT: nomic-embed-text-v1.5:latest
-      PGPT_EMBED_DIM: "768"
+      PGPT_LLM_DEFAULT: ${PGPT_LLM_DEFAULT:-qwen2.5-3b-instruct:latest}
+      PGPT_EMBEDDING_DEFAULT: ${PGPT_EMBEDDING_DEFAULT:-nomic-embed-text-v1.5:latest}
+      PGPT_EMBED_DIM: "${PGPT_EMBED_DIM:-768}"
       HF_HOME: /cache/huggingface
       PGPT_LOCAL_DATA_FOLDER: /var/lib/private-gpt
       LOCAL_INGESTION_ENABLED: "true"

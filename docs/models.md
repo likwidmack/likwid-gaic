@@ -51,11 +51,19 @@ After `add`, edit `config/models.json` before committing:
 
 The checked-in manifest pins:
 
-| Alias              | Selected artifact                  | Intended use                                 |
-| ------------------ | ---------------------------------- | -------------------------------------------- |
-| `chat-qwen2.5-3b`  | Qwen2.5 3B Instruct Q4_K_M GGUF    | LocalAI chat and PrivateGPT default LLM      |
-| `embed-nomic-v1.5` | Nomic Embed Text v1.5 Q4_K_M GGUF  | LocalAI embeddings and PrivateGPT RAG        |
-| `sd15-starter`     | SD 1.5 pruned EMA fp16 safetensors | Comfy `checkpoints/` and optional A1111 link |
+| Alias                   | Selected artifact                     | Intended use                                 |
+| ----------------------- | ------------------------------------- | -------------------------------------------- |
+| `chat-qwen2.5-3b`       | Qwen2.5 3B Instruct Q4_K_M GGUF       | LocalAI chat and PrivateGPT default LLM      |
+| `chat-qwen2.5-7b`       | Qwen2.5 7B Instruct Q4_K_M GGUF       | Stronger general chat (optional)             |
+| `chat-qwen2.5-coder-7b` | Qwen2.5 Coder 7B Instruct Q4_K_M GGUF | Architecture and coding chat (optional)      |
+| `embed-nomic-v1.5`      | Nomic Embed Text v1.5 Q4_K_M GGUF     | LocalAI embeddings and PrivateGPT RAG        |
+| `stt-whisper-base`      | whisper.cpp ggml-base.bin             | LocalAI speech-to-text (optional)            |
+| `tts-piper-en-us`       | Piper en_US lessac medium onnx        | LocalAI text-to-speech (optional)            |
+| `sd15-starter`          | SD 1.5 pruned EMA fp16 safetensors    | Comfy `checkpoints/` and optional A1111 link |
+| `sdxl-base`             | SDXL base 1.0 safetensors             | Higher-quality image checkpoint (optional)   |
+
+Use-case mapping (finance, planning, research, image, audio):
+[Use cases and models](use-cases-and-models.md).
 
 Generate LocalAI YAML definitions after downloading:
 
@@ -63,11 +71,17 @@ Generate LocalAI YAML definitions after downloading:
 npm run models -- sync-localai
 ```
 
-The command writes only registered YAML files under `C:\gaic\models\localai`; it does not download or delete weights. Optional `threads` in `config/models.json` or `FORKEDAI_CPU_THREADS` / `LOCALAI_THREADS` in the environment flow into generated YAML. For VRAM tuning on single-GPU hosts, see [GPU and CPU resource utilization](resource-utilization.md).
+The command writes registered YAML under the shared `localai` model directory for
+entries with `localAI` metadata. Chat and embedding use `llama-cpp`;
+transcription uses `whisper` (or the configured backend); TTS uses `piper` (or
+the configured backend). It does not download or delete weights. Optional
+`threads` in `config/models.json` or `FORKEDAI_CPU_THREADS` /
+`LOCALAI_THREADS` in the environment flow into chat/embedding YAML. For VRAM
+tuning on single-GPU hosts, see [GPU and CPU resource utilization](resource-utilization.md).
 
 ## Profile requirements
 
-Each Compose profile has a minimum artifact set before `npm run stack -- up PROFILE` succeeds in practice. The authoritative list is [config/profile-artifacts.json](../config/profile-artifacts.json). Inspect presence on your workstation with:
+Each Compose profile has a minimum artifact set before `npm run stack -- up PROFILE` succeeds in practice. The authoritative list is [config/profile-artifacts.json](../config/profile-artifacts.json). Overview of services and HTTPS endpoints: [Profiles](../README.md#profiles). Inspect presence on your workstation with:
 
 ```powershell
 npm run models -- recommendations inference
@@ -76,23 +90,36 @@ npm run models -- recommendations media
 npm run models -- recommendations comfy
 ```
 
-| Profile     | Required managed models / artifacts           | Strongly recommended                          |
-| ----------- | --------------------------------------------- | --------------------------------------------- |
-| `inference` | `chat-qwen2.5-3b`, LocalAI YAML, CUDA backend | —                                             |
-| `rag`       | Both LocalAI pins, YAML sync, documents root  | Sample documents for ingestion                |
-| `media`     | `sd15-starter` plus WebUI checkpoint path     | Reviewed extensions only                      |
-| `comfy`     | `sd15-starter`, Comfy model layout dirs       | Optional VAE/upscalers; reviewed custom nodes |
+| Profile     | Required managed models / artifacts           | Strongly recommended                                       |
+| ----------- | --------------------------------------------- | ---------------------------------------------------------- |
+| `inference` | `chat-qwen2.5-3b`, LocalAI YAML, CUDA backend | 7B chat/coder, Whisper STT, Piper TTS                      |
+| `rag`       | Both LocalAI starter pins, YAML, documents    | Sample docs; optional `chat-qwen2.5-7b`                    |
+| `media`     | `sd15-starter` plus WebUI checkpoint path     | `sdxl-base` + junction; reviewed extensions                |
+| `comfy`     | `sd15-starter`, Comfy model layout dirs       | `sdxl-base`; optional VAE/upscalers; reviewed custom nodes |
 
-Upstream fork quickstarts may suggest larger models (for example PrivateGPT with Ollama Qwen 35B or Comfy partner API nodes). This hub keeps smaller local GGUF pins and disables Comfy API nodes by default for loopback privacy.
+Upstream fork quickstarts may suggest larger models (for example PrivateGPT with Ollama Qwen 35B or Comfy partner API nodes). This hub keeps smaller local GGUF starters, optional 7B upgrades, and disables Comfy API nodes by default for loopback privacy.
 
-### Shared SD 1.5 layout (media and comfy)
+### Shared checkpoint layout (media and comfy)
 
-The managed `sd15-starter` pin downloads to `checkpoints/v1-5-pruned-emaonly-fp16.safetensors`. ComfyUI reads that path directly. Stable Diffusion WebUI uses `--ckpt-dir Stable-diffusion`, so expose the same bytes without duplicating the file:
+Managed image pins download under `checkpoints/`. ComfyUI reads that tree
+directly. Stable Diffusion WebUI uses `--ckpt-dir Stable-diffusion`, so expose
+the same bytes without duplicating the file.
+
+SD 1.5 starter:
 
 ```powershell
 $models = "C:\gaic\models"
 $target = Join-Path $models "Stable-diffusion\v1-5-pruned-emaonly-fp16.safetensors"
 $source = Join-Path $models "checkpoints\v1-5-pruned-emaonly-fp16.safetensors"
+New-Item -ItemType Junction -Path $target -Target $source
+```
+
+Optional SDXL (`sdxl-base`):
+
+```powershell
+$models = "C:\gaic\models"
+$target = Join-Path $models "Stable-diffusion\sd_xl_base_1.0.safetensors"
+$source = Join-Path $models "checkpoints\sd_xl_base_1.0.safetensors"
 New-Item -ItemType Junction -Path $target -Target $source
 ```
 

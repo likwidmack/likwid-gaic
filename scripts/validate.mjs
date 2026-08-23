@@ -56,7 +56,15 @@ for (const model of models.models ?? []) {
   if (!/^[0-9a-f]{40}$/i.test(model.revision)) throw new Error(`Model ${model.alias} must pin an immutable 40-character revision`);
   if (!Array.isArray(model.include) || !model.include.length) throw new Error(`Model ${model.alias} needs an explicit include list`);
   if (model.localAI) {
-    for (const key of ["configFile", "name", "model", "type", "contextSize", "gpuLayers"]) if (!model.localAI[key]) throw new Error(`LocalAI metadata for ${model.alias} is missing ${key}`);
+    const localAITypes = new Set(["chat", "embedding", "transcription", "tts"]);
+    for (const key of ["configFile", "name", "model", "type"]) if (!model.localAI[key]) throw new Error(`LocalAI metadata for ${model.alias} is missing ${key}`);
+    if (!localAITypes.has(model.localAI.type)) throw new Error(`LocalAI type for ${model.alias} must be chat, embedding, transcription, or tts`);
+    if (model.localAI.type === "chat" || model.localAI.type === "embedding") {
+      for (const key of ["contextSize", "gpuLayers"]) if (model.localAI[key] == null) throw new Error(`LocalAI metadata for ${model.alias} is missing ${key}`);
+    }
+    if ((model.localAI.type === "transcription" || model.localAI.type === "tts") && !model.localAI.backend) {
+      throw new Error(`LocalAI metadata for ${model.alias} needs backend`);
+    }
     if (!/^[\w.-]+\.ya?ml$/i.test(model.localAI.configFile)) throw new Error(`Invalid LocalAI config file for ${model.alias}`);
     if (!model.include.includes(model.localAI.model)) throw new Error(`LocalAI model file for ${model.alias} is not selected for download`);
   }

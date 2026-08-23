@@ -19,6 +19,40 @@
       }
     },
     {
+      "alias": "chat-qwen2.5-7b",
+      "repo": "bartowski/Qwen2.5-7B-Instruct-GGUF",
+      "revision": "8911e8a47f92bac19d6f5c64a2e2095bd2f7d031",
+      "localDir": "localai",
+      "include": [
+        "Qwen2.5-7B-Instruct-Q4_K_M.gguf"
+      ],
+      "localAI": {
+        "configFile": "chat-qwen2.5-7b.yaml",
+        "name": "qwen2.5-7b-instruct",
+        "model": "Qwen2.5-7B-Instruct-Q4_K_M.gguf",
+        "type": "chat",
+        "contextSize": 8192,
+        "gpuLayers": 999
+      }
+    },
+    {
+      "alias": "chat-qwen2.5-coder-7b",
+      "repo": "Qwen/Qwen2.5-Coder-7B-Instruct-GGUF",
+      "revision": "13fb94bfda8c8cf22497dc57b78f391a9acb426a",
+      "localDir": "localai",
+      "include": [
+        "qwen2.5-coder-7b-instruct-q4_k_m.gguf"
+      ],
+      "localAI": {
+        "configFile": "chat-qwen2.5-coder-7b.yaml",
+        "name": "qwen2.5-coder-7b-instruct",
+        "model": "qwen2.5-coder-7b-instruct-q4_k_m.gguf",
+        "type": "chat",
+        "contextSize": 8192,
+        "gpuLayers": 999
+      }
+    },
+    {
       "alias": "embed-nomic-v1.5",
       "repo": "nomic-ai/nomic-embed-text-v1.5-GGUF",
       "revision": "0188c9bf409793f810680a5a431e7b899c46104c",
@@ -36,12 +70,54 @@
       }
     },
     {
+      "alias": "stt-whisper-base",
+      "repo": "ggerganov/whisper.cpp",
+      "revision": "5359861c739e955e79d9a303bcbc70fb988958b1",
+      "localDir": "localai",
+      "include": [
+        "ggml-base.bin"
+      ],
+      "localAI": {
+        "configFile": "stt-whisper-base.yaml",
+        "name": "whisper-base",
+        "model": "ggml-base.bin",
+        "type": "transcription",
+        "backend": "whisper"
+      }
+    },
+    {
+      "alias": "tts-piper-en-us",
+      "repo": "rhasspy/piper-voices",
+      "revision": "f5a6e9094787fd865d65cb024472f977f9c542b5",
+      "localDir": "localai",
+      "include": [
+        "en/en_US/lessac/medium/en_US-lessac-medium.onnx",
+        "en/en_US/lessac/medium/en_US-lessac-medium.onnx.json"
+      ],
+      "localAI": {
+        "configFile": "tts-piper-en-us.yaml",
+        "name": "en-us-lessac-medium",
+        "model": "en/en_US/lessac/medium/en_US-lessac-medium.onnx",
+        "type": "tts",
+        "backend": "piper"
+      }
+    },
+    {
       "alias": "sd15-starter",
       "repo": "Comfy-Org/stable-diffusion-v1-5-archive",
       "revision": "9cfd069101959ca3828bf9c04a4419870832b74f",
       "localDir": "checkpoints",
       "include": [
         "v1-5-pruned-emaonly-fp16.safetensors"
+      ]
+    },
+    {
+      "alias": "sdxl-base",
+      "repo": "stabilityai/stable-diffusion-xl-base-1.0",
+      "revision": "462165984030d82259a11f4367a4eed129e94a7b",
+      "localDir": "checkpoints",
+      "include": [
+        "sd_xl_base_1.0.safetensors"
       ]
     }
   ]

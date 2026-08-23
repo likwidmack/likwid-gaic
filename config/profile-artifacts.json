@@ -43,7 +43,37 @@
           "purpose": "CUDA llama-cpp backend from npm run stack -- backend (runtime/localai/backends)"
         }
       ],
-      "stronglyRecommended": []
+      "stronglyRecommended": [
+        {
+          "id": "chat-qwen2.5-7b",
+          "kind": "model",
+          "modelAlias": "chat-qwen2.5-7b",
+          "purpose": "Stronger general chat for planning, finance, research, and IoT (~7B Q4; switch GPU profiles before loading)"
+        },
+        {
+          "id": "chat-qwen2.5-coder-7b",
+          "kind": "model",
+          "modelAlias": "chat-qwen2.5-coder-7b",
+          "purpose": "Software architecture and coding chat via LocalAI"
+        },
+        {
+          "id": "stt-whisper-base",
+          "kind": "model",
+          "modelAlias": "stt-whisper-base",
+          "purpose": "Speech-to-text (whisper.cpp ggml-base) for LocalAI /v1/audio/transcriptions"
+        },
+        {
+          "id": "tts-piper-en-us",
+          "kind": "model",
+          "modelAlias": "tts-piper-en-us",
+          "purpose": "English Piper TTS voice (en_US lessac medium) for LocalAI /tts"
+        },
+        {
+          "id": "localai-yaml-optional",
+          "kind": "object",
+          "purpose": "After downloading optional LocalAI pins, run npm run models -- sync-localai"
+        }
+      ]
     },
     "rag": {
       "services": ["localai", "private-gpt"],
@@ -85,6 +115,12 @@
           "id": "sample-documents",
           "kind": "object",
           "purpose": "Add reviewed documents under DOCUMENT_ROOT before starting rag"
+        },
+        {
+          "id": "chat-qwen2.5-7b",
+          "kind": "model",
+          "modelAlias": "chat-qwen2.5-7b",
+          "purpose": "Stronger RAG LLM; override PGPT_LLM_DEFAULT to qwen2.5-7b-instruct:latest after sync-localai"
         }
       ]
     },
@@ -106,6 +142,18 @@
         }
       ],
       "stronglyRecommended": [
+        {
+          "id": "sdxl-base",
+          "kind": "model",
+          "modelAlias": "sdxl-base",
+          "purpose": "SDXL base checkpoint in checkpoints/; junction into Stable-diffusion/ for WebUI"
+        },
+        {
+          "id": "sdxl-webui-checkpoint-link",
+          "kind": "object",
+          "relativePath": "Stable-diffusion/sd_xl_base_1.0.safetensors",
+          "purpose": "WebUI checkpoint path for SDXL; junction or copy from checkpoints/ after download"
+        },
         {
           "id": "vae-directory",
           "kind": "directory",
@@ -140,6 +188,12 @@
       ],
       "stronglyRecommended": [
         {
+          "id": "sdxl-base",
+          "kind": "model",
+          "modelAlias": "sdxl-base",
+          "purpose": "SDXL base checkpoint for higher-quality Load Checkpoint workflows"
+        },
+        {
           "id": "vae-directory",
           "kind": "directory",
           "relativePath": "vae",
@@ -162,9 +216,10 @@
     }
   },
   "notes": [
-    "Upstream PrivateGPT quickstart suggests larger Ollama models; this hub keeps Qwen2.5-3B and nomic for single-GPU LocalAI.",
+    "Upstream PrivateGPT quickstart suggests larger Ollama models; this hub keeps Qwen2.5-3B and nomic as required starters and offers optional 7B chat pins.",
     "Do not auto-install ComfyUI-Manager, gallery warm-up, or unreviewed extensions.",
     "At most one GPU service (localai, stable-diffusion, comfy-backend) may run on a single-GPU host.",
-    "Managed stack keeps FORKEDAI_BIND_ADDRESS=127.0.0.1 and does not set LOCALAI_API_KEY until an explicit auth follow-up."
+    "Managed stack keeps FORKEDAI_BIND_ADDRESS=127.0.0.1 and does not set LOCALAI_API_KEY until an explicit auth follow-up.",
+    "Video generation is out of scope for managed pins; see docs/use-cases-and-models.md."
   ]
 }
