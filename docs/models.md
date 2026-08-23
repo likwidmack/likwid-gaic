@@ -9,6 +9,7 @@ managed media storage.
   Windows, `/mnt/c/gaic/models` in WSL, and `~/gaic/models` on macOS/Linux
   (`pathPosix`, with `~` expanded by the npm runner).
 - `config/models.json` contains managed Hugging Face repository IDs, immutable revisions, selected files, destinations, and optional LocalAI metadata.
+- `config/profile-artifacts.json` lists required and strongly recommended models, directories, plugins, and other objects per Compose profile.
 - Model weights, generated media, and local inventories are never committed.
 
 Stable Diffusion and ComfyUI consume the same shared model tree. Legacy `E:\models` and fork-local model directories are not authoritative stack storage.
@@ -50,10 +51,11 @@ After `add`, edit `config/models.json` before committing:
 
 The checked-in manifest pins:
 
-| Alias              | Selected artifact                 | Intended use                            |
-| ------------------ | --------------------------------- | --------------------------------------- |
-| `chat-qwen2.5-3b`  | Qwen2.5 3B Instruct Q4_K_M GGUF   | LocalAI chat and PrivateGPT default LLM |
-| `embed-nomic-v1.5` | Nomic Embed Text v1.5 Q4_K_M GGUF | LocalAI embeddings and PrivateGPT RAG   |
+| Alias              | Selected artifact                  | Intended use                                 |
+| ------------------ | ---------------------------------- | -------------------------------------------- |
+| `chat-qwen2.5-3b`  | Qwen2.5 3B Instruct Q4_K_M GGUF    | LocalAI chat and PrivateGPT default LLM      |
+| `embed-nomic-v1.5` | Nomic Embed Text v1.5 Q4_K_M GGUF  | LocalAI embeddings and PrivateGPT RAG        |
+| `sd15-starter`     | SD 1.5 pruned EMA fp16 safetensors | Comfy `checkpoints/` and optional A1111 link |
 
 Generate LocalAI YAML definitions after downloading:
 
@@ -62,6 +64,39 @@ npm run models -- sync-localai
 ```
 
 The command writes only registered YAML files under `C:\gaic\models\localai`; it does not download or delete weights. Optional `threads` in `config/models.json` or `FORKEDAI_CPU_THREADS` / `LOCALAI_THREADS` in the environment flow into generated YAML. For VRAM tuning on single-GPU hosts, see [GPU and CPU resource utilization](resource-utilization.md).
+
+## Profile requirements
+
+Each Compose profile has a minimum artifact set before `npm run stack -- up PROFILE` succeeds in practice. The authoritative list is [config/profile-artifacts.json](../config/profile-artifacts.json). Inspect presence on your workstation with:
+
+```powershell
+npm run models -- recommendations inference
+npm run models -- recommendations rag
+npm run models -- recommendations media
+npm run models -- recommendations comfy
+```
+
+| Profile     | Required managed models / artifacts           | Strongly recommended                          |
+| ----------- | --------------------------------------------- | --------------------------------------------- |
+| `inference` | `chat-qwen2.5-3b`, LocalAI YAML, CUDA backend | —                                             |
+| `rag`       | Both LocalAI pins, YAML sync, documents root  | Sample documents for ingestion                |
+| `media`     | `sd15-starter` plus WebUI checkpoint path     | Reviewed extensions only                      |
+| `comfy`     | `sd15-starter`, Comfy model layout dirs       | Optional VAE/upscalers; reviewed custom nodes |
+
+Upstream fork quickstarts may suggest larger models (for example PrivateGPT with Ollama Qwen 35B or Comfy partner API nodes). This hub keeps smaller local GGUF pins and disables Comfy API nodes by default for loopback privacy.
+
+### Shared SD 1.5 layout (media and comfy)
+
+The managed `sd15-starter` pin downloads to `checkpoints/v1-5-pruned-emaonly-fp16.safetensors`. ComfyUI reads that path directly. Stable Diffusion WebUI uses `--ckpt-dir Stable-diffusion`, so expose the same bytes without duplicating the file:
+
+```powershell
+$models = "C:\gaic\models"
+$target = Join-Path $models "Stable-diffusion\v1-5-pruned-emaonly-fp16.safetensors"
+$source = Join-Path $models "checkpoints\v1-5-pruned-emaonly-fp16.safetensors"
+New-Item -ItemType Junction -Path $target -Target $source
+```
+
+Prefer a junction or hard link over copying multi-gigabyte weights. `npm run media -- init` creates both A1111 and Comfy directory trees under the shared model root.
 
 ## Inventory
 

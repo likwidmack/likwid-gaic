@@ -20,6 +20,8 @@ worktrees.
 - `config/repos.json`: managed fork identities, paths, and preferred origins.
 - `config/storage.json`: canonical Windows, WSL, and POSIX storage roots.
 - `config/models.json`: immutable Hugging Face selections and LocalAI metadata.
+- `config/profile-artifacts.json`: required and strongly recommended models,
+  directories, plugins, and objects per Compose profile.
 - `config/stack.json`: profiles, services, networks, ports, and shared mounts.
 - `compose.yaml` / `compose.cpu.yaml`: executable container topology and CPU overlay.
 - `.env.example`: complete non-secret Compose override template.

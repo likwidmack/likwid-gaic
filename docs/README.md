@@ -40,7 +40,8 @@ models, GPU details, and Docker state; review it before sharing.
 - PowerShell examples run from the repository root unless stated otherwise.
 - Bash examples run on macOS, native Linux, or WSL (labeled when WSL-specific).
 - `config/*.json` files are the source of truth for repositories, storage,
-  models, and stack topology (`pathWindows` / `pathWsl` / `pathPosix`).
+  models, profile artifacts, and stack topology (`pathWindows` / `pathWsl` /
+  `pathPosix`).
 - `.env.example` is a generic Compose override template; copy it to ignored
   `.env` and replace placeholder paths. Never commit credentials.
 - Canonical fork and storage paths live in `config/repos.json` and
