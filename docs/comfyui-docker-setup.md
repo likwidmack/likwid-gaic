@@ -261,3 +261,10 @@ Confirm the gateway and both Comfy services are healthy. The frontend uses the
 internal Compose address `http://comfy-backend:8188`; it does not require a
 host-gateway exception. Local clients should use `https://localhost:8446`, not
 the private container address.
+
+If the UI stays on the splash screen while `https://localhost:8447/system_stats`
+returns JSON but `https://localhost:8446/system_stats` returns 502, nginx likely
+cached a stale backend address after `comfy-backend` was recreated. Rebuild or
+recreate `comfy-frontend` (the image includes a Docker DNS resolver so new
+containers re-resolve `comfy-backend`), or run
+`npm run stack -- switch comfy` so the profile restarts cleanly.

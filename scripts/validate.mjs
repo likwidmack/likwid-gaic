@@ -130,6 +130,17 @@ for (const repository of ["stable-diffusion-webui-assets", "stable-diffusion-sta
 for (const pattern of ["--exclude=.git", "--exclude=.env.*", "--exclude=models", "--exclude=outputs", "-r requirements_versions.txt"]) if (!stableDockerfile.includes(pattern)) throw new Error("Stable Diffusion build rules are missing " + pattern);
 const comfyFrontendDockerfile = readFileSync(new URL("../docker/comfy-frontend.Dockerfile", import.meta.url), "utf8");
 for (const pattern of ["--exclude=.git", "--exclude=.env.*", "--exclude=node_modules", "--exclude=dist"]) if (!comfyFrontendDockerfile.includes(pattern)) throw new Error("Comfy frontend build privacy rules are missing " + pattern);
+const comfyNginx = readFileSync(new URL("../docker/comfy-nginx.conf.template", import.meta.url), "utf8");
+// Variable proxy_pass + Docker embedded DNS so nginx re-resolves comfy-backend after recreate
+// (literal proxy_pass caches the upstream IP at worker start and leaves the UI on the splash screen).
+if (!comfyNginx.includes("resolver 127.0.0.11")) throw new Error("Comfy frontend nginx must use the Docker embedded DNS resolver");
+if (!comfyNginx.includes("set $comfy_backend")) throw new Error("Comfy frontend nginx must proxy through a variable so DNS can re-resolve");
+if (!/\$comfy_backend/.test(comfyNginx) || !comfyNginx.includes("proxy_pass $comfy_backend")) {
+  throw new Error("Comfy frontend nginx must proxy_pass $comfy_backend (variable form)");
+}
+if (/proxy_pass\s+\$\{COMFY_BACKEND\}/.test(comfyNginx) || /proxy_pass\s+http:\/\/comfy-backend/.test(comfyNginx)) {
+  throw new Error("Comfy frontend nginx must not use a literal/env-substituted proxy_pass upstream");
+}
 const comfyBackendDockerfile = readFileSync(new URL("../docker/comfyui.Dockerfile", import.meta.url), "utf8");
 for (const pattern of ["--exclude=.git", "--exclude=.env.*", "--exclude=models", "--exclude=output", "/shared/models"]) if (!comfyBackendDockerfile.includes(pattern)) throw new Error("Comfy backend build rules are missing " + pattern);
 const compose = readFileSync(new URL("../compose.yaml", import.meta.url), "utf8");

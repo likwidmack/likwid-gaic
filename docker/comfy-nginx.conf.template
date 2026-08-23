@@ -2,6 +2,11 @@ map $http_upgrade $connection_upgrade {
     default upgrade;
     '' close;
 }
+
+# Docker embedded DNS. Variable proxy_pass forces re-resolution so a recreated
+# comfy-backend does not leave nginx aimed at a stale IP (502 / stuck splash).
+resolver 127.0.0.11 ipv6=off valid=10s;
+
 server {
     listen 80;
     server_name _;
@@ -9,8 +14,10 @@ server {
     index index.html;
     location / { try_files $uri $uri/ @comfy_backend; }
     location @comfy_backend {
-        proxy_pass ${COMFY_BACKEND};
+        set $comfy_backend ${COMFY_BACKEND};
+        proxy_pass $comfy_backend;
         proxy_http_version 1.1;
+        proxy_connect_timeout 5s;
         proxy_set_header Host $host;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
