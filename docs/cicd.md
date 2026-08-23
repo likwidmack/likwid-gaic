@@ -18,6 +18,9 @@ PR → development (default/integration) | main (release)
 Workstation Docker, GPU, and storage checks stay local (`npm run stack:doctor`,
 `npm run stack:config`). They are not GitHub Actions jobs.
 
+GitHub does not start `pull_request` workflows while a PR has merge conflicts.
+Resolve conflicts against the base branch and push so Local parity can run.
+
 ## Required check
 
 The job name is `Local parity`. Status-check names must match that string
