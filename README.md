@@ -29,11 +29,11 @@ Use the [documentation index](docs/README.md) to navigate the complete guide set
 
 ## Requirements
 
-- Windows 11 with WSL2 Ubuntu
+- Windows 11 with current WSL2 Ubuntu (WSL 2.1.5 or newer)
 - Git
 - Node.js 20 or newer and npm
-- Docker Desktop with Compose and WSL integration
-- NVIDIA driver and Docker GPU support
+- Docker Desktop in Linux-container mode with Compose and WSL integration
+- Current Windows NVIDIA driver with Docker GPU support
 - Hugging Face `hf` CLI in WSL for model operations
 
 This npm project has no runtime dependencies. The scripts use Node.js as a portable task runner around Git, Docker Compose, storage, and model workflows.

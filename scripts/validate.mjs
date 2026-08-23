@@ -53,6 +53,8 @@ for (const service of stack.services ?? []) {
   if (!repoNames.has(service.repository)) throw new Error(`Unknown repository for ${service.name}`);
 }
 const documentation = [
+  "../AGENT.md",
+  "../AGENTS.md",
   "../README.md",
   ...readdirSync(new URL("../docs/", import.meta.url), { withFileTypes: true })
     .filter((entry) => entry.isFile() && entry.name.endsWith(".md") && entry.name !== "inventory.generated.md")

@@ -4,6 +4,81 @@ The root `compose.yaml` is the control plane for the managed forks. It does not 
 
 `scripts/docker.mjs` injects fork contexts and storage roots from `config/`. Direct Docker Compose use must supply the equivalent variables, normally through an ignored `.env` copied from `.env.example`.
 
+## Current Docker recommendations
+
+### Host baseline
+
+- Keep Docker Desktop and WSL current. Docker requires WSL 2.1.5 or newer and
+  recommends the latest WSL release.
+- Use Docker Desktop's Linux-container mode and enable WSL integration only for
+  the distributions that need Docker access.
+- Do not install a second Docker Engine or Docker CLI inside the integrated WSL
+  distribution; use the CLI supplied through Docker Desktop.
+- For NVIDIA on WSL, install the current Windows NVIDIA driver only. Do not
+  install a Linux display driver inside WSL. The application images already
+  contain their CUDA user-space runtimes.
+- Configure WSL CPU, memory, swap, and Docker disk capacity when builds or
+  inference contend with the host.
+
+Verify tool resolution from both shells after Docker Desktop or WSL upgrades:
+
+```powershell
+wsl --version
+Get-Command docker -All
+docker version
+docker compose version
+wsl -e bash -lc "type -a docker; docker version"
+```
+
+The npm stack runner uses the Windows Node.js and Docker toolchain. An interactive
+WSL shell can instead resolve a separately installed `/usr/bin/docker` first,
+causing a stale client to talk to the newer Docker Desktop engine. If the client
+and server versions differ unexpectedly, inspect package ownership and PATH
+ordering before removing anything, then retain only the intended Docker Desktop
+integration.
+
+Docker recommends Linux-filesystem bind mounts for the highest WSL I/O
+performance. This workstation deliberately keeps shared assets and durable data
+on C:, D:, and E: for Windows interoperability and backup policy. Expect more
+overhead than Linux-native storage for source-heavy builds and model scanning;
+do not create unmanaged duplicate data trees solely as a performance workaround.
+
+### Compose trust and credentials
+
+Treat `compose.yaml`, override files, build contexts, Dockerfiles, and every
+referenced host path as executable trusted input. Before `up`, inspect the
+fully resolved model with `npm run stack:config`, especially after changing a
+fork, override, image, device grant, network mode, or bind mount.
+
+Use `.env` for machine-local interpolation and non-secret configuration, not
+as the preferred credential store. When an application supports file-based
+credentials, use a Compose secret granted only to that service; Compose mounts
+it under `/run/secrets`. If an application accepts only an environment
+variable, inject it from a protected process or operating-system secret store,
+avoid printing the resolved environment, and never commit it.
+
+### GPUs and images
+
+The checked-in GPU reservation uses Docker's supported Compose Deploy syntax:
+`driver: nvidia`, `count: all`, and `capabilities: [gpu]`. Compose 2.30 and
+newer also supports the shorter `gpus: all` service attribute. Keep the
+existing explicit reservation for this validated Docker Desktop stack; do not
+declare both forms on one service.
+
+Versioned image tags make upgrades intentional but tags remain mutable. Pin an
+image digest when byte-for-byte reproducibility or an audited deployment
+requires it. Treat each digest change as a reviewed dependency update. For a
+normal workstation, retain reviewed version tags and refresh them deliberately
+so security fixes are not blocked indefinitely.
+
+Official references:
+
+- [Docker Desktop WSL best practices](https://docs.docker.com/desktop/features/wsl/best-practices/)
+- [GPU access with Compose](https://docs.docker.com/compose/how-tos/gpu-support/)
+- [Compose trust model](https://docs.docker.com/compose/trust-model/)
+- [Compose secrets](https://docs.docker.com/compose/how-tos/use-secrets/)
+- [Docker build best practices](https://docs.docker.com/build/building/best-practices/)
+
 ## Profiles
 
 | Profile     | Services                              | HTTPS gateway endpoint                             |
@@ -92,12 +167,30 @@ The Stable Diffusion image marks its five known helper repository directories as
 
 ```powershell
 npm run stack
+npm run stack -- pull
 npm run stack -- logs localai
 npm run stack -- stop stable-diffusion
 npm run stack -- down
 ```
 
-`down` never adds `--volumes`; host-mounted models, indexes, configuration, and generated media remain on their configured drives. No command runs Docker system prune.
+`pull` refreshes registry-backed services such as Caddy and LocalAI but skips
+locally buildable images. Run `up` afterward so Compose recreates services whose
+image changed. `down` never adds `--volumes`; host-mounted models, indexes,
+configuration, and generated media remain on their configured drives. No command
+runs Docker system prune.
+
+For a maintenance rebuild that refreshes a Dockerfile's base image, use direct
+Compose with the ignored `.env` in place, then return to the npm runner:
+
+```powershell
+docker compose --project-name forkedai --file compose.yaml --profile comfy build --pull comfy-backend comfy-frontend
+npm run stack -- up comfy
+```
+
+Use `--no-cache` only for a deliberate clean rebuild or cache investigation;
+it is not required for routine source changes. `--pull` refreshes the base
+image, while `--no-cache` re-executes Dockerfile layers—each solves a different
+problem.
 
 ## Shared storage mounts
 

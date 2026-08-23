@@ -30,7 +30,10 @@ See [Container operations](container-operations.md) for lifecycle commands and
 
 ## Host and storage assumptions
 
-- Docker Desktop exposes the NVIDIA GPU to Linux containers.
+- Docker Desktop runs Linux containers through its WSL2 backend and exposes the
+  NVIDIA GPU through the current Windows driver.
+- Docker Desktop supplies Docker access to the integrated WSL distribution; a
+  second Docker Engine or NVIDIA Linux display driver is not installed there.
 - LocalAI uses the configured CUDA 13 image; Stable Diffusion uses PyTorch 2.8 with CUDA 12.8; ComfyUI uses the configured CUDA 13 PyTorch image.
 - Read-mostly models, plugins, and tools live on C:.
 - Rebuildable caches and disposable tensor/temp data live on non-redundant D: storage.

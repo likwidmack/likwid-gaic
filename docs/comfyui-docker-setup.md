@@ -22,6 +22,7 @@ private.
 
 - Docker Desktop configured to use Linux containers.
 - Docker Compose v2, included with current Docker Desktop releases.
+- WSL 2.1.5 or newer, preferably updated with `wsl --update`.
 - WSL 2 integration with access to the configured `C:`, `D:`, and `E:` storage drives.
 - A current NVIDIA Windows driver with Docker GPU support.
 - Node.js 20 or newer for the repository management scripts.
@@ -29,6 +30,10 @@ private.
 
 A separate CUDA toolkit installation on the host is not required. The backend
 image supplies its own CUDA runtime through the official PyTorch base image.
+Do not install a Linux NVIDIA display driver or a second Docker Engine inside
+the integrated WSL distribution. If Docker behaves differently between
+PowerShell and WSL, compare `Get-Command docker -All` with `type -a docker`;
+a separately installed WSL client can shadow Docker Desktop's CLI.
 
 ### Repository layout
 
@@ -161,7 +166,11 @@ Back up the user directory and generated media according to their importance.
   access is deliberately added.
 - Keep models read-only and runtime/cache locations writable.
 - Preserve the Hugging Face and Torch caches between container rebuilds.
-- Pin the PyTorch base image by digest when exact image reproducibility matters.
+- Keep reviewed version tags for planned upgrades; pin the PyTorch base image by
+  digest when exact image reproducibility matters.
+- Periodically rebuild with `docker compose build --pull` so a maintained base
+  tag can receive upstream fixes. Reserve `--no-cache` for deliberate clean
+  rebuilds.
 - Review source and dependencies before installing third-party custom nodes.
 - Keep API-backed nodes disabled unless they are specifically required.
 - Keep the gateway bound to `127.0.0.1`. Add authentication and restricted
@@ -184,7 +193,9 @@ plugin changes. Never place credentials in the shared plugin directory.
 
 The backend starts with `--disable-api-nodes`. To enable remote API-backed nodes,
 remove that argument from `docker/comfyui.Dockerfile`, rebuild the image, and
-provide required credentials through `.env` or another secret-management method.
+provide required credentials with a service-scoped Compose secret when the node
+supports a file-based credential. Otherwise inject them from a protected session
+or operating-system secret store rather than committing them to `.env`.
 Never commit credentials to either ComfyUI repository or this operations hub.
 
 ## Updates and rebuilds
@@ -194,6 +205,13 @@ After updating either ComfyUI source checkout, rebuild and restart the profile:
 ```powershell
 npm run stack -- build comfy-backend
 npm run stack -- build comfy-frontend
+npm run stack -- up comfy
+```
+
+For a maintenance rebuild that refreshes the tagged PyTorch base image:
+
+```powershell
+docker compose --project-name forkedai --file compose.yaml --profile comfy build --pull comfy-backend comfy-frontend
 npm run stack -- up comfy
 ```
 

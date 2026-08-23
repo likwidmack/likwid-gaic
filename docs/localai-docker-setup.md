@@ -143,6 +143,13 @@ services:
 
 LocalAI recommends the CDI configuration above for NVIDIA Container Toolkit 1.14 and later. Older installations may require the legacy `nvidia` driver configuration.
 
+The managed forkedAI profile uses Docker's standard `driver: nvidia` device
+reservation because that configuration is validated on this Docker Desktop
+workstation. For a standalone native-Linux deployment, use LocalAI's CDI example
+when the installed NVIDIA Container Toolkit supports it. Compose 2.30 and newer
+also accepts `gpus: all`; choose one GPU declaration style rather than combining
+them.
+
 Before starting LocalAI, verify that Docker can access the NVIDIA GPU:
 
 ```bash
@@ -185,10 +192,16 @@ LocalAI documents a known SYCL issue with memory mapping. If an Intel model hang
 
 ## Windows and WSL2 recommendations
 
-- Use Docker Desktop with the WSL2 backend.
-- Install a current Windows GPU driver that supports WSL2 when using NVIDIA acceleration.
+- Keep WSL current with `wsl --update`; Docker requires WSL 2.1.5 or newer.
+- Use Docker Desktop with the WSL2 backend and Linux containers.
+- Enable Docker Desktop integration only for the WSL distributions that need it.
+- Do not install a second Docker Engine or Docker CLI inside an integrated WSL
+  distribution.
+- Install a current Windows NVIDIA driver that supports WSL2. Do not install a
+  Linux NVIDIA display driver inside WSL.
 - For a standalone LocalAI-only deployment, Linux-filesystem storage generally loads models faster than `/mnt/c` or `/mnt/e`. This repository deliberately uses `C:\gaic\models` as the canonical, cross-tool collection; expect the first scan to be slower and do not create a second unmanaged model copy merely to follow the standalone example.
-- Allocate sufficient RAM, CPU, and disk capacity to Docker Desktop/WSL2.
+- Allocate sufficient RAM, CPU, swap, and Docker disk capacity to Docker
+  Desktop/WSL2.
 - Confirm GPU access with the NVIDIA Docker test before starting LocalAI.
 
 ## Security recommendations
@@ -197,8 +210,13 @@ LocalAI documents a known SYCL issue with memory mapping. If an Intel model hang
 - Set `LOCALAI_API_KEY` even for a workstation installation if other local applications or users are not fully trusted.
 - Simple API keys grant full administrative access. For multi-user deployments, use LocalAI's user authentication with `LOCALAI_AUTH=true`.
 - If remote access is required, place LocalAI behind a TLS-enabled reverse proxy and restrict network access with a firewall or VPN.
+- Prefer a Compose secret when the application supports a file-based credential.
+  LocalAI's environment-only settings should be injected from a protected
+  session or operating-system secret store and kept out of logs.
 - Do not commit API keys or the `.env` file containing them to source control.
 - Pin a tested version tag instead of using `latest` in a production deployment, then upgrade intentionally.
+- Pin an image digest when an audited deployment requires immutable image bytes;
+  review digest updates as dependency changes.
 
 ## Validation checklist
 

@@ -22,6 +22,18 @@ The most likely risks are accidentally publishing an unauthenticated AI API to t
 
 Use GGUF or safetensors artifacts when possible, pin Hub revisions, verify checksums, and review extensions before enabling them. Do not give model containers the Docker socket, SSH agent, browser profile, home directory, cloud credentials, or broad writable host mounts. Keep Docker Desktop, the NVIDIA driver, base images, and application forks patched.
 
+Treat Compose files, overrides, Dockerfiles, build contexts, and referenced bind
+mounts as executable trusted input. Docker Compose can grant devices, host
+filesystem access, elevated privileges, or host networking exactly as requested.
+Review `npm run stack:config` before applying changes and do not run untrusted
+Compose projects with access to this stack's data roots.
+
+WSL2 is optimized for development interoperability, not maximum isolation from
+other software running under the same Windows user. For workloads that require a
+stronger boundary, evaluate Docker Desktop's Hyper-V backend or Enhanced
+Container Isolation, then separately validate GPU support, bind mounts, and
+performance before migrating this stack.
+
 ## Shared-storage boundary
 
 All backend containers can read the common model, plugin, and tool roots and can exchange files through common tensor and object roots. This intentionally creates a data trust boundary: a compromised backend can read every shared model, plugin, and tool and can replace writable tensors or objects consumed by another backend. The static Comfy frontend receives none of these mounts.
