@@ -20,6 +20,14 @@
     {"name": "tools", "root": "tools", "containerPath": "/shared/tools", "mode": "ro"}
   ],
   "profiles": ["inference", "rag", "media", "comfy"],
+  "gpuExclusive": {
+    "services": ["localai", "stable-diffusion", "comfy-backend"],
+    "profilesByService": {
+      "localai": ["inference", "rag"],
+      "stable-diffusion": ["media"],
+      "comfy-backend": ["comfy"]
+    }
+  },
   "services": [
     {"name": "localai", "profile": "inference", "repository": "LocalAI-Prt", "url": "https://localhost:8443"},
     {"name": "private-gpt", "profile": "rag", "repository": "private-gpt-tm", "url": "https://localhost:8444"},

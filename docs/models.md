@@ -56,7 +56,7 @@ Generate LocalAI YAML definitions after downloading:
 npm run models -- sync-localai
 ```
 
-The command writes only registered YAML files under `C:\gaic\models\localai`; it does not download or delete weights.
+The command writes only registered YAML files under `C:\gaic\models\localai`; it does not download or delete weights. Optional `threads` in `config/models.json` or `FORKEDAI_CPU_THREADS` / `LOCALAI_THREADS` in the environment flow into generated YAML. For VRAM tuning on single-GPU hosts, see [GPU and CPU resource utilization](resource-utilization.md).
 
 ## Inventory
 

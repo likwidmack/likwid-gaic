@@ -12,6 +12,8 @@ pages when building or troubleshooting a profile.
    command boundary.
 3. [Container operations](container-operations.md) — profiles, first run,
    updates, storage mounts, and daily commands.
+4. [GPU and CPU resource utilization](resource-utilization.md) — single-GPU
+   profile switching, host sizing, and monitoring.
 
 ## Service guides
 

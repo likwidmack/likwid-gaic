@@ -123,6 +123,14 @@ npx --yes prettier@3.6.2 --write README.md $docs
 - Prefer `npm run stack -- ...`; `scripts/docker.mjs` injects canonical fork
   contexts and storage roots.
 - Supported profiles are `inference`, `rag`, `media`, and `comfy`.
+- On a single-GPU host, at most one of `localai`, `stable-diffusion`, or
+  `comfy-backend` may run. Use `npm run stack -- switch PROFILE` to stop
+  conflicting GPU services before starting another profile. `up` refuses GPU
+  conflicts unless `--allow-gpu-share` is passed. See
+  [docs/resource-utilization.md](docs/resource-utilization.md).
+- `npm run stack -- resources` is a read-only GPU and service snapshot.
+- Never set `LOCALAI_THREADS` (or other LocalAI integer env vars) to an empty
+  string in Compose; LocalAI exits on `LOCALAI_THREADS=""`.
 - Caddy is the only service allowed to publish host ports. The default bind
   address is `127.0.0.1`; do not broaden it without hostname, certificate,
   authentication, firewall, and rollback planning.

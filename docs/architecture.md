@@ -45,7 +45,7 @@ See [Container operations](container-operations.md) for lifecycle commands and
 - Durable media, documents, shared objects, runtime state, and the Caddy CA live on E:.
 - Published application ports bind to IPv4 loopback by default.
 
-Shared filesystem mounts exchange serialized artifacts only. They do not share live GPU allocations, Python objects, CUDA contexts, or process memory.
+Shared filesystem mounts exchange serialized artifacts only. They do not share live GPU allocations, Python objects, CUDA contexts, or process memory. On a single-GPU host, at most one of `localai`, `stable-diffusion`, or `comfy-backend` should run at a time; see [GPU and CPU resource utilization](resource-utilization.md).
 
 ## Privacy boundary
 
