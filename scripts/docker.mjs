@@ -25,6 +25,8 @@ const composeEnv = {
   COMFY_FRONTEND_CONTEXT: repoPath("ComfyUI_frontend"),
   MODEL_ROOT: hostPath(storage.roots.models),
   HF_CACHE_ROOT: hostPath(storage.roots.huggingFaceCache),
+  TORCH_CACHE_ROOT: hostPath(storage.roots.torchCache),
+  COMFY_TEMP_ROOT: hostPath(storage.roots.comfyTemp),
   MEDIA_ROOT: hostPath(storage.roots.media),
   DOCUMENT_ROOT: hostPath(storage.roots.documents),
   RUNTIME_ROOT: hostPath(storage.roots.runtime),

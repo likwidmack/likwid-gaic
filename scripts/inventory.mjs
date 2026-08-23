@@ -3,7 +3,8 @@ import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from "
 import { extname, join } from "node:path";
 import process from "node:process";
 
-const config = JSON.parse(readFileSync(new URL("../config/repos.json", import.meta.url)));
+const repos = JSON.parse(readFileSync(new URL("../config/repos.json", import.meta.url)));
+const storage = JSON.parse(readFileSync(new URL("../config/storage.json", import.meta.url)));
 const output = new URL("../docs/inventory.generated.md", import.meta.url);
 const extensions = new Set([".gguf", ".ggml", ".safetensors", ".ckpt", ".onnx", ".pt", ".pth"]);
 const localPath = (item) => process.platform === "win32" ? item.pathWindows : item.pathWsl;
@@ -20,13 +21,13 @@ function walk(root, files = []) {
   return files;
 }
 const lines = ["# Generated local inventory", "", `Generated: ${new Date().toISOString()}`, "", "> Local-only metadata. This file is intentionally Git-ignored; review it before sharing.", "", "## Repositories", ""];
-for (const repo of config.repositories) {
+for (const repo of repos.repositories) {
   const path = localPath(repo);
   const branch = existsSync(path) ? command("git", ["-C", path, "branch", "--show-current"]) : "missing";
   lines.push(`- [${repo.name}](${repo.github}) — \`${path}\` — branch \`${branch}\``);
 }
 lines.push("", "## Model files", "");
-for (const root of config.modelRoots) {
+for (const root of [{ name: "Shared models", ...storage.roots.models }]) {
   const path = localPath(root);
   lines.push(`### ${root.name}`, "");
   if (!existsSync(path)) { lines.push(`Missing: \`${path}\``, ""); continue; }

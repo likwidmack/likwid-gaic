@@ -5,10 +5,5 @@
     {"name":"stable-diffusion-ui","github":"https://github.com/tamaramack/stable-diffusion-ui","upstream":"https://github.com/AUTOMATIC1111/stable-diffusion-webui","pathWindows":"E:\\git\\stable-diffusion-ui","pathWsl":"/mnt/e/git/stable-diffusion-ui","originSsh":"git@github.com:tamaramack/stable-diffusion-ui.git"},
     {"name":"ComfyUI","github":"https://github.com/tamaramack/ComfyUI","upstream":"https://github.com/Comfy-Org/ComfyUI","pathWindows":"E:\\git\\ComfyUI","pathWsl":"/mnt/e/git/ComfyUI","originSsh":"git@github.com:tamaramack/ComfyUI.git"},
     {"name":"ComfyUI_frontend","github":"https://github.com/tamaramack/ComfyUI_frontend","upstream":"https://github.com/Comfy-Org/ComfyUI_frontend","pathWindows":"E:\\git\\ComfyUI_frontend","pathWsl":"/mnt/e/git/ComfyUI_frontend","originSsh":"git@github.com:tamaramack/ComfyUI_frontend.git"}
-  ],
-  "modelRoots": [
-    {"name":"Shared models","pathWindows":"E:\\models","pathWsl":"/mnt/e/models"},
-    {"name":"ComfyUI models","pathWindows":"E:\\git\\ComfyUI\\models","pathWsl":"/mnt/e/git/ComfyUI/models"},
-    {"name":"Stable Diffusion WebUI models","pathWindows":"E:\\git\\stable-diffusion-webui\\models","pathWsl":"/mnt/e/git/stable-diffusion-webui/models"}
   ]
 }

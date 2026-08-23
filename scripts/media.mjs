@@ -5,6 +5,7 @@ const storage = JSON.parse(readFileSync(new URL("../config/storage.json", import
 const windows = process.platform === "win32";
 const hostPath = (entry) => entry[windows ? "pathWindows" : "pathWsl"];
 const mediaRoot = hostPath(storage.roots.media);
+const mediaBackupRoot = hostPath(storage.roots.mediaBackup);
 const command = process.argv[2] ?? "status";
 const extensionKind = new Map(Object.entries(storage.mediaKinds).flatMap(([kind, extensions]) => extensions.map((extension) => [extension, kind])));
 function scan() {
@@ -29,12 +30,12 @@ if (command === "init") {
   for (const entry of Object.values(storage.roots)) mkdirSync(hostPath(entry), { recursive: true });
   for (const kind of Object.keys(storage.mediaKinds)) mkdirSync(path.join(mediaRoot, kind), { recursive: true });
   for (const subdir of ["localai", "Stable-diffusion", "VAE", "Lora", "embeddings"]) mkdirSync(path.join(hostPath(storage.roots.models), subdir), { recursive: true });
-  for (const subdir of ["caddy/data", "localai/data", "localai/backends", "localai/configuration", "private-gpt", "stable-diffusion/data", "stable-diffusion/repositories", "comfy/input", "comfy/temp", "comfy/torch", "comfy/user"]) mkdirSync(path.join(hostPath(storage.roots.runtime), subdir), { recursive: true });
+  for (const subdir of ["caddy/data", "localai/data", "localai/backends", "localai/configuration", "private-gpt", "stable-diffusion/data", "stable-diffusion/repositories", "comfy/input", "comfy/user"]) mkdirSync(path.join(hostPath(storage.roots.runtime), subdir), { recursive: true });
   for (const subdir of ["inputs", "outputs", "workflows", "artifacts"]) mkdirSync(path.join(hostPath(storage.roots.sharedObjects), subdir), { recursive: true });
   for (const subdir of ["checkpoints", "embeddings", "intermediate"]) mkdirSync(path.join(hostPath(storage.roots.tensors), subdir), { recursive: true });
   for (const subdir of ["localai", "private-gpt", "stable-diffusion", "comfyui"]) mkdirSync(path.join(hostPath(storage.roots.plugins), subdir), { recursive: true });
   for (const subdir of ["bin", "scripts", "configs"]) mkdirSync(path.join(hostPath(storage.roots.tools), subdir), { recursive: true });
-  console.log(`Initialized storage under ${path.dirname(mediaRoot)}.`);
+  console.log("Initialized configured storage roots.");
 } else if (command === "status") {
   const files = scan();
   const groups = new Map();
@@ -43,6 +44,7 @@ if (command === "init") {
     summary.count++; summary.bytes += file.bytes; groups.set(file.kind, summary);
   }
   console.log(`Media root: ${mediaRoot}${existsSync(mediaRoot) ? "" : " (missing; run init)"}`);
+  console.log(`Media backup root: ${mediaBackupRoot}${existsSync(mediaBackupRoot) ? "" : " (missing; run init)"} (host-only)`);
   for (const [kind, summary] of [...groups].sort()) console.log(`${kind.padEnd(10)} ${String(summary.count).padStart(6)} files  ${(summary.bytes / 2 ** 30).toFixed(2).padStart(8)} GiB`);
   if (!files.length) console.log("No managed media files found.");
 } else if (command === "latest") {

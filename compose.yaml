@@ -6,12 +6,12 @@ x-security-defaults: &security-defaults
 
 x-shared-models: &shared-models
   type: bind
-  source: ${MODEL_ROOT:-/mnt/e/models}
+  source: ${MODEL_ROOT:-/mnt/c/gaic/models}
   target: /shared/models
   read_only: true
 x-shared-tensors: &shared-tensors
   type: bind
-  source: ${TENSOR_ROOT:-/mnt/e/data/forkedAI/shared/tensors}
+  source: ${TENSOR_ROOT:-/mnt/d/forkedAI/scratch/tensors}
   target: /shared/tensors
 x-shared-objects: &shared-objects
   type: bind
@@ -19,12 +19,12 @@ x-shared-objects: &shared-objects
   target: /shared/objects
 x-shared-plugins: &shared-plugins
   type: bind
-  source: ${PLUGIN_ROOT:-/mnt/e/data/forkedAI/shared/plugins}
+  source: ${PLUGIN_ROOT:-/mnt/c/gaic/shared/plugins}
   target: /shared/plugins
   read_only: true
 x-shared-tools: &shared-tools
   type: bind
-  source: ${TOOL_ROOT:-/mnt/e/data/forkedAI/shared/tools}
+  source: ${TOOL_ROOT:-/mnt/c/gaic/shared/tools}
   target: /shared/tools
   read_only: true
 
@@ -61,7 +61,7 @@ services:
   localai:
     <<: *security-defaults
     profiles: ["inference", "rag"]
-    image: ${LOCALAI_IMAGE:-localai/localai:latest-gpu-nvidia-cuda-13}
+    image: ${LOCALAI_IMAGE:-localai/localai:v4.8.0-gpu-nvidia-cuda-13}
     init: true
     restart: unless-stopped
     expose:
@@ -79,6 +79,7 @@ services:
       - *shared-objects
       - *shared-plugins
       - *shared-tools
+      - {type: bind, source: "${MODEL_ROOT:-/mnt/c/gaic/models}/localai", target: /models, read_only: true}
       - {type: bind, source: "${MEDIA_ROOT:-/mnt/e/data/forkedAI/media}/images", target: /tmp/generated/images}
       - {type: bind, source: "${RUNTIME_ROOT:-/mnt/e/data/forkedAI/runtime}/localai/data", target: /data}
       - {type: bind, source: "${RUNTIME_ROOT:-/mnt/e/data/forkedAI/runtime}/localai/backends", target: /backends}
@@ -130,7 +131,7 @@ services:
       - *shared-objects
       - *shared-plugins
       - *shared-tools
-      - {type: bind, source: "${HF_CACHE_ROOT:-/mnt/e/models/.cache/huggingface}", target: /cache/huggingface}
+      - {type: bind, source: "${HF_CACHE_ROOT:-/mnt/d/forkedAI/cache/huggingface}", target: /cache/huggingface}
       - {type: bind, source: "${DOCUMENT_ROOT:-/mnt/e/data/forkedAI/documents}", target: /documents, read_only: true}
       - {type: bind, source: "${RUNTIME_ROOT:-/mnt/e/data/forkedAI/runtime}/private-gpt", target: /var/lib/private-gpt}
 
@@ -164,7 +165,7 @@ services:
       - *shared-objects
       - *shared-plugins
       - *shared-tools
-      - {type: bind, source: "${PLUGIN_ROOT:-/mnt/e/data/forkedAI/shared/plugins}/stable-diffusion", target: /opt/stable-diffusion/extensions, read_only: true}
+      - {type: bind, source: "${PLUGIN_ROOT:-/mnt/c/gaic/shared/plugins}/stable-diffusion", target: /opt/stable-diffusion/extensions, read_only: true}
       - {type: bind, source: "${RUNTIME_ROOT:-/mnt/e/data/forkedAI/runtime}/stable-diffusion/data", target: /data}
       - {type: bind, source: "${RUNTIME_ROOT:-/mnt/e/data/forkedAI/runtime}/stable-diffusion/repositories", target: /opt/stable-diffusion/repositories}
       - {type: bind, source: "${MEDIA_ROOT:-/mnt/e/data/forkedAI/media}/images", target: /data/outputs}
@@ -206,12 +207,12 @@ services:
       - *shared-objects
       - *shared-plugins
       - *shared-tools
-      - {type: bind, source: "${PLUGIN_ROOT:-/mnt/e/data/forkedAI/shared/plugins}/comfyui", target: /opt/comfyui/custom_nodes, read_only: true}
-      - {type: bind, source: "${HF_CACHE_ROOT:-/mnt/e/models/.cache/huggingface}", target: /cache/huggingface}
-      - {type: bind, source: "${RUNTIME_ROOT:-/mnt/e/data/forkedAI/runtime}/comfy/torch", target: /cache/torch}
+      - {type: bind, source: "${PLUGIN_ROOT:-/mnt/c/gaic/shared/plugins}/comfyui", target: /opt/comfyui/custom_nodes, read_only: true}
+      - {type: bind, source: "${HF_CACHE_ROOT:-/mnt/d/forkedAI/cache/huggingface}", target: /cache/huggingface}
+      - {type: bind, source: "${TORCH_CACHE_ROOT:-/mnt/d/forkedAI/cache/torch}", target: /cache/torch}
       - {type: bind, source: "${RUNTIME_ROOT:-/mnt/e/data/forkedAI/runtime}/comfy/input", target: /data/input}
       - {type: bind, source: "${MEDIA_ROOT:-/mnt/e/data/forkedAI/media}/images", target: /data/output}
-      - {type: bind, source: "${RUNTIME_ROOT:-/mnt/e/data/forkedAI/runtime}/comfy/temp", target: /data/temp}
+      - {type: bind, source: "${COMFY_TEMP_ROOT:-/mnt/d/forkedAI/scratch/comfy/temp}", target: /data/temp}
       - {type: bind, source: "${RUNTIME_ROOT:-/mnt/e/data/forkedAI/runtime}/comfy/user", target: /data/user}
     deploy:
       resources:
