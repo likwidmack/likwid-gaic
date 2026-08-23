@@ -57,6 +57,23 @@ services:
       - forkedai-edge
       - forkedai-inference
       - forkedai-media
+    # required:false keeps media/comfy-only profiles working when inference is off.
+    depends_on:
+      localai:
+        condition: service_healthy
+        required: false
+      private-gpt:
+        condition: service_healthy
+        required: false
+      stable-diffusion:
+        condition: service_healthy
+        required: false
+      comfy-backend:
+        condition: service_healthy
+        required: false
+      comfy-frontend:
+        condition: service_healthy
+        required: false
 
   localai:
     <<: *security-defaults
@@ -64,8 +81,10 @@ services:
     image: ${LOCALAI_IMAGE:-localai/localai:v4.8.0-gpu-nvidia-cuda-13}
     init: true
     restart: unless-stopped
+    # Override the image HEALTHCHECK (1h start_period) so Compose --wait and
+    # private-gpt's service_healthy dependency reflect API readiness promptly.
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:8080/v1/models"]
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/v1/models"]
       interval: 10s
       timeout: 5s
       retries: 30
@@ -78,6 +97,10 @@ services:
       LOCALAI_ADDRESS: ":8080"
       LOCALAI_MODELS_PATH: /shared/models/localai
       LOCALAI_VRAM_WARM_LIMIT: "0"
+      # Pin CUDA 13 meta-backends even if NVML probing is flaky under Docker Desktop.
+      LOCALAI_FORCE_META_BACKEND_CAPABILITY: nvidia-cuda-13
+      LOCALAI_F16: "true"
+      NVIDIA_VISIBLE_DEVICES: all
       NVIDIA_DRIVER_CAPABILITIES: compute,utility
     volumes:
       - *shared-models

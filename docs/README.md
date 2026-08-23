@@ -36,5 +36,8 @@ models, GPU details, and Docker state; review it before sharing.
 - Bash examples run in WSL.
 - `config/*.json` files are the source of truth for repositories, storage,
   models, and stack topology.
-- `.env` is for ignored machine-local overrides; never commit credentials.
+- `.env.example` is a generic Compose override template; copy it to ignored
+  `.env` and replace placeholder paths. Never commit credentials.
+- Canonical fork and storage paths live in `config/repos.json` and
+  `config/storage.json`; the npm stack runner injects those values.
 - Run `npm test` after changing documentation links or configuration examples.

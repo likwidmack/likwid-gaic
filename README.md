@@ -80,7 +80,7 @@ npm run repos:update
 npm run inventory
 ```
 
-The profiles are `inference`, `rag`, `media`, and `comfy`. Storage roots and fork build contexts are injected from `config/` when commands run through npm. Copy `.env.example` to `.env` only for local overrides; never commit the resulting file.
+The profiles are `inference`, `rag`, `media`, and `comfy`. Storage roots and fork build contexts are injected from `config/` when commands run through npm. Copy `.env.example` to `.env` only for local overrides; the example uses placeholder paths, so replace them when not using the npm runner. Never commit the resulting file.
 
 `repos:status` is read-only. `repos:fetch` refreshes `origin` and `upstream`. `repos:update` additionally fast-forwards the checked-out branch from the upstream default branch, but refuses dirty or detached worktrees and never resets, rebases, force-pushes, deletes, or automatically pushes a fork.
 

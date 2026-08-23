@@ -65,6 +65,13 @@ newer also supports the shorter `gpus: all` service attribute. Keep the
 existing explicit reservation for this validated Docker Desktop stack; do not
 declare both forms on one service.
 
+LocalAI also sets `NVIDIA_VISIBLE_DEVICES=all`,
+`NVIDIA_DRIVER_CAPABILITIES=compute,utility`, `LOCALAI_F16=true`, and
+`LOCALAI_FORCE_META_BACKEND_CAPABILITY=nvidia-cuda-13` so CUDA 13 backends stay
+selected when NVML probing is flaky under Docker Desktop. Confirm GPU access
+with `npm run stack:doctor` or an `nvidia-smi` container test before treating
+inference failures as application bugs.
+
 Versioned image tags make upgrades intentional but tags remain mutable. Pin an
 image digest when byte-for-byte reproducibility or an audited deployment
 requires it. Treat each digest change as a reviewed dependency update. For a
@@ -90,9 +97,13 @@ Official references:
 
 The Caddy gateway is the only service with published host ports. It terminates HTTPS on loopback ports 8443 through 8447 and forwards plain HTTP over the appropriate private bridge. The Comfy frontend reaches its backend at `http://comfy-backend:8188`; direct backend ports are not published.
 
+The gateway declares optional `depends_on` entries with `condition: service_healthy` and `required: false`, so profile-scoped starts still wait for backends that are in the active project without failing when a backend is omitted. LocalAI overrides the image's long `HEALTHCHECK` start period with a Compose healthcheck against `http://127.0.0.1:8080/v1/models` so `--wait` and dependents observe API readiness promptly.
+
+Caddy's `bridge_upstream` snippet probes each backend, sets a short dial timeout, and uses `fail_duration` so Docker DNS is re-resolved after a backend recreate. Without that, a recreated LocalAI (or other upstream) can leave `https://localhost:8443` stuck on 502 until the gateway is restarted manually.
+
 ## Segmented bridges
 
-Services explicitly join one trust-zone bridge. `localai` and `private-gpt` use `forkedai-inference`; Stable Diffusion and both Comfy services use `forkedai-media`; the gateway joins those networks plus `forkedai-edge`. Docker provides service-name DNS within each network, so fixed container IP addresses are unnecessary. The gateway is the only multi-homed service.
+Services explicitly join one trust-zone bridge. `localai` and `private-gpt` use `forkedai-inference`; Stable Diffusion and both Comfy services use `forkedai-media`; the gateway joins those networks plus `forkedai-edge`. Docker provides service-name DNS within each network, so fixed container IP addresses are unnecessary. The gateway is the only multi-homed service. A 502 from the gateway while `docker exec` into the backend succeeds usually means a stale upstream dial after recreate, not a missing bridge attachment—recreate or restart the gateway if probes have not recovered yet.
 
 The gateway binds to `127.0.0.1` by default. It is available to applications and browsers on this computer but not intentionally exposed to the LAN. Compose does not opt into standalone attachment, each service runs with `no-new-privileges`, and Docker-daemon access remains a privileged administrative boundary.
 
@@ -210,7 +221,7 @@ Shared objects and tensors are filesystem artifacts only. Live CUDA tensors, GPU
 
 The drive layout separates workloads by durability and SSD role. Read-mostly models, plugins, and tools use C:. Durable shared objects, generated media, documents, service state, and the Caddy CA stay on E:. Host-only media backups use `E:/VIMG`; this path is initialized by `npm run media -- init` but is intentionally not mounted into any container. The non-redundant D: Storage Space holds only rebuildable Hugging Face/Torch caches and disposable tensors and Comfy temporary files. A D: failure must not remove the only copy of an artifact.
 
-Override fork contexts, storage roots, network names, gateway bind address or HTTPS ports, images, or the Comfy backend in a local `.env` copied from `.env.example`. The npm runner already injects configured context and storage paths; overrides are needed only when the local layout differs.
+Override fork contexts, storage roots, network names, gateway bind address or HTTPS ports, images, or the Comfy backend in a local `.env` copied from `.env.example`. The example file uses generic placeholder paths; replace them with your layout or rely on the npm runner, which injects roots from `config/storage.json` and `config/repos.json`. Overrides are needed only when the local layout differs from those config files.
 
 `npm test` requires every Compose variable to appear in `.env.example` and requires every storage default in Compose to match `config/storage.json`.
 
