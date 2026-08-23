@@ -106,7 +106,7 @@ docker compose logs -f localai
 
 The WebUI and API will be available at `http://localhost:8080`.
 
-The managed forkedAI profile instead uses the pinned CUDA 13 image declared by `LOCALAI_IMAGE`, publishes only the Caddy HTTPS endpoint at `https://localhost:8443`, and stores models under `C:\gaic\models`.
+The managed forkedAI profile instead uses the pinned CUDA 13 image declared by `LOCALAI_IMAGE`, publishes only the Caddy HTTPS endpoint at `https://localhost:8443`, and stores models under the shared model root from `config/storage.json` (`C:\gaic\models` on this workstation). Compose overrides LocalAI's image healthcheck with a prompt `/v1/models` probe, waits on that health from the gateway when the inference profile is active, and pins CUDA 13 meta-backends with `LOCALAI_FORCE_META_BACKEND_CAPABILITY=nvidia-cuda-13` plus `NVIDIA_VISIBLE_DEVICES=all`.
 
 Mounting all four persistent locations is recommended:
 
@@ -149,6 +149,15 @@ workstation. For a standalone native-Linux deployment, use LocalAI's CDI example
 when the installed NVIDIA Container Toolkit supports it. Compose 2.30 and newer
 also accepts `gpus: all`; choose one GPU declaration style rather than combining
 them.
+
+Managed LocalAI environment pins (in addition to the Deploy reservation):
+
+| Variable                                | Purpose                                              |
+| --------------------------------------- | ---------------------------------------------------- |
+| `LOCALAI_FORCE_META_BACKEND_CAPABILITY` | Force `nvidia-cuda-13` backends under Docker Desktop |
+| `LOCALAI_F16`                           | Prefer half-precision where backends support it      |
+| `NVIDIA_VISIBLE_DEVICES`                | Expose all GPUs to the container                     |
+| `NVIDIA_DRIVER_CAPABILITIES`            | `compute,utility` for CUDA and `nvidia-smi`          |
 
 Before starting LocalAI, verify that Docker can access the NVIDIA GPU:
 
@@ -240,8 +249,9 @@ Then open `http://localhost:8080`, install a small model from the gallery, and t
 ## Troubleshooting priorities
 
 1. Verify the container runtime is running with `docker ps`.
-2. Check that port `8080` is not already in use.
+2. Check that port `8080` is not already in use (standalone) or that only the Caddy gateway publishes host ports (managed profile).
 3. Read `docker compose logs localai` for the backend's actual error.
-4. For NVIDIA, verify the standalone CUDA `nvidia-smi` container test.
-5. For an out-of-memory error, choose a smaller quantization, reduce context size, reduce concurrent models, or add RAM/VRAM.
-6. If model loading is slow, ensure the model is stored on SSD-backed Linux storage rather than an HDD or Windows-mounted filesystem.
+4. For NVIDIA, verify the standalone CUDA `nvidia-smi` container test and that the managed container reports the GPU via `nvidia-smi` or LocalAI `/api/resources`.
+5. If `https://localhost:8443` returns 502 while LocalAI answers inside its container, confirm both services share `forkedai-inference`, wait for Caddy's upstream probes, or recreate the gateway after a LocalAI recreate.
+6. For an out-of-memory error, choose a smaller quantization, reduce context size, reduce concurrent models, or add RAM/VRAM.
+7. If model loading is slow, ensure the model is stored on SSD-backed Linux storage rather than an HDD or Windows-mounted filesystem.

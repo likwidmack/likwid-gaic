@@ -50,7 +50,7 @@ ComfyUI model files are mounted read-only. Input, output, user state, temporary 
 
 ## Gateway authentication follow-up
 
-Caddy is the only host-facing container. It uses an internal development CA for `localhost`, serving LocalAI on 8443, PrivateGPT on 8444, Stable Diffusion on 8445, the Comfy UI on 8446, and the Comfy API on 8447. Backend traffic remains HTTP within its trust-zone bridge. The Caddy admin API is disabled, configuration is mounted read-only, and CA state is persisted under `RUNTIME_ROOT/caddy/data`.
+Caddy is the only host-facing container. It uses an internal development CA for `localhost`, serving LocalAI on 8443, PrivateGPT on 8444, Stable Diffusion on 8445, the Comfy UI on 8446, and the Comfy API on 8447. Backend traffic remains HTTP within its trust-zone bridge. Each reverse proxy imports a shared `bridge_upstream` health probe so Caddy re-dials Docker DNS after a backend recreate instead of holding a stale address. The Caddy admin API is disabled, configuration is mounted read-only, and CA state is persisted under `RUNTIME_ROOT/caddy/data`.
 
 The gateway is deliberately unauthenticated while it remains bound to loopback; HTTPS protects transport and server identity but does not authorize a client. Before binding it to a LAN or VPN address, complete this follow-up:
 
