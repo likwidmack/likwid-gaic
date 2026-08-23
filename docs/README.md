@@ -8,10 +8,10 @@ pages when building or troubleshooting a profile.
 
 1. [System architecture](architecture.md) — configuration, topology, storage,
    and privacy boundaries.
-2. [Node.js and npm setup](node-setup.md) — the supported Windows and WSL
-   command boundary.
-3. [Container operations](container-operations.md) — profiles, first run,
-   updates, storage mounts, and daily commands.
+2. [Node.js and npm setup](node-setup.md) — Node boundary, path flavors, and
+   doctor checks across Windows, macOS, and Linux.
+3. [Container operations](container-operations.md) — platforms, compute modes,
+   profiles, first run, updates, storage mounts, and daily commands.
 4. [GPU and CPU resource utilization](resource-utilization.md) — single-GPU
    profile switching, host sizing, and monitoring.
 
@@ -38,11 +38,12 @@ models, GPU details, and Docker state; review it before sharing.
 ## Documentation conventions
 
 - PowerShell examples run from the repository root unless stated otherwise.
-- Bash examples run in WSL.
+- Bash examples run on macOS, native Linux, or WSL (labeled when WSL-specific).
 - `config/*.json` files are the source of truth for repositories, storage,
-  models, and stack topology.
+  models, and stack topology (`pathWindows` / `pathWsl` / `pathPosix`).
 - `.env.example` is a generic Compose override template; copy it to ignored
   `.env` and replace placeholder paths. Never commit credentials.
 - Canonical fork and storage paths live in `config/repos.json` and
   `config/storage.json`; the npm stack runner injects those values.
+- `FORKEDAI_COMPUTE` selects nvidia vs cpu Compose rendering.
 - Run `npm test` after changing documentation links or configuration examples.

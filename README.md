@@ -19,13 +19,15 @@ Stable Diffusion WebUI, or ComfyUI themselves.
 
 ## Requirements
 
-- Windows 11 with current WSL2 Ubuntu
 - Git, Node.js 20+, and npm
-- Docker Desktop (Linux containers) with Compose and WSL integration
-- Current Windows NVIDIA driver with Docker GPU support
-- Hugging Face `hf` CLI in WSL for model downloads
+- Docker Desktop or Docker Engine with Compose
+- **NVIDIA path (Windows/WSL or Linux):** current NVIDIA driver / Container Toolkit for GPU profiles
+- **CPU path (macOS default, or Linux without NVIDIA):** `FORKEDAI_COMPUTE=cpu` for inference/RAG
+- Hugging Face `hf` CLI (WSL on the Windows workstation; host PATH on macOS/Linux)
 
 ## Quick start
+
+**PowerShell:**
 
 ```powershell
 Copy-Item .env.example .env -ErrorAction SilentlyContinue
@@ -35,7 +37,17 @@ npm run stack:doctor
 npm run stack:config
 ```
 
-For first-run profiles, model downloads, and HTTPS trust, see
+**Bash:**
+
+```bash
+cp -n .env.example .env || true
+npm install
+npm test
+npm run stack:doctor
+npm run stack:config
+```
+
+For first-run profiles, compute modes, model downloads, and HTTPS trust, see
 [Container operations](docs/container-operations.md).
 
 ## Documentation

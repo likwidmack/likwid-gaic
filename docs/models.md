@@ -5,7 +5,9 @@ managed media storage.
 
 ## Sources of truth
 
-- `config/storage.json` defines the shared model root: `C:\gaic\models` on Windows and `/mnt/c/gaic/models` in WSL.
+- `config/storage.json` defines the shared model root: `C:\gaic\models` on
+  Windows, `/mnt/c/gaic/models` in WSL, and `~/gaic/models` on macOS/Linux
+  (`pathPosix`, with `~` expanded by the npm runner).
 - `config/models.json` contains managed Hugging Face repository IDs, immutable revisions, selected files, destinations, and optional LocalAI metadata.
 - Model weights, generated media, and local inventories are never committed.
 
@@ -13,7 +15,8 @@ Stable Diffusion and ComfyUI consume the same shared model tree. Legacy `E:\mode
 
 ## Hugging Face CLI
 
-Install and authenticate the current `hf` CLI in WSL:
+Install and authenticate the current `hf` CLI (WSL on the Windows workstation,
+or the host shell on macOS/Linux):
 
 ```bash
 curl -LsSf https://hf.co/cli/install.sh | bash -s
@@ -21,7 +24,9 @@ hf version
 hf auth login
 ```
 
-The Windows task runner invokes `hf` through WSL and sets `HF_HOME` to the configured rebuildable cache on D:.
+On Windows, the task runner invokes `hf` through WSL and sets `HF_HOME` to the
+configured rebuildable cache (`pathWsl`). On macOS and native Linux it calls
+`hf` on the host with `HF_HOME` from `pathPosix`.
 
 ## Managed model workflow
 

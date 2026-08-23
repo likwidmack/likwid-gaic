@@ -2,9 +2,9 @@
 
 The task scripts require Node.js 20 or newer and use only Node built-ins. There are no third-party runtime dependencies.
 
-## Verify Windows execution
+## Verify execution
 
-Run the tasks from a Windows PowerShell session:
+**PowerShell (Windows):**
 
 ```powershell
 node --version
@@ -14,12 +14,33 @@ npm test
 npm run stack:doctor
 ```
 
-`stack:doctor` verifies Node, Docker client/server, Docker Compose, the NVIDIA GPU, the WSL Hugging Face CLI, configured storage roots, and all five fork contexts.
+**Bash (macOS / Linux / WSL):**
+
+```bash
+node --version
+npm --version
+npm install
+npm test
+npm run stack:doctor
+```
+
+`stack:doctor` verifies Node, Docker client/server, Docker Compose, NVIDIA GPU
+(soft-warn in CPU mode), the Hugging Face CLI, configured storage roots, and
+all five fork contexts. It prints the active `FORKEDAI_COMPUTE` mode.
 
 If PowerShell resolves `npm.ps1` but cannot find `node.exe`, repair or reinstall the current Node.js LTS release, open a new terminal, and check `Get-Command node,npm`. Node must be available in the same environment that launches npm.
 
-## Windows and WSL boundary
+## Path and shell boundary
 
-The npm scripts choose Windows or WSL paths from `config/` according to the Node process platform. Model commands launched from Windows call the WSL `hf` CLI automatically. Avoid launching Windows Node from an arbitrary WSL working directory; use PowerShell when operating the Windows Docker Desktop stack.
+`scripts/paths.mjs` selects host paths from `config/`:
+
+- Windows Node → `pathWindows`
+- WSL Node → `pathWsl`
+- macOS / native Linux → `pathPosix` (`~/...` expanded)
+
+Model commands launched from Windows call the WSL `hf` CLI automatically. On
+macOS and native Linux, install `hf` on the host PATH. Prefer running the
+Windows Docker Desktop stack from PowerShell rather than an arbitrary WSL
+working directory when using the Windows Docker CLI.
 
 No global npm package is required by this repository.

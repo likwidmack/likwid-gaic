@@ -8,9 +8,10 @@ const stack = JSON.parse(readFileSync(new URL("../config/stack.json", import.met
 if (pkg.private !== true) throw new Error("package.json must remain private");
 if (config.repositories?.length !== 5) throw new Error("Expected five managed forks");
 for (const repo of config.repositories) {
-  for (const key of ["name", "github", "upstream", "pathWindows", "pathWsl", "originSsh"]) {
+  for (const key of ["name", "github", "upstream", "pathWindows", "pathWsl", "pathPosix", "originSsh"]) {
     if (!repo[key]) throw new Error(`${repo.name ?? "repository"} is missing ${key}`);
   }
+  if (!repo.pathPosix.startsWith("~/")) throw new Error(`POSIX path for ${repo.name} must start with ~/`);
   new URL(repo.github); new URL(repo.upstream);
   if (!/^git@github\.com:[\w.-]+\/[\w.-]+\.git$/.test(repo.originSsh)) throw new Error(`Invalid origin SSH URL for ${repo.name}`);
 }
@@ -20,9 +21,13 @@ if (accounts.accounts?.forkOwner?.login !== "tamaramack") throw new Error("Fork 
 if (accounts.credentialPolicy?.storeTokensInRepository !== false) throw new Error("Tokens must never be stored in this repository");
 
 for (const script of ["stack", "models", "media", "repos:status"]) if (!pkg.scripts?.[script]) throw new Error(`Missing npm script: ${script}`);
-for (const [name, root] of Object.entries(storage.roots ?? {})) if (!root.pathWindows || !root.pathWsl) throw new Error(`Storage root ${name} needs Windows and WSL paths`);
+for (const [name, root] of Object.entries(storage.roots ?? {})) {
+  if (!root.pathWindows || !root.pathWsl || !root.pathPosix) throw new Error(`Storage root ${name} needs Windows, WSL, and POSIX paths`);
+  if (!root.pathPosix.startsWith("~/")) throw new Error(`POSIX path for storage root ${name} must start with ~/`);
+}
 for (const name of ["models", "huggingFaceCache", "torchCache", "comfyTemp", "media", "mediaBackup", "documents", "runtime", "sharedObjects", "tensors", "plugins", "tools"]) if (!storage.roots?.[name]) throw new Error("Missing storage root: " + name);
 if (storage.roots.mediaBackup.pathWindows !== "E:\\VIMG" || storage.roots.mediaBackup.pathWsl !== "/mnt/e/VIMG") throw new Error("Media backup root must be E:\\VIMG");
+if (storage.roots.mediaBackup.pathPosix !== "~/VIMG") throw new Error("POSIX media backup root must be ~/VIMG");
 const aliases = new Set();
 for (const model of models.models ?? []) {
   for (const key of ["alias", "repo", "revision", "localDir"]) if (!model[key]) throw new Error(`Model entry is missing ${key}`);
@@ -78,7 +83,7 @@ for (const file of documentation) {
     if (!existsSync(target)) throw new Error(`Broken documentation link in ${file}: ${match[1]}`);
   }
 }
-for (const file of ["../compose.yaml", "../.dockerignore", "../docker/Caddyfile", "../docker/stable-diffusion.Dockerfile", "../docker/comfy-frontend.Dockerfile", "../docker/comfyui.Dockerfile"]) if (!existsSync(new URL(file, import.meta.url))) throw new Error(`Missing container artifact: ${file}`);
+for (const file of ["../compose.yaml", "../compose.cpu.yaml", "../.dockerignore", "../docker/Caddyfile", "../docker/stable-diffusion.Dockerfile", "../docker/comfy-frontend.Dockerfile", "../docker/comfyui.Dockerfile", "../scripts/paths.mjs"]) if (!existsSync(new URL(file, import.meta.url))) throw new Error(`Missing container artifact: ${file}`);
 const gitignore = readFileSync(new URL("../.gitignore", import.meta.url), "utf8");
 for (const pattern of [".env.*", "docs/inventory.generated.md", "*.gguf", "*.safetensors", "*.sqlite", "documents/", "media/", "models/", "/shared/"]) if (!gitignore.includes(pattern)) throw new Error("Git privacy rules are missing " + pattern);
 const ciWorkflow = readFileSync(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
@@ -94,10 +99,17 @@ for (const pattern of ["--exclude=.git", "--exclude=.env.*", "--exclude=node_mod
 const comfyBackendDockerfile = readFileSync(new URL("../docker/comfyui.Dockerfile", import.meta.url), "utf8");
 for (const pattern of ["--exclude=.git", "--exclude=.env.*", "--exclude=models", "--exclude=output", "/shared/models"]) if (!comfyBackendDockerfile.includes(pattern)) throw new Error("Comfy backend build rules are missing " + pattern);
 const compose = readFileSync(new URL("../compose.yaml", import.meta.url), "utf8");
+const composeCpu = readFileSync(new URL("../compose.cpu.yaml", import.meta.url), "utf8");
 const envExample = readFileSync(new URL("../.env.example", import.meta.url), "utf8");
 const envKeys = new Set([...envExample.matchAll(/^([A-Z][A-Z0-9_]*)=/gm)].map((match) => match[1]));
+if (!envKeys.has("FORKEDAI_COMPUTE")) throw new Error(".env.example is missing FORKEDAI_COMPUTE");
 for (const variable of new Set([...compose.matchAll(/\$\{([A-Z][A-Z0-9_]*)(?::-[^}]*)?\}/g)].map((match) => match[1]))) {
   if (!envKeys.has(variable)) throw new Error(`.env.example is missing Compose variable ${variable}`);
+}
+if (!composeCpu.includes("localai/localai:v4.8.0")) throw new Error("compose.cpu.yaml must default LocalAI to the CPU image tag");
+if (!composeCpu.includes("!reset")) throw new Error("compose.cpu.yaml must reset NVIDIA device reservations");
+for (const service of ["localai", "stable-diffusion", "comfy-backend"]) {
+  if (!composeCpu.includes(`  ${service}:`)) throw new Error(`compose.cpu.yaml is missing ${service}`);
 }
 const storageBindings = {
   MODEL_ROOT: "models",

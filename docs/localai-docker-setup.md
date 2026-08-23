@@ -199,19 +199,26 @@ services:
 
 LocalAI documents a known SYCL issue with memory mapping. If an Intel model hangs during loading, set `mmap: false` in its model configuration.
 
-## Windows and WSL2 recommendations
+## Windows, WSL2, macOS, and Linux
 
-- Keep WSL current with `wsl --update`; Docker requires WSL 2.1.5 or newer.
-- Use Docker Desktop with the WSL2 backend and Linux containers.
-- Enable Docker Desktop integration only for the WSL distributions that need it.
-- Do not install a second Docker Engine or Docker CLI inside an integrated WSL
-  distribution.
-- Install a current Windows NVIDIA driver that supports WSL2. Do not install a
-  Linux NVIDIA display driver inside WSL.
-- For a standalone LocalAI-only deployment, Linux-filesystem storage generally loads models faster than `/mnt/c` or `/mnt/e`. This repository deliberately uses `C:\gaic\models` as the canonical, cross-tool collection; expect the first scan to be slower and do not create a second unmanaged model copy merely to follow the standalone example.
-- Allocate sufficient RAM, CPU, swap, and Docker disk capacity to Docker
-  Desktop/WSL2.
-- Confirm GPU access with the NVIDIA Docker test before starting LocalAI.
+- **Windows / WSL:** Keep WSL current with `wsl --update`; Docker requires
+  WSL 2.1.5 or newer. Use Docker Desktop with the WSL2 backend and Linux
+  containers. Enable Docker Desktop integration only for the WSL distributions
+  that need it. Do not install a second Docker Engine or Docker CLI inside an
+  integrated WSL distribution. Install a current Windows NVIDIA driver that
+  supports WSL2. Do not install a Linux NVIDIA display driver inside WSL. This
+  repository deliberately uses `C:\gaic\models` as the canonical Windows model
+  collection; expect the first scan to be slower on Windows-mounted storage.
+  Allocate sufficient RAM, CPU, swap, and Docker disk capacity to Docker
+  Desktop/WSL2. Confirm GPU access with the NVIDIA Docker test before starting
+  LocalAI in nvidia mode.
+- **macOS:** Use Docker Desktop and `FORKEDAI_COMPUTE=cpu` (default). NVIDIA
+  LocalAI and media/comfy profiles are not supported.
+- **Native Linux:** Use Docker Engine or Desktop. For GPU profiles install the
+  NVIDIA Container Toolkit; otherwise set `FORKEDAI_COMPUTE=cpu`.
+
+See [Container operations](container-operations.md) for the platform matrix and
+first-run commands.
 
 ## Security recommendations
 

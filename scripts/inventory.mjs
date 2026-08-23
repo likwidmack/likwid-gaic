@@ -2,12 +2,13 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { extname, join } from "node:path";
 import process from "node:process";
+import { hostPath } from "./paths.mjs";
 
 const repos = JSON.parse(readFileSync(new URL("../config/repos.json", import.meta.url)));
 const storage = JSON.parse(readFileSync(new URL("../config/storage.json", import.meta.url)));
 const output = new URL("../docs/inventory.generated.md", import.meta.url);
 const extensions = new Set([".gguf", ".ggml", ".safetensors", ".ckpt", ".onnx", ".pt", ".pth"]);
-const localPath = (item) => process.platform === "win32" ? item.pathWindows : item.pathWsl;
+const localPath = (item) => hostPath(item);
 function command(program, args) {
   try { return execFileSync(program, args, { encoding: "utf8", timeout: 20000 }).trim(); }
   catch (error) { return `Unavailable: ${error.stderr?.toString().trim() || error.message}`; }

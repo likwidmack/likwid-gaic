@@ -6,21 +6,22 @@ and all descendants.
 
 ## Repository purpose
 
-likwid-gaic is the local-first operations hub for five managed AI forks on a
-Windows 11, WSL2, Docker Desktop, and NVIDIA workstation. It owns orchestration,
-storage policy, model metadata, media inventory, fork management, validation,
-and documentation. It must not absorb private runtime data or silently modify
-the managed fork worktrees.
+likwid-gaic is the local-first operations hub for five managed AI forks. It owns
+orchestration, storage policy, model metadata, media inventory, fork management,
+validation, and documentation across Windows, macOS, and Linux. The reference
+validation host is a Windows 11 / WSL2 / Docker Desktop / NVIDIA workstation.
+It must not absorb private runtime data or silently modify the managed fork
+worktrees.
 
 ## Sources of truth
 
 - `config/accounts.json`: GitHub account boundary (`likwidmack` hub,
   `tamaramack` forks), SSH host aliases, and credential policy.
 - `config/repos.json`: managed fork identities, paths, and preferred origins.
-- `config/storage.json`: canonical Windows and WSL storage roots.
+- `config/storage.json`: canonical Windows, WSL, and POSIX storage roots.
 - `config/models.json`: immutable Hugging Face selections and LocalAI metadata.
 - `config/stack.json`: profiles, services, networks, ports, and shared mounts.
-- `compose.yaml`: executable container topology.
+- `compose.yaml` / `compose.cpu.yaml`: executable container topology and CPU overlay.
 - `.env.example`: complete non-secret Compose override template.
 - `docs/README.md`: documentation index and conventions.
 - `scripts/*.mjs`: supported automation. Prefer npm scripts over ad hoc
@@ -31,17 +32,20 @@ or derived from these files.
 
 ## Workstation boundary
 
-- Windows path: `E:\git\_lk\forkedAI`.
-- WSL path: `/mnt/e/git/_lk/forkedai`.
+- Reference Windows path: `E:\git\_lk\forkedAI` (local clone name may still be
+  forkedAI until renamed).
+- Reference WSL path: `/mnt/e/git/_lk/forkedai`.
+- POSIX defaults: `~/git/...` forks and `~/gaic` / `~/forkedAI` / `~/data/forkedAI`
+  storage from `pathPosix` (see `scripts/paths.mjs`).
 - Run repository npm workflows from the repository root.
-- The npm runner uses Windows Node.js and the Windows Docker toolchain.
-- Interactive WSL can resolve a separate `/usr/bin/docker` before Docker
-  Desktop's CLI. Compare `Get-Command docker -All`, `type -a docker`, and
-  `docker version` when client and server versions differ. Do not remove or
-  rewrite tool installations without explicit approval.
-- Use Docker Desktop in Linux-container mode with current WSL2 integration.
-  Do not recommend a second Docker Engine or CLI, or a Linux NVIDIA display
-  driver, inside the integrated WSL distribution.
+- On Windows, the npm runner uses Windows Node.js and the Windows Docker
+  toolchain. Interactive WSL can resolve a separate `/usr/bin/docker` first;
+  compare client and server versions before changing installs.
+- Use Docker Desktop in Linux-container mode with current WSL2 integration on
+  Windows. Do not recommend a second Docker Engine or Linux NVIDIA display
+  driver inside the integrated WSL distribution.
+- Set `FORKEDAI_COMPUTE=cpu` on macOS (default) or non-NVIDIA Linux for
+  inference/RAG; `media`/`comfy` require `nvidia`.
 
 ## Skill: first run
 
@@ -124,8 +128,10 @@ npx --yes prettier@3.6.2 --write README.md $docs
 ## Skill: Docker and Compose
 
 - Prefer `npm run stack -- ...`; `scripts/docker.mjs` injects canonical fork
-  contexts and storage roots.
-- Supported profiles are `inference`, `rag`, `media`, and `comfy`.
+  contexts and storage roots and appends `compose.cpu.yaml` when
+  `FORKEDAI_COMPUTE=cpu` (default on macOS).
+- Supported profiles are `inference`, `rag`, `media`, and `comfy`. In CPU mode
+  only `inference` and `rag` are allowed; media/comfy require `nvidia`.
 - On a single-GPU host, at most one of `localai`, `stable-diffusion`, or
   `comfy-backend` may run. Use `npm run stack -- switch PROFILE` to stop
   conflicting GPU services before starting another profile. `up` refuses GPU

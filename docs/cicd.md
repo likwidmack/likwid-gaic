@@ -12,8 +12,14 @@ PR → development (default/integration) | main (release)
   → CI (Local parity: npm ci, npm test)
 ```
 
+`npm test` runs configuration validation (`npm run check`) and Node unit tests
+(`npm run test:unit`, currently `scripts/paths.test.mjs`).
+
 Workstation Docker, GPU, and storage checks stay local (`npm run stack:doctor`,
 `npm run stack:config`). They are not GitHub Actions jobs.
+
+GitHub does not start `pull_request` workflows while a PR has merge conflicts.
+Resolve conflicts against the base branch and push so Local parity can run.
 
 ## Required check
 

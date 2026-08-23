@@ -4,9 +4,27 @@ The root `compose.yaml` is the control plane for the managed forks. It does not 
 
 `scripts/docker.mjs` injects fork contexts and storage roots from `config/`. Direct Docker Compose use must supply the equivalent variables, normally through an ignored `.env` copied from `.env.example`.
 
+## Platforms and compute modes
+
+| Host                      | Path keys used        | Default `FORKEDAI_COMPUTE`          | Supported profiles                  |
+| ------------------------- | --------------------- | ----------------------------------- | ----------------------------------- |
+| Windows (Node on Windows) | `pathWindows`         | `nvidia`                            | All (CUDA)                          |
+| WSL (Node inside WSL)     | `pathWsl`             | `nvidia`                            | All (CUDA via Docker Desktop)       |
+| macOS                     | `pathPosix` (`~/...`) | `cpu`                               | `inference`, `rag` only             |
+| Native Linux              | `pathPosix` (`~/...`) | `nvidia` (set `cpu` without NVIDIA) | All with NVIDIA; else inference/rag |
+
+Set `FORKEDAI_COMPUTE=cpu` or `nvidia` explicitly when needed. CPU mode appends
+[`compose.cpu.yaml`](../compose.cpu.yaml) (CPU LocalAI image, no NVIDIA devices).
+`media` and `comfy` require NVIDIA images and are refused in CPU mode.
+
 ## Current Docker recommendations
 
 ### Host baseline
+
+**All platforms:** Git, Node.js 20+, Docker Engine or Docker Desktop with Compose,
+and the Hugging Face `hf` CLI for model downloads.
+
+**Windows / WSL2 (validated NVIDIA workstation):**
 
 - Keep Docker Desktop and WSL current. Docker requires WSL 2.1.5 or newer and
   recommends the latest WSL release.
@@ -20,8 +38,6 @@ The root `compose.yaml` is the control plane for the managed forks. It does not 
 - Configure WSL CPU, memory, swap, and Docker disk capacity when builds or
   inference contend with the host.
 
-Verify tool resolution from both shells after Docker Desktop or WSL upgrades:
-
 ```powershell
 wsl --version
 Get-Command docker -All
@@ -30,18 +46,20 @@ docker compose version
 wsl -e bash -lc "type -a docker; docker version"
 ```
 
-The npm stack runner uses the Windows Node.js and Docker toolchain. An interactive
-WSL shell can instead resolve a separately installed `/usr/bin/docker` first,
-causing a stale client to talk to the newer Docker Desktop engine. If the client
-and server versions differ unexpectedly, inspect package ownership and PATH
-ordering before removing anything, then retain only the intended Docker Desktop
-integration.
+The npm stack runner on Windows uses the Windows Node.js and Docker toolchain.
+An interactive WSL shell can resolve a separately installed `/usr/bin/docker`
+first; compare client and server versions before changing installs.
 
 Docker recommends Linux-filesystem bind mounts for the highest WSL I/O
-performance. This workstation deliberately keeps shared assets and durable data
-on C:, D:, and E: for Windows interoperability and backup policy. Expect more
-overhead than Linux-native storage for source-heavy builds and model scanning;
-do not create unmanaged duplicate data trees solely as a performance workaround.
+performance. The reference workstation keeps shared assets and durable data on
+C:, D:, and E: for Windows interoperability and backup policy.
+
+**macOS:** Docker Desktop (Linux containers). There is no NVIDIA GPU passthrough;
+keep `FORKEDAI_COMPUTE=cpu` (the default on Darwin). Use host-native paths under
+`$HOME` from `config/storage.json` `pathPosix` entries.
+
+**Native Linux:** Docker Engine or Desktop plus the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
+for GPU profiles. Without NVIDIA, set `FORKEDAI_COMPUTE=cpu`.
 
 ### Compose trust and credentials
 
@@ -59,19 +77,24 @@ avoid printing the resolved environment, and never commit it.
 
 ### GPUs and images
 
-The checked-in GPU reservation uses Docker's supported Compose Deploy syntax:
-`driver: nvidia`, `count: all`, and `capabilities: [gpu]`. Compose 2.30 and
-newer also supports the shorter `gpus: all` service attribute. Keep the
-existing explicit reservation for this validated Docker Desktop stack; do not
-declare both forms on one service.
+In **nvidia** mode, the checked-in GPU reservation uses Docker's supported
+Compose Deploy syntax: `driver: nvidia`, `count: all`, and
+`capabilities: [gpu]`. Compose 2.30 and newer also supports the shorter
+`gpus: all` service attribute. Keep the existing explicit reservation for this
+validated stack; do not declare both forms on one service.
 
-LocalAI also sets `NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES:-0}`,
+LocalAI in nvidia mode sets `NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES:-0}`,
 `NVIDIA_DRIVER_CAPABILITIES=compute,utility`, `LOCALAI_F16=true`,
 `LOCALAI_MAX_ACTIVE_BACKENDS=1`, and
 `LOCALAI_FORCE_META_BACKEND_CAPABILITY=nvidia-cuda-13` so CUDA 13 backends stay
 selected when NVML probing is flaky under Docker Desktop. Confirm GPU access
 with `npm run stack:doctor` or an `nvidia-smi` container test before treating
 inference failures as application bugs.
+
+In **cpu** mode, `compose.cpu.yaml` defaults LocalAI to
+`localai/localai:v4.8.0`, resets NVIDIA device reservations, and clears
+CUDA-only LocalAI environment pins. `stack:doctor` treats a missing
+`nvidia-smi` as a warning, not a hard failure.
 
 On a single-GPU workstation, use `npm run stack -- switch PROFILE` to stop
 conflicting GPU services before starting a new profile. See
@@ -94,12 +117,12 @@ Official references:
 
 ## Profiles
 
-| Profile     | Services                              | HTTPS gateway endpoint                             |
-| ----------- | ------------------------------------- | -------------------------------------------------- |
-| `inference` | LocalAI CUDA 13                       | `https://localhost:8443`                           |
-| `rag`       | LocalAI + PrivateGPT                  | `https://localhost:8443`, `https://localhost:8444` |
-| `media`     | Stable Diffusion WebUI                | `https://localhost:8445`                           |
-| `comfy`     | ComfyUI CUDA backend + frontend proxy | `https://localhost:8447`, `https://localhost:8446` |
+| Profile     | Services                              | HTTPS gateway endpoint                             | Compute     |
+| ----------- | ------------------------------------- | -------------------------------------------------- | ----------- |
+| `inference` | LocalAI (CUDA 13 or CPU image)        | `https://localhost:8443`                           | nvidia, cpu |
+| `rag`       | LocalAI + PrivateGPT                  | `https://localhost:8443`, `https://localhost:8444` | nvidia, cpu |
+| `media`     | Stable Diffusion WebUI                | `https://localhost:8445`                           | nvidia only |
+| `comfy`     | ComfyUI CUDA backend + frontend proxy | `https://localhost:8447`, `https://localhost:8446` | nvidia only |
 
 The Caddy gateway is the only service with published host ports. It terminates HTTPS on loopback ports 8443 through 8447 and forwards plain HTTP over the appropriate private bridge. The Comfy frontend reaches its backend at `http://comfy-backend:8188`; direct backend ports are not published.
 
@@ -130,7 +153,13 @@ exists. See [Network security](network-security.md) before changing
 
 ## Trusting the local HTTPS certificate
 
-Caddy creates a private development CA under `RUNTIME_ROOT/caddy/data`. After starting any profile, inspect the CA certificate and then trust it for the current Windows user:
+Caddy creates a private development CA under `RUNTIME_ROOT/caddy/data`. After
+starting any profile, inspect the CA and trust it for the current user only
+after verifying the path and thumbprint belong to this stack. Removing
+`RUNTIME_ROOT/caddy/data` rotates the CA. The CA private key is sensitive
+runtime state and must not be committed or shared.
+
+**Windows:**
 
 ```powershell
 $ca = "E:\data\forkedAI\runtime\caddy\data\caddy\pki\authorities\local\root.crt"
@@ -138,11 +167,28 @@ Get-PfxCertificate -FilePath $ca | Format-List Subject, Thumbprint, NotAfter
 Import-Certificate -FilePath $ca -CertStoreLocation Cert:\CurrentUser\Root
 ```
 
-Trust the certificate only after verifying that the path and thumbprint belong to this stack. Removing `RUNTIME_ROOT/caddy/data` rotates the CA and requires trusting the replacement. The CA private key is sensitive runtime state and must not be committed or shared.
+**macOS** (Keychain; adjust the path if you override `RUNTIME_ROOT`):
+
+```bash
+CA="$HOME/data/forkedAI/runtime/caddy/data/caddy/pki/authorities/local/root.crt"
+security add-trusted-cert -r trustRoot -k ~/Library/Keychains/login.keychain-db "$CA"
+```
+
+**Linux** (distribution-specific; example for a user NSS DB or system store
+requires admin rights—prefer browser trust for loopback-only development when
+unsure):
+
+```bash
+CA="$HOME/data/forkedAI/runtime/caddy/data/caddy/pki/authorities/local/root.crt"
+openssl x509 -in "$CA" -noout -subject -fingerprint -sha256
+```
 
 ## First run
 
+**PowerShell (Windows NVIDIA workstation):**
+
 ```powershell
+Copy-Item .env.example .env -ErrorAction SilentlyContinue
 npm run stack:doctor
 npm run media -- init
 npm run stack:config
@@ -154,12 +200,43 @@ npm run models -- sync-localai
 npm run stack -- up inference
 npm run stack -- backend
 npm run stack -- up rag
+```
+
+**Bash (macOS CPU, or Linux):**
+
+```bash
+cp -n .env.example .env || true
+# macOS defaults to cpu; on Linux without NVIDIA:
+# export FORKEDAI_COMPUTE=cpu
+npm run stack:doctor
+npm run media -- init
+npm run stack:config
+npm run models -- download chat-qwen2.5-3b
+npm run models -- download embed-nomic-v1.5
+npm run models -- verify chat-qwen2.5-3b
+npm run models -- verify embed-nomic-v1.5
+npm run models -- sync-localai
+npm run stack -- up inference
+npm run stack -- up rag
+```
+
+Skip `npm run stack -- backend` in CPU mode (CUDA backend install is
+NVIDIA-only). Optional media and Comfy starters (**nvidia** compute only):
+
+```powershell
+npm run stack -- build stable-diffusion
+npm run stack -- up media
 npm run stack -- build comfy-backend
 npm run stack -- build comfy-frontend
 npm run stack -- up comfy
 ```
 
-`doctor` is read-only. `media init` creates configured directories. `stack:config` renders and validates the complete Compose model. `up` starts containers and waits up to five minutes for health. The backend command installs `localai@cuda13-llama-cpp` only when missing, persists it under the runtime root, and recreates LocalAI once so the backend registry refreshes.
+`doctor` is read-only. `media init` creates configured directories. `stack:config`
+renders and validates the complete Compose model (`FORKEDAI_COMPUTE=cpu npm run
+stack:config` to preview the CPU overlay). `up` starts containers and waits up
+to five minutes for health. The backend command installs
+`localai@cuda13-llama-cpp` only when missing, persists it under the runtime
+root, and recreates LocalAI once so the backend registry refreshes.
 
 Build fork-backed images explicitly:
 
