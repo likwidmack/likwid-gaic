@@ -4,7 +4,7 @@
   "gateway": {
     "service": "gateway",
     "defaultBindAddress": "127.0.0.1",
-    "defaultPort": 8443,
+    "defaultPorts": {"localai": 8443, "private-gpt": 8444, "stable-diffusion": 8445, "comfy": 8446, "comfy-api": 8447},
     "certificateAuthority": "caddy-internal"
   },
   "networks": [
@@ -21,10 +21,10 @@
   ],
   "profiles": ["inference", "rag", "media", "comfy"],
   "services": [
-    {"name": "localai", "profile": "inference", "repository": "LocalAI-Prt", "url": "https://localai.localhost:8443"},
-    {"name": "private-gpt", "profile": "rag", "repository": "private-gpt-tm", "url": "https://private-gpt.localhost:8443"},
-    {"name": "stable-diffusion", "profile": "media", "repository": "stable-diffusion-ui", "url": "https://stable-diffusion.localhost:8443"},
-    {"name": "comfy-backend", "profile": "comfy", "repository": "ComfyUI", "url": "https://comfy-api.localhost:8443"},
-    {"name": "comfy-frontend", "profile": "comfy", "repository": "ComfyUI_frontend", "url": "https://comfy.localhost:8443"}
+    {"name": "localai", "profile": "inference", "repository": "LocalAI-Prt", "url": "https://localhost:8443"},
+    {"name": "private-gpt", "profile": "rag", "repository": "private-gpt-tm", "url": "https://localhost:8444"},
+    {"name": "stable-diffusion", "profile": "media", "repository": "stable-diffusion-ui", "url": "https://localhost:8445"},
+    {"name": "comfy-backend", "profile": "comfy", "repository": "ComfyUI", "url": "https://localhost:8447"},
+    {"name": "comfy-frontend", "profile": "comfy", "repository": "ComfyUI_frontend", "url": "https://localhost:8446"}
   ]
 }

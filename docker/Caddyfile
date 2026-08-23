@@ -11,27 +11,27 @@
 	}
 }
 
-https://localai.localhost {
+https://localhost:8443 {
 	import local_security
 	reverse_proxy localai:8080
 }
 
-https://private-gpt.localhost {
+https://localhost:8444 {
 	import local_security
 	reverse_proxy private-gpt:8080
 }
 
-https://stable-diffusion.localhost {
+https://localhost:8445 {
 	import local_security
 	reverse_proxy stable-diffusion:7860
 }
 
-https://comfy.localhost {
+https://localhost:8446 {
 	import local_security
 	reverse_proxy comfy-frontend:80
 }
 
-https://comfy-api.localhost {
+https://localhost:8447 {
 	import local_security
 	reverse_proxy comfy-backend:8188
 }

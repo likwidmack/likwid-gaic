@@ -6,12 +6,12 @@ The root `compose.yaml` is the control plane for the managed forks. It does not 
 
 | Profile | Services | HTTPS gateway endpoint |
 | --- | --- | --- |
-| `inference` | LocalAI CUDA 13 | `https://localai.localhost:8443` |
-| `rag` | LocalAI + PrivateGPT | `https://localai.localhost:8443`, `https://private-gpt.localhost:8443` |
-| `media` | Stable Diffusion WebUI | `https://stable-diffusion.localhost:8443` |
-| `comfy` | ComfyUI CUDA backend + frontend proxy | `https://comfy-api.localhost:8443`, `https://comfy.localhost:8443` |
+| `inference` | LocalAI CUDA 13 | `https://localhost:8443` |
+| `rag` | LocalAI + PrivateGPT | `https://localhost:8443`, `https://localhost:8444` |
+| `media` | Stable Diffusion WebUI | `https://localhost:8445` |
+| `comfy` | ComfyUI CUDA backend + frontend proxy | `https://localhost:8447`, `https://localhost:8446` |
 
-The Caddy gateway is the only service with a published host port. It terminates HTTPS on loopback port 8443 and forwards plain HTTP over the appropriate private bridge. The Comfy frontend reaches its backend at `http://comfy-backend:8188`; direct backend ports are not published.
+The Caddy gateway is the only service with published host ports. It terminates HTTPS on loopback ports 8443 through 8447 and forwards plain HTTP over the appropriate private bridge. The Comfy frontend reaches its backend at `http://comfy-backend:8188`; direct backend ports are not published.
 
 ## Segmented bridges
 

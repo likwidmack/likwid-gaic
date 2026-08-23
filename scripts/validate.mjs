@@ -35,7 +35,7 @@ for (const model of models.models ?? []) {
 }
 const repoNames = new Set(config.repositories.map((repo) => repo.name));
 if (stack.gateway?.defaultBindAddress !== "127.0.0.1") throw new Error("The HTTPS gateway must default to loopback");
-if (stack.gateway?.defaultPort !== 8443) throw new Error("The HTTPS gateway must default to port 8443");
+for (const [service, port] of Object.entries({localai: 8443, "private-gpt": 8444, "stable-diffusion": 8445, comfy: 8446, "comfy-api": 8447})) if (stack.gateway?.defaultPorts?.[service] !== port) throw new Error(`Invalid HTTPS gateway port for ${service}`);
 const networkKeys = new Set((stack.networks ?? []).map((network) => network.key));
 for (const key of ["forkedai-edge", "forkedai-inference", "forkedai-media"]) if (!networkKeys.has(key)) throw new Error("Missing stack network: " + key);
 for (const network of stack.networks ?? []) if (network.driver !== "bridge") throw new Error(`Stack network ${network.key} must use the bridge driver`);
@@ -64,14 +64,15 @@ const compose = readFileSync(new URL("../compose.yaml", import.meta.url), "utf8"
 for (const service of stack.services) if (!compose.includes(`  ${service.name}:`)) throw new Error(`Compose is missing ${service.name}`);
 if (!compose.includes("  " + stack.gateway.service + ":")) throw new Error("Compose is missing the HTTPS gateway");
 for (const network of stack.networks) if (!compose.includes("  " + network.key + ":")) throw new Error("Compose is missing network " + network.key);
-if (!compose.includes("FORKEDAI_BIND_ADDRESS:-127.0.0.1") || !compose.includes("FORKEDAI_HTTPS_PORT:-8443")) throw new Error("The HTTPS gateway must publish on loopback port 8443 by default");
+for (const binding of ["LOCALAI_HTTPS_PORT:-8443", "PRIVATE_GPT_HTTPS_PORT:-8444", "STABLE_DIFFUSION_HTTPS_PORT:-8445", "COMFY_HTTPS_PORT:-8446", "COMFY_API_HTTPS_PORT:-8447"]) if (!compose.includes(binding)) throw new Error("Compose is missing HTTPS gateway binding " + binding);
+if (!compose.includes("FORKEDAI_BIND_ADDRESS:-127.0.0.1")) throw new Error("The HTTPS gateway must publish on loopback by default");
 if ((compose.match(/^    ports:/gm) ?? []).length !== 1) throw new Error("Only the HTTPS gateway may publish host ports");
 if (!compose.includes("no-new-privileges:true")) throw new Error("Compose is missing the no-new-privileges baseline");
 for (const mount of ["shared-models", "shared-tensors", "shared-objects", "shared-plugins", "shared-tools"]) if (!compose.includes("&" + mount) || !compose.includes("*" + mount)) throw new Error("Compose is missing shared mount " + mount);
 for (const path of ["/shared/models", "/shared/tensors", "/shared/objects", "/shared/plugins", "/shared/tools"]) if (!compose.includes(path)) throw new Error("Compose is missing shared path " + path);
 for (const endpoint of ["127.0.0.1:8080/v1/models", "127.0.0.1:7860/", "127.0.0.1:8188/system_stats", "127.0.0.1/"]) if (!compose.includes(endpoint)) throw new Error("Compose health checks are missing " + endpoint);
 const caddyfile = readFileSync(new URL("../docker/Caddyfile", import.meta.url), "utf8");
-for (const route of ["localai.localhost", "private-gpt.localhost", "stable-diffusion.localhost", "comfy.localhost", "comfy-api.localhost"]) if (!caddyfile.includes(route)) throw new Error("Caddy is missing route " + route);
+for (const route of ["localhost:8443", "localhost:8444", "localhost:8445", "localhost:8446", "localhost:8447"]) if (!caddyfile.includes(route)) throw new Error("Caddy is missing route " + route);
 for (const upstream of ["localai:8080", "private-gpt:8080", "stable-diffusion:7860", "comfy-frontend:80", "comfy-backend:8188"]) if (!caddyfile.includes(upstream)) throw new Error("Caddy is missing upstream " + upstream);
 if (!caddyfile.includes("tls internal") || !caddyfile.includes("admin off")) throw new Error("Caddy must use its internal CA with the admin API disabled");
 console.log("Storage, model, media, and Compose configuration is valid.");

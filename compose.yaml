@@ -43,7 +43,11 @@ services:
       retries: 3
       start_period: 5s
     ports:
-      - "${FORKEDAI_BIND_ADDRESS:-127.0.0.1}:${FORKEDAI_HTTPS_PORT:-8443}:443"
+      - "${FORKEDAI_BIND_ADDRESS:-127.0.0.1}:${LOCALAI_HTTPS_PORT:-8443}:8443"
+      - "${FORKEDAI_BIND_ADDRESS:-127.0.0.1}:${PRIVATE_GPT_HTTPS_PORT:-8444}:8444"
+      - "${FORKEDAI_BIND_ADDRESS:-127.0.0.1}:${STABLE_DIFFUSION_HTTPS_PORT:-8445}:8445"
+      - "${FORKEDAI_BIND_ADDRESS:-127.0.0.1}:${COMFY_HTTPS_PORT:-8446}:8446"
+      - "${FORKEDAI_BIND_ADDRESS:-127.0.0.1}:${COMFY_API_HTTPS_PORT:-8447}:8447"
     volumes:
       - {type: bind, source: "${HUB_CONTEXT:-.}/docker/Caddyfile", target: /etc/caddy/Caddyfile, read_only: true}
       - {type: bind, source: "${RUNTIME_ROOT:-/mnt/e/data/forkedAI/runtime}/caddy/data", target: /data}

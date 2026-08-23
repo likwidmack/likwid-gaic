@@ -7,7 +7,7 @@ This is a local AI development stack, not an internet-facing deployment. Its def
 | Control | Default | Why |
 | --- | --- | --- |
 | Networks | Named bridges `forkedai-edge`, `forkedai-inference`, and `forkedai-media` | Service-name DNS with inference/media trust-zone separation |
-| Host publishing | Caddy HTTPS gateway on IPv4 loopback `127.0.0.1:8443` | One reviewed ingress point without intentional LAN exposure |
+| Host publishing | Caddy HTTPS gateway on IPv4 loopback ports 8443-8447 | One reviewed ingress service without intentional LAN exposure |
 | Standalone attachment | Not enabled by Compose | Reduces accidental attachment of unrelated containers |
 | Privilege escalation | `no-new-privileges:true` | Blocks gaining additional privileges through setuid/setgid executables |
 | Docker socket | Never mounted | Prevents a compromised AI service from controlling the Docker daemon |
@@ -30,17 +30,17 @@ Models, plugins, and tools are mounted read-only. Keep service-specific runtime 
 
 ## Comfy service routing
 
-`comfy-frontend` reaches `comfy-backend` through service DNS on `forkedai-media`. Neither service receives a host-gateway mapping or publishes a host port. Trusted local clients use `https://comfy.localhost:8443` for the UI and `https://comfy-api.localhost:8443` for direct API access through the gateway.
+`comfy-frontend` reaches `comfy-backend` through service DNS on `forkedai-media`. Neither service receives a host-gateway mapping or publishes a host port. Trusted local clients use `https://localhost:8446` for the UI and `https://localhost:8447` for direct API access through the gateway.
 
 ComfyUI model files are mounted read-only. Input, output, user state, temporary files, and caches use narrowly scoped writable mounts; the container does not receive the Docker socket, source repository, home directory, or host credentials.
 
 ## HTTPS gateway and authentication follow-up
 
-Caddy is the only host-facing container. It uses an internal development CA for `localai.localhost`, `private-gpt.localhost`, `stable-diffusion.localhost`, `comfy.localhost`, and `comfy-api.localhost`, while backend traffic remains HTTP within its trust-zone bridge. Its admin API is disabled, configuration is mounted read-only, and CA state is persisted under `RUNTIME_ROOT/caddy/data`.
+Caddy is the only host-facing container. It uses an internal development CA for `localhost`, serving LocalAI on 8443, PrivateGPT on 8444, Stable Diffusion on 8445, the Comfy UI on 8446, and the Comfy API on 8447. Backend traffic remains HTTP within its trust-zone bridge. The Caddy admin API is disabled, configuration is mounted read-only, and CA state is persisted under `RUNTIME_ROOT/caddy/data`.
 
 The gateway is deliberately unauthenticated while it remains bound to loopback; HTTPS protects transport and server identity but does not authorize a client. Before binding it to a LAN or VPN address, complete this follow-up:
 
-1. Replace the `.localhost` names with controlled LAN or VPN DNS names and configure certificates trusted by every intended client.
+1. Replace `localhost` with controlled LAN or VPN DNS names and configure certificates trusted by every intended client.
 2. Add reviewed authentication at the gateway, such as an identity-aware forward-auth provider, securely managed hashed basic-auth credentials, or mTLS for API clients.
 3. Restrict Windows Firewall to the required profile, gateway port, interface, and source addresses.
 4. Verify that no backend service has a published port and test both permitted and rejected clients.
@@ -77,7 +77,7 @@ Keep:
 FORKEDAI_BIND_ADDRESS=127.0.0.1
 ```
 
-This is the implemented default. Host applications use the named `https://*.localhost:8443` gateway endpoints, while containers use service DNS such as `http://localai:8080`.
+This is the implemented default. Host applications use `https://localhost` on the service-specific gateway ports 8443-8447, while containers use service DNS such as `http://localai:8080`.
 
 **Setbacks:** Other computers and phones cannot reach the services, and remote access requires a separate VPN or tunnel. Loopback binding is not authentication: untrusted software running on the computer can still attempt to connect to the published ports.
 
@@ -134,7 +134,7 @@ docker network inspect forkedai-edge forkedai-inference forkedai-media
 docker ps --format "table {{.Names}}\t{{.Ports}}\t{{.Networks}}"
 ```
 
-The only published binding should be the gateway at `127.0.0.1:8443`; backend services should show no host port. The network inspection should show only the intended ForkedAI containers. Re-run these checks after adding a service, changing `.env`, or upgrading Docker.
+The only published bindings should belong to the gateway at `127.0.0.1:8443` through `127.0.0.1:8447`; backend services should show no host port. The network inspection should show only the intended ForkedAI containers. Re-run these checks after adding a service, changing `.env`, or upgrading Docker.
 
 ## Incident response
 
