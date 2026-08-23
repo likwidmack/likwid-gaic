@@ -107,9 +107,10 @@ the same bytes without duplicating the file.
 
 NTFS **junctions only work for directories**. For checkpoint _files_, use a hard
 link (same volume) or a symbolic link. Prefer a hard link over copying
-multi-gigabyte weights.
+multi-gigabyte weights. Hard links require source and target on the same
+filesystem volume.
 
-SD 1.5 starter:
+SD 1.5 starter (PowerShell on Windows):
 
 ```powershell
 $models = "C:\gaic\models"
@@ -118,13 +119,29 @@ $source = Join-Path $models "checkpoints\v1-5-pruned-emaonly-fp16.safetensors"
 New-Item -ItemType HardLink -Path $target -Target $source
 ```
 
-Optional SDXL (`sdxl-base`):
+SD 1.5 starter (bash on WSL; use `~/gaic/models` on macOS/Linux):
+
+```bash
+models="/mnt/c/gaic/models"   # macOS/Linux: models="$HOME/gaic/models"
+ln "$models/checkpoints/v1-5-pruned-emaonly-fp16.safetensors" \
+  "$models/Stable-diffusion/v1-5-pruned-emaonly-fp16.safetensors"
+```
+
+Optional SDXL (`sdxl-base`) on Windows:
 
 ```powershell
 $models = "C:\gaic\models"
 $target = Join-Path $models "Stable-diffusion\sd_xl_base_1.0.safetensors"
 $source = Join-Path $models "checkpoints\sd_xl_base_1.0.safetensors"
 New-Item -ItemType HardLink -Path $target -Target $source
+```
+
+Optional SDXL on WSL / macOS / Linux:
+
+```bash
+models="/mnt/c/gaic/models"   # macOS/Linux: models="$HOME/gaic/models"
+ln "$models/checkpoints/sd_xl_base_1.0.safetensors" \
+  "$models/Stable-diffusion/sd_xl_base_1.0.safetensors"
 ```
 
 `npm run media -- init` creates both A1111 and Comfy directory trees under the shared model root.
