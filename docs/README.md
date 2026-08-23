@@ -25,6 +25,7 @@ pages when building or troubleshooting a profile.
 - [Models and managed media](models.md)
 - [Network security](network-security.md)
 - [GitHub accounts and repository access](github-access.md)
+- [Continuous integration](cicd.md)
 
 ## Generated inventory
 
