@@ -17,6 +17,7 @@ PrivateGPT model IDs or broadening gateway exposure.
 | Required starters   | Unchanged (`chat-qwen2.5-3b`, `embed-nomic-v1.5`, `sd15-starter`) |
 | New pins            | Optional downloads; selective `stronglyRecommended` only          |
 | PrivateGPT defaults | Stay on 3B chat + nomic; document env override for 7B             |
+| Checkpoint sharing  | Hard links for files (`HardLink`); junctions are directories-only |
 
 ## Managed pins
 

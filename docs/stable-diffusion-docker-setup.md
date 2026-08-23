@@ -17,7 +17,7 @@ Only the gateway publishes host ports. Defaults bind to `127.0.0.1`.
 - Docker Desktop with Linux containers, Compose v2, WSL2 integration (Windows).
 - Current NVIDIA driver with Docker GPU support.
 - Shared model tree from `config/storage.json` (default `C:\gaic\models`).
-- At least one checkpoint: managed `sd15-starter`, plus a junction into
+- At least one checkpoint: managed `sd15-starter`, plus a hard link into
   `Stable-diffusion/` for WebUI’s `--ckpt-dir` (see
   [Models and managed media](models.md)).
 
@@ -41,7 +41,7 @@ Expose the checkpoint for WebUI without copying multi-gigabyte weights:
 $models = "C:\gaic\models"
 $target = Join-Path $models "Stable-diffusion\v1-5-pruned-emaonly-fp16.safetensors"
 $source = Join-Path $models "checkpoints\v1-5-pruned-emaonly-fp16.safetensors"
-New-Item -ItemType Junction -Path $target -Target $source -Force
+New-Item -ItemType HardLink -Path $target -Target $source -Force
 ```
 
 Build and start:
@@ -69,7 +69,7 @@ npm run models -- verify sdxl-base
 $models = "C:\gaic\models"
 $target = Join-Path $models "Stable-diffusion\sd_xl_base_1.0.safetensors"
 $source = Join-Path $models "checkpoints\sd_xl_base_1.0.safetensors"
-New-Item -ItemType Junction -Path $target -Target $source -Force
+New-Item -ItemType HardLink -Path $target -Target $source -Force
 ```
 
 Select `sd_xl_base_1.0.safetensors` in the UI and use SDXL-appropriate sizes
@@ -94,7 +94,7 @@ Aliases: `npm run stack:media`, `npm run stack:status`, `npm run stack:down`.
 
 ## Troubleshooting
 
-- **No checkpoint in UI:** confirm the junction under `Stable-diffusion/` and
+- **No checkpoint in UI:** confirm the hard link under `Stable-diffusion/` and
   that `npm run media -- init` created the directory tree.
 - **502 on 8445:** wait for gateway probes or recreate the gateway after a
   WebUI recreate.
