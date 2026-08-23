@@ -2,12 +2,17 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSy
 import path from "node:path";
 import process from "node:process";
 const storage = JSON.parse(readFileSync(new URL("../config/storage.json", import.meta.url), "utf8"));
+const profileArtifacts = JSON.parse(readFileSync(new URL("../config/profile-artifacts.json", import.meta.url), "utf8"));
 const windows = process.platform === "win32";
 const hostPath = (entry) => entry[windows ? "pathWindows" : "pathWsl"];
 const mediaRoot = hostPath(storage.roots.media);
 const mediaBackupRoot = hostPath(storage.roots.mediaBackup);
 const command = process.argv[2] ?? "status";
 const extensionKind = new Map(Object.entries(storage.mediaKinds).flatMap(([kind, extensions]) => extensions.map((extension) => [extension, kind])));
+function modelLayoutDirs() {
+  const layout = profileArtifacts.layout?.models ?? {};
+  return [...new Set([...(layout.a1111 ?? []), ...(layout.comfy ?? [])])];
+}
 function scan() {
   const files = [];
   if (!existsSync(mediaRoot)) return files;
@@ -29,11 +34,11 @@ function scan() {
 if (command === "init") {
   for (const entry of Object.values(storage.roots)) mkdirSync(hostPath(entry), { recursive: true });
   for (const kind of Object.keys(storage.mediaKinds)) mkdirSync(path.join(mediaRoot, kind), { recursive: true });
-  for (const subdir of ["localai", "Stable-diffusion", "VAE", "Lora", "embeddings"]) mkdirSync(path.join(hostPath(storage.roots.models), subdir), { recursive: true });
+  for (const subdir of modelLayoutDirs()) mkdirSync(path.join(hostPath(storage.roots.models), subdir), { recursive: true });
   for (const subdir of ["caddy/data", "localai/data", "localai/backends", "localai/configuration", "private-gpt", "stable-diffusion/data", "stable-diffusion/repositories", "comfy/input", "comfy/user"]) mkdirSync(path.join(hostPath(storage.roots.runtime), subdir), { recursive: true });
   for (const subdir of ["inputs", "outputs", "workflows", "artifacts"]) mkdirSync(path.join(hostPath(storage.roots.sharedObjects), subdir), { recursive: true });
-  for (const subdir of ["checkpoints", "embeddings", "intermediate"]) mkdirSync(path.join(hostPath(storage.roots.tensors), subdir), { recursive: true });
-  for (const subdir of ["localai", "private-gpt", "stable-diffusion", "comfyui"]) mkdirSync(path.join(hostPath(storage.roots.plugins), subdir), { recursive: true });
+  for (const subdir of profileArtifacts.layout?.tensors ?? ["checkpoints", "embeddings", "intermediate"]) mkdirSync(path.join(hostPath(storage.roots.tensors), subdir), { recursive: true });
+  for (const subdir of profileArtifacts.layout?.plugins ?? ["localai", "private-gpt", "stable-diffusion", "comfyui"]) mkdirSync(path.join(hostPath(storage.roots.plugins), subdir), { recursive: true });
   for (const subdir of ["bin", "scripts", "configs"]) mkdirSync(path.join(hostPath(storage.roots.tools), subdir), { recursive: true });
   console.log("Initialized configured storage roots.");
 } else if (command === "status") {

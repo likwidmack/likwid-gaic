@@ -19,6 +19,8 @@ the managed fork worktrees.
 - `config/repos.json`: managed fork identities, paths, and preferred origins.
 - `config/storage.json`: canonical Windows and WSL storage roots.
 - `config/models.json`: immutable Hugging Face selections and LocalAI metadata.
+- `config/profile-artifacts.json`: required and strongly recommended models,
+  directories, plugins, and objects per Compose profile.
 - `config/stack.json`: profiles, services, networks, ports, and shared mounts.
 - `compose.yaml`: executable container topology.
 - `.env.example`: complete non-secret Compose override template.
