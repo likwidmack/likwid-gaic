@@ -1,12 +1,12 @@
-# forkedAI agent guide
+# likwid-gaic agent guide
 
 This file records repository-specific skills, workflows, and safety rules for
-agents working on forkedAI. Apply these instructions to the repository root and
-all descendants.
+agents working on likwid-gaic. Apply these instructions to the repository root
+and all descendants.
 
 ## Repository purpose
 
-forkedAI is the local-first operations hub for five managed AI forks on a
+likwid-gaic is the local-first operations hub for five managed AI forks on a
 Windows 11, WSL2, Docker Desktop, and NVIDIA workstation. It owns orchestration,
 storage policy, model metadata, media inventory, fork management, validation,
 and documentation. It must not absorb private runtime data or silently modify
@@ -198,7 +198,7 @@ npm run models -- sync-localai
 
 ## Skill: managed forks and GitHub
 
-- The hub belongs to `likwidmack/forkedAI`; managed forks belong to
+- The hub belongs to `likwidmack/likwid-gaic`; managed forks belong to
   `tamaramack`.
 - `npm run repos:status` is read-only.
 - `npm run repos:fetch` refreshes remote references only.
@@ -209,7 +209,7 @@ npm run models -- sync-localai
 - Preserve mixed remote transports; the Comfy forks may use HTTPS while the
   other forks use SSH.
 - The hub's raw origin should remain the canonical
-  `git@github.com:likwidmack/forkedAI.git`. A workstation `insteadOf` rule
+  `git@github.com:likwidmack/likwid-gaic.git`. A workstation `insteadOf` rule
   may display the `github.com-lkpc` alias. Do not store an already rewritten
   alias as the raw remote because it can be rewritten twice.
 - Git SSH identity and GitHub CLI API identity are separate. Check

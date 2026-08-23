@@ -5,10 +5,10 @@ and credential boundaries for the hub and its managed forks.
 
 ## Account boundary
 
-| Account                                     | Responsibility                         |
-| ------------------------------------------- | -------------------------------------- |
-| [likwidmack](https://github.com/likwidmack) | Owns this hub at `likwidmack/forkedAI` |
-| [tamaramack](https://github.com/tamaramack) | Owns the five managed forks            |
+| Account                                     | Responsibility                            |
+| ------------------------------------------- | ----------------------------------------- |
+| [likwidmack](https://github.com/likwidmack) | Owns this hub at `likwidmack/likwid-gaic` |
+| [tamaramack](https://github.com/tamaramack) | Owns the five managed forks               |
 
 The ownership boundary is stored in `config/accounts.json`; fork URLs and preferred SSH origins are stored in `config/repos.json`.
 
@@ -17,10 +17,10 @@ The ownership boundary is stored in `config/accounts.json`; fork URLs and prefer
 The hub's raw `origin` should use the canonical GitHub SSH form:
 
 ```text
-git@github.com:likwidmack/forkedAI.git
+git@github.com:likwidmack/likwid-gaic.git
 ```
 
-This workstation has a Git `url.*.insteadOf` rule that rewrites the canonical URL to the `github.com-lkpc` SSH host alias. Consequently, `git remote get-url origin` may display `git@github.com-lkpc:likwidmack/forkedAI.git`.
+This workstation has a Git `url.*.insteadOf` rule that rewrites the canonical URL to the `github.com-lkpc` SSH host alias. Consequently, `git remote get-url origin` may display `git@github.com-lkpc:likwidmack/likwid-gaic.git`.
 
 Do not store the already-rewritten alias in the raw remote while the rewrite rule is active; it can be rewritten a second time into an invalid hostname. Inspect both views when troubleshooting:
 
