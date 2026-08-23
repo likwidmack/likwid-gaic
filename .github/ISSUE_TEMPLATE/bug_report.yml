@@ -1,0 +1,46 @@
+name: Bug report
+description: Unexpected behavior in validation, scripts, Compose config, or docs
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not include secrets, tokens, `.env` contents, private documents, or
+        local inventories. Prefer sanitizing paths when possible.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What went wrong?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Commands and configuration involved (no secrets).
+      placeholder: |
+        npm test
+        npm run stack:doctor
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Node.js version, Docker Desktop version (optional).
+      placeholder: Windows 11, Node 22, Docker Desktop …
+    validations:
+      required: false

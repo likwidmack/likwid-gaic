@@ -1,0 +1,25 @@
+name: Documentation
+description: Clarify, fix, or expand maintained documentation
+labels: ["documentation"]
+body:
+  - type: textarea
+    id: page
+    attributes:
+      label: Page or topic
+      description: Which doc or section should change?
+      placeholder: docs/container-operations.md — first run
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is unclear or missing?
+    validations:
+      required: true
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested improvement
+      description: Optional wording or structure ideas.
+    validations:
+      required: false

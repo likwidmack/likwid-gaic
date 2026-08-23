@@ -106,7 +106,7 @@ docker compose logs -f localai
 
 The WebUI and API will be available at `http://localhost:8080`.
 
-The managed forkedAI profile instead uses the pinned CUDA 13 image declared by `LOCALAI_IMAGE`, publishes only the Caddy HTTPS endpoint at `https://localhost:8443`, and stores models under the shared model root from `config/storage.json` (`C:\gaic\models` on this workstation). Compose overrides LocalAI's image healthcheck with a prompt `/v1/models` probe, waits on that health from the gateway when the inference profile is active, and pins CUDA 13 meta-backends with `LOCALAI_FORCE_META_BACKEND_CAPABILITY=nvidia-cuda-13` plus `NVIDIA_VISIBLE_DEVICES=0` on single-GPU hosts. The `LOCALAI_API_KEY` examples below apply to the standalone deployment only; the managed loopback stack does not set that variable until a deliberate authentication follow-up is requested.
+The managed likwid-gaic profile instead uses the pinned CUDA 13 image declared by `LOCALAI_IMAGE`, publishes only the Caddy HTTPS endpoint at `https://localhost:8443`, and stores models under the shared model root from `config/storage.json` (`C:\gaic\models` on this workstation). Compose overrides LocalAI's image healthcheck with a prompt `/v1/models` probe, waits on that health from the gateway when the inference profile is active, and pins CUDA 13 meta-backends with `LOCALAI_FORCE_META_BACKEND_CAPABILITY=nvidia-cuda-13` plus `NVIDIA_VISIBLE_DEVICES=0` on single-GPU hosts. The `LOCALAI_API_KEY` examples below apply to the standalone deployment only; the managed loopback stack does not set that variable until a deliberate authentication follow-up is requested.
 
 Mounting all four persistent locations is recommended:
 
@@ -143,7 +143,7 @@ services:
 
 LocalAI recommends the CDI configuration above for NVIDIA Container Toolkit 1.14 and later. Older installations may require the legacy `nvidia` driver configuration.
 
-The managed forkedAI profile uses Docker's standard `driver: nvidia` device
+The managed likwid-gaic profile uses Docker's standard `driver: nvidia` device
 reservation because that configuration is validated on this Docker Desktop
 workstation. For a standalone native-Linux deployment, use LocalAI's CDI example
 when the installed NVIDIA Container Toolkit supports it. Compose 2.30 and newer
@@ -216,7 +216,7 @@ LocalAI documents a known SYCL issue with memory mapping. If an Intel model hang
 ## Security recommendations
 
 - Keep the port bound to `127.0.0.1` for local-only use.
-- For the managed forkedAI stack on loopback, gateway authentication and
+- For the managed likwid-gaic stack on loopback, gateway authentication and
   `LOCALAI_API_KEY` remain deferred; see [Network security](network-security.md).
 - For a standalone LocalAI deployment, set `LOCALAI_API_KEY` even on a
   workstation if other local applications or users are not fully trusted.

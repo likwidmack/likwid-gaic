@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://github.com/likwidmack/likwid-gaic/blob/development/docs/README.md
+    about: Start with the documentation index for setup and operations.
+  - name: Security report
+    url: https://github.com/likwidmack/likwid-gaic/security/advisories/new
+    about: Report vulnerabilities privately; do not open a public issue.

@@ -2,8 +2,8 @@
   "accounts": {
     "hubOwner": {
       "login": "likwidmack",
-      "repository": "likwidmack/forkedAI",
-      "purpose": "Own and publish this private AI operations hub",
+      "repository": "likwidmack/likwid-gaic",
+      "purpose": "Own and publish this public AI operations hub",
       "sshHost": "github.com-lkpc"
     },
     "forkOwner": {

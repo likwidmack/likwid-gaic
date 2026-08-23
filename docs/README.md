@@ -1,6 +1,6 @@
 # Documentation
 
-This directory contains the maintained operating documentation for forkedAI.
+This directory contains the maintained operating documentation for likwid-gaic.
 Start with the architecture and container guides, then use the service-specific
 pages when building or troubleshooting a profile.
 
@@ -27,6 +27,7 @@ pages when building or troubleshooting a profile.
 - [GitHub accounts and repository access](github-access.md)
 - [Continuous integration](cicd.md) — local-parity CI on PRs to `development`
   (default) and `main` (release)
+- [Contributing](../CONTRIBUTING.md) · [Security policy](../SECURITY.md)
 
 ## Generated inventory
 

@@ -1,8 +1,25 @@
 {
-  "name": "forked-ai",
+  "name": "likwid-gaic",
   "version": "0.1.0",
   "private": true,
+  "description": "Local-first control plane for a GPU AI workstation: Compose profiles, model pins, storage policy, and managed forks.",
   "type": "module",
+  "license": "MIT",
+  "homepage": "https://github.com/likwidmack/likwid-gaic#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/likwidmack/likwid-gaic.git"
+  },
+  "bugs": {
+    "url": "https://github.com/likwidmack/likwid-gaic/issues"
+  },
+  "keywords": [
+    "local-ai",
+    "docker-compose",
+    "gpu",
+    "workstation",
+    "orchestration"
+  ],
   "scripts": {
     "stack": "node scripts/docker.mjs",
     "stack:doctor": "node scripts/docker.mjs doctor",
@@ -16,5 +33,7 @@
     "check": "node scripts/validate.mjs",
     "test": "npm run check"
   },
-  "engines": { "node": ">=20" }
+  "engines": {
+    "node": ">=20"
+  }
 }
