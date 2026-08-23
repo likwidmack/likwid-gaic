@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "models": [
+    {
+      "alias": "chat-qwen2.5-3b",
+      "repo": "Qwen/Qwen2.5-3B-Instruct-GGUF",
+      "revision": "7dabda4d13d513e3e842b20f0d435c732f172cbe",
+      "localDir": "localai",
+      "include": [
+        "qwen2.5-3b-instruct-q4_k_m.gguf"
+      ],
+      "localAI": {
+        "configFile": "chat-qwen2.5-3b.yaml",
+        "name": "qwen2.5-3b-instruct",
+        "model": "qwen2.5-3b-instruct-q4_k_m.gguf",
+        "type": "chat",
+        "contextSize": 8192,
+        "gpuLayers": 999
+      }
+    },
+    {
+      "alias": "embed-nomic-v1.5",
+      "repo": "nomic-ai/nomic-embed-text-v1.5-GGUF",
+      "revision": "0188c9bf409793f810680a5a431e7b899c46104c",
+      "localDir": "localai",
+      "include": [
+        "nomic-embed-text-v1.5.Q4_K_M.gguf"
+      ],
+      "localAI": {
+        "configFile": "embed-nomic-v1.5.yaml",
+        "name": "nomic-embed-text-v1.5",
+        "model": "nomic-embed-text-v1.5.Q4_K_M.gguf",
+        "type": "embedding",
+        "contextSize": 2048,
+        "gpuLayers": 999
+      }
+    }
+  ]
+}

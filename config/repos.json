@@ -2,7 +2,8 @@
   "repositories": [
     {"name":"LocalAI-Prt","github":"https://github.com/tamaramack/LocalAI-Prt","upstream":"https://github.com/mudler/LocalAI","pathWindows":"E:\\git\\LocalAI-Prt","pathWsl":"/mnt/e/git/LocalAI-Prt","originSsh":"git@github.com:tamaramack/LocalAI-Prt.git"},
     {"name":"private-gpt-tm","github":"https://github.com/tamaramack/private-gpt-tm","upstream":"https://github.com/zylon-ai/private-gpt","pathWindows":"E:\\git\\private-gpt-tm","pathWsl":"/mnt/e/git/private-gpt-tm","originSsh":"git@github.com:tamaramack/private-gpt-tm.git"},
-    {"name":"stable-diffusion-ui","github":"https://github.com/tamaramack/stable-diffusion-ui","upstream":"https://github.com/AUTOMATIC1111/stable-diffusion-webui","pathWindows":"E:\\git\\stable-diffusion-ui","pathWsl":"/mnt/e/git/stable-diffusion-ui","originSsh":"git@github.com:tamaramack/stable-diffusion-ui.git"}
+    {"name":"stable-diffusion-ui","github":"https://github.com/tamaramack/stable-diffusion-ui","upstream":"https://github.com/AUTOMATIC1111/stable-diffusion-webui","pathWindows":"E:\\git\\stable-diffusion-ui","pathWsl":"/mnt/e/git/stable-diffusion-ui","originSsh":"git@github.com:tamaramack/stable-diffusion-ui.git"},
+    {"name":"ComfyUI_frontend","github":"https://github.com/tamaramack/ComfyUI_frontend","upstream":"https://github.com/Comfy-Org/ComfyUI_frontend","pathWindows":"E:\\git\\ComfyUI_frontend","pathWsl":"/mnt/e/git/ComfyUI_frontend","originSsh":"git@github.com:tamaramack/ComfyUI_frontend.git"}
   ],
   "modelRoots": [
     {"name":"Shared models","pathWindows":"E:\\models","pathWsl":"/mnt/e/models"},

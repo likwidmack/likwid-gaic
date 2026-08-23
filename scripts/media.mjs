@@ -1,0 +1,57 @@
+import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import path from "node:path";
+import process from "node:process";
+const storage = JSON.parse(readFileSync(new URL("../config/storage.json", import.meta.url), "utf8"));
+const windows = process.platform === "win32";
+const hostPath = (entry) => entry[windows ? "pathWindows" : "pathWsl"];
+const mediaRoot = hostPath(storage.roots.media);
+const command = process.argv[2] ?? "status";
+const extensionKind = new Map(Object.entries(storage.mediaKinds).flatMap(([kind, extensions]) => extensions.map((extension) => [extension, kind])));
+function scan() {
+  const files = [];
+  if (!existsSync(mediaRoot)) return files;
+  const pending = [mediaRoot];
+  while (pending.length) {
+    const current = pending.pop();
+    for (const entry of readdirSync(current, { withFileTypes: true })) {
+      if (current === mediaRoot && entry.name === ".forkedai") continue;
+      const file = path.join(current, entry.name);
+      if (entry.isDirectory() && !entry.isSymbolicLink()) pending.push(file);
+      else if (entry.isFile()) {
+        const stats = statSync(file);
+        files.push({ path: path.relative(mediaRoot, file).split(path.sep).join("/"), kind: extensionKind.get(path.extname(entry.name).toLowerCase()) ?? "other", bytes: stats.size, modifiedAt: stats.mtime.toISOString() });
+      }
+    }
+  }
+  return files.sort((a, b) => b.modifiedAt.localeCompare(a.modifiedAt));
+}
+if (command === "init") {
+  for (const entry of Object.values(storage.roots)) mkdirSync(hostPath(entry), { recursive: true });
+  for (const kind of Object.keys(storage.mediaKinds)) mkdirSync(path.join(mediaRoot, kind), { recursive: true });
+  for (const subdir of ["localai", "Stable-diffusion", "VAE", "Lora", "embeddings"]) mkdirSync(path.join(hostPath(storage.roots.models), subdir), { recursive: true });
+  for (const subdir of ["localai/data", "localai/backends", "localai/configuration", "private-gpt", "stable-diffusion/data", "stable-diffusion/repositories"]) mkdirSync(path.join(hostPath(storage.roots.runtime), subdir), { recursive: true });
+  console.log(`Initialized storage under ${path.dirname(mediaRoot)}.`);
+} else if (command === "status") {
+  const files = scan();
+  const groups = new Map();
+  for (const file of files) {
+    const summary = groups.get(file.kind) ?? { count: 0, bytes: 0 };
+    summary.count++; summary.bytes += file.bytes; groups.set(file.kind, summary);
+  }
+  console.log(`Media root: ${mediaRoot}${existsSync(mediaRoot) ? "" : " (missing; run init)"}`);
+  for (const [kind, summary] of [...groups].sort()) console.log(`${kind.padEnd(10)} ${String(summary.count).padStart(6)} files  ${(summary.bytes / 2 ** 30).toFixed(2).padStart(8)} GiB`);
+  if (!files.length) console.log("No managed media files found.");
+} else if (command === "latest") {
+  const kind = process.argv[3];
+  for (const item of scan().filter((entry) => !kind || entry.kind === kind).slice(0, 25)) console.log(`${item.modifiedAt}  ${item.kind.padEnd(10)}  ${item.path}`);
+} else if (command === "index") {
+  const files = scan();
+  const stateDir = path.join(mediaRoot, ".forkedai");
+  mkdirSync(stateDir, { recursive: true });
+  const output = path.join(stateDir, "index.json");
+  writeFileSync(output, `${JSON.stringify({ schemaVersion: 1, generatedAt: new Date().toISOString(), root: mediaRoot, files }, null, 2)}\n`);
+  console.log(`Indexed ${files.length} files in ${output}`);
+} else {
+  console.error("Usage: npm run media -- <init|status|latest [KIND]|index>");
+  process.exitCode = 2;
+}

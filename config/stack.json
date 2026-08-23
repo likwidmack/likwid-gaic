@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "projectName": "forkedai",
+  "network": {
+    "key": "forkedai-shared",
+    "name": "forkedai-shared",
+    "driver": "bridge",
+    "defaultBindAddress": "127.0.0.1"
+  },
+  "profiles": ["inference", "rag", "media", "comfy"],
+  "services": [
+    {"name": "localai", "profile": "inference", "repository": "LocalAI-Prt", "url": "http://localhost:8080"},
+    {"name": "private-gpt", "profile": "rag", "repository": "private-gpt-tm", "url": "http://localhost:8001"},
+    {"name": "stable-diffusion", "profile": "media", "repository": "stable-diffusion-ui", "url": "http://localhost:7860"},
+    {"name": "comfy-frontend", "profile": "comfy", "repository": "ComfyUI_frontend", "url": "http://localhost:8189"}
+  ]
+}

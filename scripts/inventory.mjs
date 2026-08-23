@@ -19,7 +19,7 @@ function walk(root, files = []) {
   }
   return files;
 }
-const lines = ["# Generated local inventory", "", `Generated: ${new Date().toISOString()}`, "", "> Metadata only. Never commit model binaries or generated images.", "", "## Repositories", ""];
+const lines = ["# Generated local inventory", "", `Generated: ${new Date().toISOString()}`, "", "> Local-only metadata. This file is intentionally Git-ignored; review it before sharing.", "", "## Repositories", ""];
 for (const repo of config.repositories) {
   const path = localPath(repo);
   const branch = existsSync(path) ? command("git", ["-C", path, "branch", "--show-current"]) : "missing";

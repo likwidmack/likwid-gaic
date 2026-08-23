@@ -5,9 +5,9 @@
 | Account | Responsibility |
 | --- | --- |
 | [likwidmack](https://github.com/likwidmack) | Owns this hub at `likwidmack/forkedAI` |
-| [tamaramack](https://github.com/tamaramack) | Owns `LocalAI-Prt`, `private-gpt-tm`, and `stable-diffusion-ui` |
+| [tamaramack](https://github.com/tamaramack) | Owns `LocalAI-Prt`, `private-gpt-tm`, `stable-diffusion-ui`, and `ComfyUI_frontend` |
 
-The connected GitHub app was verified as `likwidmack`. The three existing local fork remotes were verified under `tamaramack`.
+The connected GitHub app was verified as `likwidmack`. The four existing local fork remotes were verified under `tamaramack`.
 
 ## Token policy
 
@@ -33,8 +33,6 @@ origin  git@github.com-lkpc:likwidmack/forkedAI.git
 
 Managed forks use `git@github.com:tamaramack/<repository>.git`; upstream remotes also use SSH. Windows OpenSSH verifies that `github.com` authenticates as `tamaramack` and `github.com-lkpc` authenticates as `likwidmack`.
 
-## Repository creation status
+## Repository status
 
-At the time of setup, `likwidmack/forkedAI` did not exist. The GitHub connector could authenticate and inspect repositories but did not expose repository creation, while the local environment had no token or credential helper available for a secure API call.
-
-Create an empty private repository named `forkedAI` under `likwidmack` without initializing a README, license, or gitignore. The local repository is already initialized and ready to push.
+The local operations hub is initialized on `main`, tracks `origin/main`, and uses the `github.com-lkpc` SSH alias. Managed fork operations remain separate and use the `tamaramack` credentials described above.

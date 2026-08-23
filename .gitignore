@@ -6,6 +6,66 @@
 .DS_Store
 .idea
 
+# forkedAI local runtime, credentials, and private artifacts #
+.env
+.env.*
+!.env.example
+.runtime/
+runtime/
+data/
+documents/
+media/
+models/
+outputs/
+generated/
+docs/inventory.generated.md
+*.local.json
+*.local.yaml
+*.local.yml
+compose.override.yml
+compose.override.yaml
+docker-compose.override.yml
+docker-compose.override.yaml
+
+# Authentication and key material #
+.netrc
+.npmrc
+.pypirc
+.hf/
+.huggingface/
+.aws/
+.azure/
+.gcloud/
+.kube/
+.credentials/
+credentials/
+secrets/
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.kdbx
+
+# Model weights, private indexes, and local datasets #
+*.bin
+*.ckpt
+*.ggml
+*.gguf
+*.onnx
+*.pt
+*.pth
+*.safetensors
+*.db
+*.duckdb
+*.sqlite
+*.sqlite3
+*.faiss
+*.index
+*.arrow
+*.parquet
+
 # js #
 node_modules
 yarn.lock
@@ -153,6 +213,8 @@ fabric.properties
 [Ll]ib64
 [Ll]ocal
 [Ss]cripts
+!/[Ss]cripts/
+!/[Ss]cripts/*.mjs
 pyvenv.cfg
 .venv
 pip-selfcheck.json

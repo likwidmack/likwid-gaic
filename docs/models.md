@@ -1,5 +1,46 @@
 # Model and image asset inventory
 
+## Managed model workflow
+
+`config/models.json` stores Hugging Face repository IDs, revisions, include filters, and destinations, never weights or access tokens. Install the current `hf` CLI in WSL:
+
+```bash
+curl -LsSf https://hf.co/cli/install.sh | bash -s
+hf auth login
+```
+
+Register, dry-run, download, and verify:
+
+```powershell
+npm run models -- add my-model owner/repository main localai/my-model
+npm run models -- plan my-model
+npm run models -- download my-model
+npm run models -- verify my-model
+```
+
+Before downloading, set the `include` list on each entry when only selected GGUF or safetensors files are needed. `sync-localai` materializes LocalAI YAML files from registered `localAI` metadata. Other commands are `search`, `inventory`, `cache`, and `auth`. There is deliberately no deletion command.
+
+The checked-in manifest currently pins:
+
+| Alias | Hugging Face artifact | Use |
+| --- | --- | --- |
+| `chat-qwen2.5-3b` | Qwen2.5 3B Instruct Q4_K_M, 2.1 GB | LocalAI chat and PrivateGPT default LLM |
+| `embed-nomic-v1.5` | Nomic Embed Text v1.5 Q4_K_M, 84.1 MB | LocalAI embeddings and PrivateGPT RAG, 768 dimensions |
+
+Install them with `plan`, `download`, and `verify`, then run `npm run models -- sync-localai`. The repositories are pinned to immutable Hub revisions, and verification checks the selected files against Hub checksums.
+
+## Managed media workflow
+
+```powershell
+npm run media -- init
+npm run media -- status
+npm run media -- latest images
+npm run media -- index
+```
+
+The metadata-only index is stored outside Git at `E:\data\forkedAI\media\.forkedai\index.json`. Media commands never delete generated assets.
+
+
 ## Docker Model Runner
 
 | Model tag | Intended use |
