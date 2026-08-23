@@ -10,10 +10,14 @@ This repository is the portable control plane for a personal Windows, WSL2, Dock
 | `config/storage.json` | Canonical host storage roots                                         |
 | `config/models.json`  | Pinned Hugging Face selections and LocalAI metadata                  |
 | `config/stack.json`   | Profiles, services, networks, gateway ports, and shared mount policy |
-| `.env.example`        | Optional local overrides for every Compose variable                  |
+| `.env.example`        | Generic, non-secret Compose override template (placeholders only)    |
 | `compose.yaml`        | Executable container topology                                        |
 
-The npm stack runner injects fork and storage paths from JSON configuration. Direct `docker compose` users must provide equivalent values, normally by copying `.env.example` to the ignored `.env` file.
+The npm stack runner injects fork and storage paths from JSON configuration.
+`.env.example` lists every Compose variable with portable placeholder paths;
+copy it to the ignored `.env` and replace those values when running Compose
+directly. Canonical workstation roots remain in `config/storage.json` and
+`config/repos.json`.
 
 ## Managed topology
 
