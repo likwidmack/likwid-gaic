@@ -14,6 +14,8 @@ the managed fork worktrees.
 
 ## Sources of truth
 
+- `config/accounts.json`: GitHub account boundary (`likwidmack` hub,
+  `tamaramack` forks), SSH host aliases, and credential policy.
 - `config/repos.json`: managed fork identities, paths, and preferred origins.
 - `config/storage.json`: canonical Windows and WSL storage roots.
 - `config/models.json`: immutable Hugging Face selections and LocalAI metadata.
@@ -40,6 +42,32 @@ or derived from these files.
 - Use Docker Desktop in Linux-container mode with current WSL2 integration.
   Do not recommend a second Docker Engine or CLI, or a Linux NVIDIA display
   driver, inside the integrated WSL distribution.
+
+## Skill: first run
+
+Use this sequence on a new workstation before starting profiles. Do not broaden
+`FORKEDAI_BIND_ADDRESS`, add gateway authentication, or configure managed-stack
+`LOCALAI_API_KEY` unless explicitly requested.
+
+```powershell
+Copy-Item .env.example .env -ErrorAction SilentlyContinue
+npm run media -- init
+npm test
+npm run stack:doctor
+npm run stack:config
+npm run models -- download chat-qwen2.5-3b
+npm run models -- download embed-nomic-v1.5
+npm run models -- verify chat-qwen2.5-3b
+npm run models -- verify embed-nomic-v1.5
+npm run models -- sync-localai
+npm run stack -- up inference
+npm run stack -- backend
+```
+
+Trust the Caddy development CA, then verify `https://localhost:8443`. Use
+`npm run media -- status` for a read-only storage check. The full profile order,
+CA import commands, and optional `rag`, `media`, and `comfy` steps are in
+[docs/container-operations.md](docs/container-operations.md).
 
 ## Skill: repository validation
 

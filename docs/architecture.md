@@ -4,14 +4,15 @@ This repository is the portable control plane for a personal Windows, WSL2, Dock
 
 ## Configuration model
 
-| File                  | Responsibility                                                       |
-| --------------------- | -------------------------------------------------------------------- |
-| `config/repos.json`   | Five managed fork identities and Windows/WSL source paths            |
-| `config/storage.json` | Canonical host storage roots                                         |
-| `config/models.json`  | Pinned Hugging Face selections and LocalAI metadata                  |
-| `config/stack.json`   | Profiles, services, networks, gateway ports, and shared mount policy |
-| `.env.example`        | Optional local overrides for every Compose variable                  |
-| `compose.yaml`        | Executable container topology                                        |
+| File                   | Responsibility                                                       |
+| ---------------------- | -------------------------------------------------------------------- |
+| `config/accounts.json` | GitHub account boundary, SSH host aliases, and credential policy     |
+| `config/repos.json`    | Five managed fork identities and Windows/WSL source paths            |
+| `config/storage.json`  | Canonical host storage roots                                         |
+| `config/models.json`   | Pinned Hugging Face selections and LocalAI metadata                  |
+| `config/stack.json`    | Profiles, services, networks, gateway ports, and shared mount policy |
+| `.env.example`         | Optional local overrides for every Compose variable                  |
+| `compose.yaml`         | Executable container topology                                        |
 
 The npm stack runner injects fork and storage paths from JSON configuration. Direct `docker compose` users must provide equivalent values, normally by copying `.env.example` to the ignored `.env` file.
 

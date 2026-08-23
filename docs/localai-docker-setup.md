@@ -106,7 +106,7 @@ docker compose logs -f localai
 
 The WebUI and API will be available at `http://localhost:8080`.
 
-The managed forkedAI profile instead uses the pinned CUDA 13 image declared by `LOCALAI_IMAGE`, publishes only the Caddy HTTPS endpoint at `https://localhost:8443`, and stores models under `C:\gaic\models`.
+The managed forkedAI profile instead uses the pinned CUDA 13 image declared by `LOCALAI_IMAGE`, publishes only the Caddy HTTPS endpoint at `https://localhost:8443`, and stores models under `C:\gaic\models`. The `LOCALAI_API_KEY` examples below apply to the standalone deployment only; the managed loopback stack does not set that variable until a deliberate authentication follow-up is requested.
 
 Mounting all four persistent locations is recommended:
 
@@ -207,7 +207,10 @@ LocalAI documents a known SYCL issue with memory mapping. If an Intel model hang
 ## Security recommendations
 
 - Keep the port bound to `127.0.0.1` for local-only use.
-- Set `LOCALAI_API_KEY` even for a workstation installation if other local applications or users are not fully trusted.
+- For the managed forkedAI stack on loopback, gateway authentication and
+  `LOCALAI_API_KEY` remain deferred; see [Network security](network-security.md).
+- For a standalone LocalAI deployment, set `LOCALAI_API_KEY` even on a
+  workstation if other local applications or users are not fully trusted.
 - Simple API keys grant full administrative access. For multi-user deployments, use LocalAI's user authentication with `LOCALAI_AUTH=true`.
 - If remote access is required, place LocalAI behind a TLS-enabled reverse proxy and restrict network access with a firewall or VPN.
 - Prefer a Compose secret when the application supports a file-based credential.
