@@ -108,6 +108,8 @@ else if (command === "sync-localai") {
       `gpu_layers: ${spec.gpuLayers ?? 999}`,
       "f16: true"
     ];
+    const threads = spec.threads ?? process.env.FORKEDAI_CPU_THREADS ?? process.env.LOCALAI_THREADS;
+    if (threads) lines.splice(6, 0, `threads: ${threads}`);
     if (spec.type === "embedding") lines.push("embeddings: true");
     else lines.push("options:", "  - use_jinja:true");
     writeFileSync(temporary, `${lines.join("\n")}\n`);

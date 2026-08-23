@@ -52,6 +52,16 @@ for (const service of stack.services ?? []) {
   if (!stack.profiles.includes(service.profile)) throw new Error(`Unknown profile for ${service.name}`);
   if (!repoNames.has(service.repository)) throw new Error(`Unknown repository for ${service.name}`);
 }
+const gpuExclusive = stack.gpuExclusive;
+if (!gpuExclusive?.services?.length) throw new Error("stack.gpuExclusive.services is required");
+if (!gpuExclusive.profilesByService || typeof gpuExclusive.profilesByService !== "object") throw new Error("stack.gpuExclusive.profilesByService is required");
+const gpuServiceSet = new Set(gpuExclusive.services);
+for (const [service, profiles] of Object.entries(gpuExclusive.profilesByService)) {
+  if (!gpuServiceSet.has(service)) throw new Error(`GPU exclusive profiles reference unknown service: ${service}`);
+  if (!Array.isArray(profiles) || !profiles.length) throw new Error(`GPU exclusive service ${service} needs at least one profile`);
+  for (const profile of profiles) if (!stack.profiles.includes(profile)) throw new Error(`GPU exclusive service ${service} references unknown profile: ${profile}`);
+}
+for (const service of gpuExclusive.services) if (!gpuExclusive.profilesByService[service]) throw new Error(`GPU exclusive service ${service} is missing profilesByService entry`);
 const documentation = [
   "../AGENTS.md",
   "../README.md",
@@ -102,6 +112,7 @@ const storageBindings = {
 for (const [variable, root] of Object.entries(storageBindings)) if (!compose.includes(`\${${variable}:-${storage.roots[root].pathWsl}}`)) throw new Error(`Compose storage default for ${variable} does not match config/storage.json`);
 if (compose.includes(storage.roots.mediaBackup.pathWsl) || compose.includes("MEDIA_BACKUP_ROOT")) throw new Error("Media backup storage must remain host-only and must not be mounted by Compose");
 for (const service of stack.services) if (!compose.includes(`  ${service.name}:`)) throw new Error(`Compose is missing ${service.name}`);
+for (const service of gpuExclusive.services) if (!compose.includes(`  ${service}:`)) throw new Error(`GPU exclusive service ${service} is missing from Compose`);
 if (!compose.includes("  " + stack.gateway.service + ":")) throw new Error("Compose is missing the HTTPS gateway");
 for (const network of stack.networks) if (!compose.includes("  " + network.key + ":")) throw new Error("Compose is missing network " + network.key);
 for (const binding of ["LOCALAI_HTTPS_PORT:-8443", "PRIVATE_GPT_HTTPS_PORT:-8444", "STABLE_DIFFUSION_HTTPS_PORT:-8445", "COMFY_HTTPS_PORT:-8446", "COMFY_API_HTTPS_PORT:-8447"]) if (!compose.includes(binding)) throw new Error("Compose is missing HTTPS gateway binding " + binding);

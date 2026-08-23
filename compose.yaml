@@ -74,6 +74,10 @@ services:
       comfy-frontend:
         condition: service_healthy
         required: false
+    deploy:
+      resources:
+        reservations:
+          cpus: "0.5"
 
   localai:
     <<: *security-defaults
@@ -100,7 +104,8 @@ services:
       # Pin CUDA 13 meta-backends even if NVML probing is flaky under Docker Desktop.
       LOCALAI_FORCE_META_BACKEND_CAPABILITY: nvidia-cuda-13
       LOCALAI_F16: "true"
-      NVIDIA_VISIBLE_DEVICES: all
+      LOCALAI_MAX_ACTIVE_BACKENDS: ${LOCALAI_MAX_ACTIVE_BACKENDS:-1}
+      NVIDIA_VISIBLE_DEVICES: ${NVIDIA_VISIBLE_DEVICES:-0}
       NVIDIA_DRIVER_CAPABILITIES: compute,utility
     volumes:
       - *shared-models
@@ -148,8 +153,8 @@ services:
       OPENAI_EMBEDDING_API_BASE: http://localai:8080/v1
       OPENAI_API_KEY: localai
       OPENAI_EMBEDDING_API_KEY: localai
-      PGPT_LLM_DEFAULT: qwen2.5-3b-instruct
-      PGPT_EMBEDDING_DEFAULT: nomic-embed-text-v1.5
+      PGPT_LLM_DEFAULT: qwen2.5-3b-instruct:latest
+      PGPT_EMBEDDING_DEFAULT: nomic-embed-text-v1.5:latest
       PGPT_EMBED_DIM: "768"
       HF_HOME: /cache/huggingface
       PGPT_LOCAL_DATA_FOLDER: /var/lib/private-gpt
@@ -163,6 +168,10 @@ services:
       - {type: bind, source: "${HF_CACHE_ROOT:-/mnt/d/forkedAI/cache/huggingface}", target: /cache/huggingface}
       - {type: bind, source: "${DOCUMENT_ROOT:-/mnt/e/data/forkedAI/documents}", target: /documents, read_only: true}
       - {type: bind, source: "${RUNTIME_ROOT:-/mnt/e/data/forkedAI/runtime}/private-gpt", target: /var/lib/private-gpt}
+    deploy:
+      resources:
+        reservations:
+          cpus: "0.5"
 
   stable-diffusion:
     <<: *security-defaults
@@ -186,6 +195,7 @@ services:
     networks:
       - forkedai-media
     environment:
+      NVIDIA_VISIBLE_DEVICES: ${NVIDIA_VISIBLE_DEVICES:-0}
       NVIDIA_DRIVER_CAPABILITIES: compute,utility
       STABLE_DIFFUSION_REPO: https://github.com/w-e-w/stablediffusion.git
     volumes:
@@ -228,6 +238,7 @@ services:
       - forkedai-media
     environment:
       HF_HOME: /cache/huggingface
+      NVIDIA_VISIBLE_DEVICES: ${NVIDIA_VISIBLE_DEVICES:-0}
       NVIDIA_DRIVER_CAPABILITIES: compute,utility
       TORCH_HOME: /cache/torch
     volumes:
@@ -275,6 +286,10 @@ services:
     environment:
       COMFY_BACKEND: ${COMFY_BACKEND:-http://comfy-backend:8188}
       NGINX_ENVSUBST_FILTER: COMFY_BACKEND
+    deploy:
+      resources:
+        reservations:
+          cpus: "0.5"
 
 networks:
   forkedai-edge:

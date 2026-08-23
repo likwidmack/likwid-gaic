@@ -65,12 +65,18 @@ newer also supports the shorter `gpus: all` service attribute. Keep the
 existing explicit reservation for this validated Docker Desktop stack; do not
 declare both forms on one service.
 
-LocalAI also sets `NVIDIA_VISIBLE_DEVICES=all`,
-`NVIDIA_DRIVER_CAPABILITIES=compute,utility`, `LOCALAI_F16=true`, and
+LocalAI also sets `NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES:-0}`,
+`NVIDIA_DRIVER_CAPABILITIES=compute,utility`, `LOCALAI_F16=true`,
+`LOCALAI_MAX_ACTIVE_BACKENDS=1`, and
 `LOCALAI_FORCE_META_BACKEND_CAPABILITY=nvidia-cuda-13` so CUDA 13 backends stay
 selected when NVML probing is flaky under Docker Desktop. Confirm GPU access
 with `npm run stack:doctor` or an `nvidia-smi` container test before treating
 inference failures as application bugs.
+
+On a single-GPU workstation, use `npm run stack -- switch PROFILE` to stop
+conflicting GPU services before starting a new profile. See
+[GPU and CPU resource utilization](resource-utilization.md) for host sizing,
+environment variables, and monitoring.
 
 Versioned image tags make upgrades intentional but tags remain mutable. Pin an
 image digest when byte-for-byte reproducibility or an audited deployment

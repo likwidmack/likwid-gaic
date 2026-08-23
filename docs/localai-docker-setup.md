@@ -106,7 +106,7 @@ docker compose logs -f localai
 
 The WebUI and API will be available at `http://localhost:8080`.
 
-The managed forkedAI profile instead uses the pinned CUDA 13 image declared by `LOCALAI_IMAGE`, publishes only the Caddy HTTPS endpoint at `https://localhost:8443`, and stores models under the shared model root from `config/storage.json` (`C:\gaic\models` on this workstation). Compose overrides LocalAI's image healthcheck with a prompt `/v1/models` probe, waits on that health from the gateway when the inference profile is active, and pins CUDA 13 meta-backends with `LOCALAI_FORCE_META_BACKEND_CAPABILITY=nvidia-cuda-13` plus `NVIDIA_VISIBLE_DEVICES=all`. The `LOCALAI_API_KEY` examples below apply to the standalone deployment only; the managed loopback stack does not set that variable until a deliberate authentication follow-up is requested.
+The managed forkedAI profile instead uses the pinned CUDA 13 image declared by `LOCALAI_IMAGE`, publishes only the Caddy HTTPS endpoint at `https://localhost:8443`, and stores models under the shared model root from `config/storage.json` (`C:\gaic\models` on this workstation). Compose overrides LocalAI's image healthcheck with a prompt `/v1/models` probe, waits on that health from the gateway when the inference profile is active, and pins CUDA 13 meta-backends with `LOCALAI_FORCE_META_BACKEND_CAPABILITY=nvidia-cuda-13` plus `NVIDIA_VISIBLE_DEVICES=0` on single-GPU hosts. The `LOCALAI_API_KEY` examples below apply to the standalone deployment only; the managed loopback stack does not set that variable until a deliberate authentication follow-up is requested.
 
 Mounting all four persistent locations is recommended:
 
