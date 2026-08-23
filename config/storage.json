@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "roots": {
+    "models": {"pathWindows": "C:\\gaic\\models", "pathWsl": "/mnt/c/gaic/models"},
+    "huggingFaceCache": {"pathWindows": "D:\\forkedAI\\cache\\huggingface", "pathWsl": "/mnt/d/forkedAI/cache/huggingface"},
+    "torchCache": {"pathWindows": "D:\\forkedAI\\cache\\torch", "pathWsl": "/mnt/d/forkedAI/cache/torch"},
+    "comfyTemp": {"pathWindows": "D:\\forkedAI\\scratch\\comfy\\temp", "pathWsl": "/mnt/d/forkedAI/scratch/comfy/temp"},
+    "media": {"pathWindows": "E:\\data\\forkedAI\\media", "pathWsl": "/mnt/e/data/forkedAI/media"},
+    "mediaBackup": {"pathWindows": "E:\\VIMG", "pathWsl": "/mnt/e/VIMG"},
+    "documents": {"pathWindows": "E:\\data\\forkedAI\\documents", "pathWsl": "/mnt/e/data/forkedAI/documents"},
+    "runtime": {"pathWindows": "E:\\data\\forkedAI\\runtime", "pathWsl": "/mnt/e/data/forkedAI/runtime"},
+    "sharedObjects": {"pathWindows": "E:\\data\\forkedAI\\shared\\objects", "pathWsl": "/mnt/e/data/forkedAI/shared/objects"},
+    "tensors": {"pathWindows": "D:\\forkedAI\\scratch\\tensors", "pathWsl": "/mnt/d/forkedAI/scratch/tensors"},
+    "plugins": {"pathWindows": "C:\\gaic\\shared\\plugins", "pathWsl": "/mnt/c/gaic/shared/plugins"},
+    "tools": {"pathWindows": "C:\\gaic\\shared\\tools", "pathWsl": "/mnt/c/gaic/shared/tools"}
+  },
+  "mediaKinds": {
+    "images": [".avif", ".gif", ".jpeg", ".jpg", ".png", ".webp"],
+    "video": [".mkv", ".mov", ".mp4", ".webm"],
+    "audio": [".flac", ".m4a", ".mp3", ".ogg", ".wav"],
+    "workflows": [".json"]
+  }
+}

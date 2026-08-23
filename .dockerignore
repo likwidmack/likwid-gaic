@@ -1,0 +1,5 @@
+# The hub Dockerfiles only need files under docker/. Keep credentials,
+# Git metadata, inventories, documents, models, and media out of the context.
+**
+!docker/
+!docker/**

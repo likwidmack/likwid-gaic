@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "projectName": "forkedai",
+  "gateway": {
+    "service": "gateway",
+    "defaultBindAddress": "127.0.0.1",
+    "defaultPorts": {"localai": 8443, "private-gpt": 8444, "stable-diffusion": 8445, "comfy": 8446, "comfy-api": 8447},
+    "certificateAuthority": "caddy-internal"
+  },
+  "networks": [
+    {"key": "forkedai-edge", "name": "forkedai-edge", "driver": "bridge", "purpose": "HTTPS ingress"},
+    {"key": "forkedai-inference", "name": "forkedai-inference", "driver": "bridge", "purpose": "inference services"},
+    {"key": "forkedai-media", "name": "forkedai-media", "driver": "bridge", "purpose": "media services"}
+  ],
+  "sharedStorage": [
+    {"name": "models", "root": "models", "containerPath": "/shared/models", "mode": "ro"},
+    {"name": "tensors", "root": "tensors", "containerPath": "/shared/tensors", "mode": "rw"},
+    {"name": "objects", "root": "sharedObjects", "containerPath": "/shared/objects", "mode": "rw"},
+    {"name": "plugins", "root": "plugins", "containerPath": "/shared/plugins", "mode": "ro"},
+    {"name": "tools", "root": "tools", "containerPath": "/shared/tools", "mode": "ro"}
+  ],
+  "profiles": ["inference", "rag", "media", "comfy"],
+  "services": [
+    {"name": "localai", "profile": "inference", "repository": "LocalAI-Prt", "url": "https://localhost:8443"},
+    {"name": "private-gpt", "profile": "rag", "repository": "private-gpt-tm", "url": "https://localhost:8444"},
+    {"name": "stable-diffusion", "profile": "media", "repository": "stable-diffusion-ui", "url": "https://localhost:8445"},
+    {"name": "comfy-backend", "profile": "comfy", "repository": "ComfyUI", "url": "https://localhost:8447"},
+    {"name": "comfy-frontend", "profile": "comfy", "repository": "ComfyUI_frontend", "url": "https://localhost:8446"}
+  ]
+}

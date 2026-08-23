@@ -1,0 +1,64 @@
+{
+	admin off
+}
+
+(local_security) {
+	tls internal
+	header {
+		-Server
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer"
+	}
+}
+
+# Re-probe Docker DNS after backend recreate; fail_duration clears stale dials
+# that otherwise leave https://localhost:8443 stuck on 502.
+(bridge_upstream) {
+	health_uri {args[0]}
+	health_interval 5s
+	health_timeout 2s
+	health_passes 1
+	health_fails 2
+	fail_duration 5s
+	transport http {
+		dial_timeout 3s
+	}
+}
+
+https://localhost:8443 {
+	import local_security
+	reverse_proxy localai:8080 {
+		import bridge_upstream /readyz
+	}
+}
+
+https://localhost:8444 {
+	import local_security
+	reverse_proxy private-gpt:8080 {
+		import bridge_upstream /v1/models
+	}
+}
+
+https://localhost:8445 {
+	import local_security
+	reverse_proxy stable-diffusion:7860 {
+		import bridge_upstream /
+	}
+}
+
+https://localhost:8446 {
+	import local_security
+	reverse_proxy comfy-frontend:80 {
+		import bridge_upstream /
+	}
+}
+
+https://localhost:8447 {
+	import local_security
+	reverse_proxy comfy-backend:8188 {
+		import bridge_upstream /system_stats
+	}
+}
+
+# Before binding the gateway to a LAN or VPN address, add authentication here
+# or use a reviewed forward-auth provider. Never commit plaintext credentials.

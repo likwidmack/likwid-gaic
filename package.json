@@ -4,6 +4,11 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "stack": "node scripts/docker.mjs",
+    "stack:doctor": "node scripts/docker.mjs doctor",
+    "stack:config": "node scripts/docker.mjs config",
+    "models": "node scripts/models.mjs",
+    "media": "node scripts/media.mjs",
     "repos:status": "node scripts/repos.mjs status",
     "repos:fetch": "node scripts/repos.mjs fetch",
     "repos:update": "node scripts/repos.mjs update",
