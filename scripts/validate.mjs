@@ -4,6 +4,7 @@ const config = JSON.parse(readFileSync(new URL("../config/repos.json", import.me
 const accounts = JSON.parse(readFileSync(new URL("../config/accounts.json", import.meta.url)));
 const storage = JSON.parse(readFileSync(new URL("../config/storage.json", import.meta.url)));
 const models = JSON.parse(readFileSync(new URL("../config/models.json", import.meta.url)));
+const profileArtifacts = JSON.parse(readFileSync(new URL("../config/profile-artifacts.json", import.meta.url)));
 const stack = JSON.parse(readFileSync(new URL("../config/stack.json", import.meta.url)));
 if (pkg.private !== true) throw new Error("package.json must remain private");
 if (config.repositories?.length !== 5) throw new Error("Expected five managed forks");
@@ -41,6 +42,21 @@ for (const model of models.models ?? []) {
     if (!/^[\w.-]+\.ya?ml$/i.test(model.localAI.configFile)) throw new Error(`Invalid LocalAI config file for ${model.alias}`);
     if (!model.include.includes(model.localAI.model)) throw new Error(`LocalAI model file for ${model.alias} is not selected for download`);
   }
+}
+const artifactKinds = new Set(["model", "tensor", "plugin", "node", "directory", "object"]);
+for (const [profile, spec] of Object.entries(profileArtifacts.profiles ?? {})) {
+  if (!stack.profiles.includes(profile)) throw new Error(`profile-artifacts references unknown profile: ${profile}`);
+  for (const tier of ["required", "stronglyRecommended"]) {
+    for (const entry of spec[tier] ?? []) {
+      if (!entry.id || !entry.kind || !entry.purpose) throw new Error(`Profile ${profile} ${tier} entry is missing id, kind, or purpose`);
+      if (!artifactKinds.has(entry.kind)) throw new Error(`Profile ${profile} ${tier} entry ${entry.id} has invalid kind: ${entry.kind}`);
+      if (entry.modelAlias && !aliases.has(entry.modelAlias)) throw new Error(`Profile ${profile} references unknown model alias: ${entry.modelAlias}`);
+      if (entry.storageRoot && !storage.roots?.[entry.storageRoot]) throw new Error(`Profile ${profile} references unknown storage root: ${entry.storageRoot}`);
+    }
+  }
+}
+for (const group of Object.values(profileArtifacts.layout?.models ?? {})) {
+  if (!Array.isArray(group) || !group.length) throw new Error("profile-artifacts layout.models groups must be non-empty arrays");
 }
 const repoNames = new Set(config.repositories.map((repo) => repo.name));
 if (stack.gateway?.defaultBindAddress !== "127.0.0.1") throw new Error("The HTTPS gateway must default to loopback");

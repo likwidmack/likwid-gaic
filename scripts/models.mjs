@@ -6,6 +6,8 @@ import { hostPath, pathFlavor, pathModule } from "./paths.mjs";
 
 const modelsUrl = new URL("../config/models.json", import.meta.url);
 const storage = JSON.parse(readFileSync(new URL("../config/storage.json", import.meta.url), "utf8"));
+const stack = JSON.parse(readFileSync(new URL("../config/stack.json", import.meta.url), "utf8"));
+const profileArtifacts = JSON.parse(readFileSync(new URL("../config/profile-artifacts.json", import.meta.url), "utf8"));
 const manifest = JSON.parse(readFileSync(modelsUrl, "utf8"));
 const flavor = pathFlavor();
 const windows = flavor === "windows";
@@ -28,6 +30,41 @@ function expectedFiles(item) {
 function isPresent(item) {
   const expected = expectedFiles(item);
   return expected.length ? expected.every((file) => existsSync(path.join(destination(item), file))) : existsSync(destination(item));
+}
+function artifactState(entry) {
+  if (entry.modelAlias) return isPresent(find(entry.modelAlias)) ? "present" : "missing";
+  if (entry.storageRoot) {
+    const root = hostPath(storage.roots[entry.storageRoot]);
+    const target = entry.relativePath ? path.join(root, entry.relativePath) : root;
+    return existsSync(target) ? "present" : "missing";
+  }
+  if (entry.relativePath) {
+    const target = path.join(modelRoot, entry.relativePath);
+    if (target.endsWith(path.sep) || !path.extname(entry.relativePath)) return existsSync(target) ? "present" : "missing";
+    return existsSync(target) ? "present" : "missing";
+  }
+  return "manual";
+}
+function printRecommendations(profile) {
+  const spec = profileArtifacts.profiles?.[profile];
+  if (!spec) throw new Error(`Unknown profile: ${profile}. Choose: ${stack.profiles.join(", ")}`);
+  console.log(`Profile: ${profile}`);
+  if (spec.services?.length) console.log(`Services: ${spec.services.join(", ")}`);
+  if (spec.gateway) console.log(`Gateway: ${spec.gateway}`);
+  for (const tier of ["required", "stronglyRecommended"]) {
+    const items = spec[tier] ?? [];
+    if (!items.length) continue;
+    console.log(`\n${tier === "required" ? "Required" : "Strongly recommended"}:`);
+    for (const entry of items) {
+      const state = artifactState(entry);
+      const alias = entry.modelAlias ? ` (${entry.modelAlias})` : "";
+      console.log(`  [${state}] ${entry.id}${alias}: ${entry.purpose}`);
+    }
+  }
+  if (profileArtifacts.notes?.length) {
+    console.log("\nNotes:");
+    for (const note of profileArtifacts.notes) console.log(`  - ${note}`);
+  }
 }
 function hfRunner() {
   if (windows) {
@@ -131,13 +168,18 @@ else if (command === "cache") {
   const cache = hostPath(storage.roots.huggingFaceCache, runner.style);
   runHf(["cache", "list", "--cache-dir", cache]);
 }
-else if (command === "inventory") {
+else if (command === "recommendations") {
+  const profile = process.argv[3];
+  if (!profile) throw new Error(`Usage: npm run models -- recommendations PROFILE (${stack.profiles.join("|")})`);
+  if (!stack.profiles.includes(profile)) throw new Error(`Unknown profile: ${profile}`);
+  printRecommendations(profile);
+} else if (command === "inventory") {
   const files = walk(modelRoot).sort((a, b) => b.bytes - a.bytes);
   const total = files.reduce((sum, item) => sum + item.bytes, 0);
   console.log(`${files.length} model files, ${(total / 2 ** 30).toFixed(2)} GiB under ${modelRoot}`);
   for (const item of files.slice(0, 25)) console.log(`${(item.bytes / 2 ** 30).toFixed(2).padStart(7)} GiB  ${item.file}`);
   if (files.length > 25) console.log(`... ${files.length - 25} more`);
 } else {
-  console.error("Usage: npm run models -- <list|add|search|plan|download|verify|sync-localai|auth|cache|inventory>");
+  console.error("Usage: npm run models -- <list|add|search|plan|download|verify|sync-localai|recommendations|auth|cache|inventory>");
   process.exitCode = 2;
 }

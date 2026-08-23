@@ -185,6 +185,13 @@ openssl x509 -in "$CA" -noout -subject -fingerprint -sha256
 
 ## First run
 
+Review profile requirements before starting services:
+
+```powershell
+npm run models -- recommendations inference
+npm run models -- recommendations rag
+```
+
 **PowerShell (Windows NVIDIA workstation):**
 
 ```powershell
@@ -221,11 +228,17 @@ npm run stack -- up rag
 ```
 
 Skip `npm run stack -- backend` in CPU mode (CUDA backend install is
-NVIDIA-only). Optional media and Comfy starters (**nvidia** compute only):
+NVIDIA-only). Optional media and Comfy starters (**nvidia** compute only;
+download once; see [Models and managed media](models.md) for the WebUI
+junction):
 
 ```powershell
+npm run models -- recommendations media
+npm run models -- download sd15-starter
+npm run models -- verify sd15-starter
 npm run stack -- build stable-diffusion
 npm run stack -- up media
+npm run models -- recommendations comfy
 npm run stack -- build comfy-backend
 npm run stack -- build comfy-frontend
 npm run stack -- up comfy

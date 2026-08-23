@@ -81,6 +81,9 @@ Copy-Item .env.example .env -ErrorAction SilentlyContinue
 npm run media -- init
 npm run stack:doctor
 npm run stack:config
+npm run models -- recommendations comfy
+npm run models -- download sd15-starter
+npm run models -- verify sd15-starter
 npm run stack -- build comfy-backend
 npm run stack -- build comfy-frontend
 npm run stack -- up comfy
