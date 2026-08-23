@@ -94,7 +94,7 @@ npm run models -- recommendations comfy
 | ----------- | --------------------------------------------- | ---------------------------------------------------------- |
 | `inference` | `chat-qwen2.5-3b`, LocalAI YAML, CUDA backend | 7B chat/coder, Whisper STT, Piper TTS                      |
 | `rag`       | Both LocalAI starter pins, YAML, documents    | Sample docs; optional `chat-qwen2.5-7b`                    |
-| `media`     | `sd15-starter` plus WebUI checkpoint path     | `sdxl-base` + junction; reviewed extensions                |
+| `media`     | `sd15-starter` plus WebUI checkpoint path     | `sdxl-base` + hard link; reviewed extensions               |
 | `comfy`     | `sd15-starter`, Comfy model layout dirs       | `sdxl-base`; optional VAE/upscalers; reviewed custom nodes |
 
 Upstream fork quickstarts may suggest larger models (for example PrivateGPT with Ollama Qwen 35B or Comfy partner API nodes). This hub keeps smaller local GGUF starters, optional 7B upgrades, and disables Comfy API nodes by default for loopback privacy.
@@ -105,13 +105,17 @@ Managed image pins download under `checkpoints/`. ComfyUI reads that tree
 directly. Stable Diffusion WebUI uses `--ckpt-dir Stable-diffusion`, so expose
 the same bytes without duplicating the file.
 
+NTFS **junctions only work for directories**. For checkpoint _files_, use a hard
+link (same volume) or a symbolic link. Prefer a hard link over copying
+multi-gigabyte weights.
+
 SD 1.5 starter:
 
 ```powershell
 $models = "C:\gaic\models"
 $target = Join-Path $models "Stable-diffusion\v1-5-pruned-emaonly-fp16.safetensors"
 $source = Join-Path $models "checkpoints\v1-5-pruned-emaonly-fp16.safetensors"
-New-Item -ItemType Junction -Path $target -Target $source
+New-Item -ItemType HardLink -Path $target -Target $source
 ```
 
 Optional SDXL (`sdxl-base`):
@@ -120,10 +124,10 @@ Optional SDXL (`sdxl-base`):
 $models = "C:\gaic\models"
 $target = Join-Path $models "Stable-diffusion\sd_xl_base_1.0.safetensors"
 $source = Join-Path $models "checkpoints\sd_xl_base_1.0.safetensors"
-New-Item -ItemType Junction -Path $target -Target $source
+New-Item -ItemType HardLink -Path $target -Target $source
 ```
 
-Prefer a junction or hard link over copying multi-gigabyte weights. `npm run media -- init` creates both A1111 and Comfy directory trees under the shared model root.
+`npm run media -- init` creates both A1111 and Comfy directory trees under the shared model root.
 
 ## Inventory
 

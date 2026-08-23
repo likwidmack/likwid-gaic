@@ -237,7 +237,7 @@ npm run stack -- up rag
 Skip `npm run stack -- backend` in CPU mode (CUDA backend install is
 NVIDIA-only). Optional media and Comfy starters (**nvidia** compute only;
 download once; see [Models and managed media](models.md) for the WebUI
-junction):
+hard link):
 
 ```powershell
 npm run models -- recommendations media

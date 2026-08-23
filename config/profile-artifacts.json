@@ -138,7 +138,7 @@
           "id": "stable-diffusion-checkpoint-link",
           "kind": "object",
           "relativePath": "Stable-diffusion/v1-5-pruned-emaonly-fp16.safetensors",
-          "purpose": "WebUI reads --ckpt-dir Stable-diffusion; use a junction or copy from checkpoints/ after download"
+          "purpose": "WebUI reads --ckpt-dir Stable-diffusion; use a hard link or copy from checkpoints/ after download"
         }
       ],
       "stronglyRecommended": [
@@ -146,13 +146,13 @@
           "id": "sdxl-base",
           "kind": "model",
           "modelAlias": "sdxl-base",
-          "purpose": "SDXL base checkpoint in checkpoints/; junction into Stable-diffusion/ for WebUI"
+          "purpose": "SDXL base checkpoint in checkpoints/; hard-link into Stable-diffusion/ for WebUI"
         },
         {
           "id": "sdxl-webui-checkpoint-link",
           "kind": "object",
           "relativePath": "Stable-diffusion/sd_xl_base_1.0.safetensors",
-          "purpose": "WebUI checkpoint path for SDXL; junction or copy from checkpoints/ after download"
+          "purpose": "WebUI checkpoint path for SDXL; hard link or copy from checkpoints/ after download"
         },
         {
           "id": "vae-directory",

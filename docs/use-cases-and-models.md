@@ -67,7 +67,7 @@ stretch models required.
 ### Generative image
 
 Start with `sd15-starter` on `media` or `comfy`. Download `sdxl-base` for
-higher quality; junction the safetensors into `Stable-diffusion/` for A1111 as
+higher quality; hard-link the safetensors into `Stable-diffusion/` for A1111 as
 described in [models.md](models.md). Service how-tos:
 [Stable Diffusion WebUI](stable-diffusion-docker-setup.md) and
 [ComfyUI](comfyui-docker-setup.md).
