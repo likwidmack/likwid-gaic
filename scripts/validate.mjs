@@ -84,6 +84,15 @@ for (const [profile, spec] of Object.entries(profileArtifacts.profiles ?? {})) {
 for (const group of Object.values(profileArtifacts.layout?.models ?? {})) {
   if (!Array.isArray(group) || !group.length) throw new Error("profile-artifacts layout.models groups must be non-empty arrays");
 }
+for (const dir of ["localai", "Stable-diffusion"]) {
+  if (!profileArtifacts.layout?.models?.a1111?.includes(dir)) throw new Error(`profile-artifacts layout.models.a1111 must include ${dir}`);
+}
+for (const dir of ["checkpoints", "vae", "loras", "upscale_models"]) {
+  if (!profileArtifacts.layout?.models?.comfy?.includes(dir)) throw new Error(`profile-artifacts layout.models.comfy must include ${dir}`);
+}
+for (const alias of ["chat-qwen2.5-3b", "embed-nomic-v1.5", "sd15-starter"]) {
+  if (!aliases.has(alias)) throw new Error(`Required managed model alias missing: ${alias}`);
+}
 const repoNames = new Set(config.repositories.map((repo) => repo.name));
 if (stack.gateway?.defaultBindAddress !== "127.0.0.1") throw new Error("The HTTPS gateway must default to loopback");
 for (const [service, port] of Object.entries({localai: 8443, "private-gpt": 8444, "stable-diffusion": 8445, comfy: 8446, "comfy-api": 8447})) if (stack.gateway?.defaultPorts?.[service] !== port) throw new Error(`Invalid HTTPS gateway port for ${service}`);

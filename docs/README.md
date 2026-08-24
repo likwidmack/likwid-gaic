@@ -48,8 +48,9 @@ models, GPU details, and Docker state; review it before sharing.
 - `config/*.json` files are the source of truth for repositories, storage,
   models, profile artifacts, and stack topology (`pathWindows` / `pathWsl` /
   `pathPosix`).
-- `.env.example` is a generic Compose override template; copy it to ignored
-  `.env` and replace placeholder paths. Never commit credentials.
+- `.env.example` is a non-secret Compose override template with Windows
+  examples from `config/storage.json` and fork names from `config/repos.json`;
+  copy it to ignored `.env` and adjust for your layout. Never commit credentials.
 - Canonical fork and storage paths live in `config/repos.json` and
   `config/storage.json`; the npm stack runner injects those values.
 - `FORKEDAI_COMPUTE` selects nvidia vs cpu Compose rendering.
