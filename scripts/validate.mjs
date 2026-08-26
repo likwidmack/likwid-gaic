@@ -216,5 +216,9 @@ if (!compose.includes("gateway-auth.caddy")) throw new Error("Compose must mount
 if (!envKeys.has("GATEWAY_HOSTNAME")) throw new Error(".env.example is missing GATEWAY_HOSTNAME");
 const emptyAuth = readFileSync(new URL("../docker/gateway-auth.empty.caddy", import.meta.url), "utf8");
 if (!emptyAuth.includes("(gateway_auth)")) throw new Error("gateway-auth.empty.caddy must define the gateway_auth snippet");
-if (/\bbasicauth\b/i.test(emptyAuth)) throw new Error("gateway-auth.empty.caddy must not enable basicauth");
+const emptyAuthBody = emptyAuth
+  .split("\n")
+  .filter((line) => !line.trim().startsWith("#"))
+  .join("\n");
+if (/\bbasicauth\b/i.test(emptyAuthBody)) throw new Error("gateway-auth.empty.caddy must not enable basicauth");
 console.log("Storage, model, media, and Compose configuration is valid.");

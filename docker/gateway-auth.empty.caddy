@@ -1,5 +1,5 @@
-# No-op auth snippet for loopback. Replace with a hashed basic-auth block before
-# leaving FORKEDAI_BIND_ADDRESS=127.0.0.1. See docs/network-security.md and
-# docker/gateway-auth.basicauth.example.caddy.
+# No-op auth snippet for loopback. Replace with a hashed password gate before
+# leaving FORKEDAI_BIND_ADDRESS=127.0.0.1. See docs/network-security.md and the
+# docker/gateway-auth example sibling file.
 (gateway_auth) {
 }
