@@ -39,7 +39,7 @@
     "repos:update": "node scripts/repos.mjs update",
     "inventory": "node scripts/inventory.mjs",
     "check": "node scripts/validate.mjs",
-    "test:unit": "node --test scripts/paths.test.mjs",
+    "test:unit": "node --test scripts/paths.test.mjs scripts/cli-policy.test.mjs",
     "test": "npm run check && npm run test:unit"
   },
   "engines": {

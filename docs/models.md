@@ -34,18 +34,19 @@ configured rebuildable cache (`pathWsl`). On macOS and native Linux it calls
 ```powershell
 npm run models -- list
 npm run models -- search "small instruct gguf"
-npm run models -- add my-model owner/repository REVISION localai/my-model
+npm run models -- add my-model owner/repository 0123456789abcdef0123456789abcdef01234567 localai/my-model --include model.gguf
 npm run models -- plan my-model
 npm run models -- download my-model
 npm run models -- verify my-model
 ```
 
-After `add`, edit `config/models.json` before committing:
+`add` requires a full 40-character revision and at least one `--include` file so
+new entries cannot fail `npm test` validation. After `add`, still review
+`config/models.json` before committing:
 
-- replace the revision with a full 40-character immutable commit;
-- add an explicit, minimal `include` list;
-- record LocalAI metadata only when LocalAI should load the artifact;
-- review the repository license and model card.
+- confirm license and model-card provenance;
+- add LocalAI metadata only when LocalAI should load the artifact;
+- keep the include list minimal and explicit.
 
 `npm test` rejects floating revisions, empty include lists, duplicate aliases, paths that escape the model root, and unsafe LocalAI configuration filenames. `plan` performs an `hf download --dry-run`; `verify` checks selected local files against Hub metadata. Because multiple managed models share the `localai` directory and each manifest intentionally selects only a subset of its Hub repository, `hf` can warn about extra local files and unselected remote files; the checksum result for the selected artifact is the integrity result that matters.
 
@@ -85,17 +86,19 @@ Each Compose profile has a minimum artifact set before `npm run stack -- up PROF
 
 ```powershell
 npm run models -- recommendations inference
+npm run models -- ready inference
 npm run models -- recommendations rag
 npm run models -- recommendations media
 npm run models -- recommendations comfy
 ```
 
-| Profile     | Required managed models / artifacts           | Strongly recommended                                       |
+`ready` exits with status 1 when any **required** artifact is missing (recommended gaps are reported but non-blocking).
+| Profile | Required managed models / artifacts | Strongly recommended |
 | ----------- | --------------------------------------------- | ---------------------------------------------------------- |
-| `inference` | `chat-qwen2.5-3b`, LocalAI YAML, CUDA backend | 7B chat/coder, Whisper STT, Piper TTS                      |
-| `rag`       | Both LocalAI starter pins, YAML, documents    | Sample docs; optional `chat-qwen2.5-7b`                    |
-| `media`     | `sd15-starter` plus WebUI checkpoint path     | `sdxl-base` + hard link; reviewed extensions               |
-| `comfy`     | `sd15-starter`, Comfy model layout dirs       | `sdxl-base`; optional VAE/upscalers; reviewed custom nodes |
+| `inference` | `chat-qwen2.5-3b`, LocalAI YAML, CUDA backend | 7B chat/coder, Whisper STT, Piper TTS |
+| `rag` | Both LocalAI starter pins, YAML, documents | Sample docs; optional `chat-qwen2.5-7b` |
+| `media` | `sd15-starter` plus WebUI checkpoint path | `sdxl-base` + hard link; reviewed extensions |
+| `comfy` | `sd15-starter`, Comfy model layout dirs | `sdxl-base`; optional VAE/upscalers; reviewed custom nodes |
 
 Upstream fork quickstarts may suggest larger models (for example PrivateGPT with Ollama Qwen 35B or Comfy partner API nodes). This hub keeps smaller local GGUF starters, optional 7B upgrades, and disables Comfy API nodes by default for loopback privacy.
 
@@ -145,6 +148,14 @@ ln "$models/checkpoints/sd_xl_base_1.0.safetensors" \
 ```
 
 `npm run media -- init` creates both A1111 and Comfy directory trees under the shared model root.
+
+## Upscalers (not managed)
+
+RealESRGAN and similar Hub upscalers often ship as `.pth` checkpoints. Those
+formats are treated as executable content and are **not** managed pins in
+`config/models.json`. Prefer reviewed safetensors placed manually under
+`upscale_models/` (Comfy) when you need an upscaler. See
+[Troubleshooting](troubleshooting.md).
 
 ## Inventory
 

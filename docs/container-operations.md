@@ -211,6 +211,7 @@ npm run models -- download embed-nomic-v1.5
 npm run models -- verify chat-qwen2.5-3b
 npm run models -- verify embed-nomic-v1.5
 npm run models -- sync-localai
+npm run models -- ready inference
 npm run stack -- up inference
 npm run stack -- backend
 npm run stack -- up rag
@@ -230,14 +231,17 @@ npm run models -- download embed-nomic-v1.5
 npm run models -- verify chat-qwen2.5-3b
 npm run models -- verify embed-nomic-v1.5
 npm run models -- sync-localai
+npm run models -- ready inference
 npm run stack -- up inference
 npm run stack -- up rag
 ```
 
 Skip `npm run stack -- backend` in CPU mode (CUDA backend install is
-NVIDIA-only). Optional media and Comfy starters (**nvidia** compute only;
-download once; see [Models and managed media](models.md) for the WebUI
-hard link):
+NVIDIA-only). For optional Whisper/Piper audio backends after downloading those
+pins, see [Troubleshooting](troubleshooting.md) and
+[Use cases and models](use-cases-and-models.md). Optional media and Comfy
+starters (**nvidia** compute only; download once; see
+[Models and managed media](models.md) for the WebUI hard link):
 
 ```powershell
 npm run models -- recommendations media
@@ -342,7 +346,7 @@ Shared objects and tensors are filesystem artifacts only. Live CUDA tensors, GPU
 
 The drive layout separates workloads by durability and SSD role. Read-mostly models, plugins, and tools use C:. Durable shared objects, generated media, documents, service state, and the Caddy CA stay on E:. Host-only media backups use `E:/VIMG`; this path is initialized by `npm run media -- init` but is intentionally not mounted into any container. The non-redundant D: Storage Space holds only rebuildable Hugging Face/Torch caches and disposable tensors and Comfy temporary files. A D: failure must not remove the only copy of an artifact.
 
-Override fork contexts, storage roots, network names, gateway bind address or HTTPS ports, images, or the Comfy backend in a local `.env` copied from `.env.example`. The example file uses generic placeholder paths; replace them with your layout or rely on the npm runner, which injects roots from `config/storage.json` and `config/repos.json`. Overrides are needed only when the local layout differs from those config files.
+Override fork contexts, storage roots, network names, gateway bind address or HTTPS ports, images, or the Comfy backend in a local `.env` copied from `.env.example`. The example file uses Windows paths from `config/storage.json` and fork names from `config/repos.json`; replace them for your layout or rely on the npm runner, which injects those config values. Overrides are needed only when the local layout differs from those config files.
 
 `npm test` requires every Compose variable to appear in `.env.example` and requires every storage default in Compose to match `config/storage.json`.
 

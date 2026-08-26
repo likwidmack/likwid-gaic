@@ -220,6 +220,7 @@
     "Do not auto-install ComfyUI-Manager, gallery warm-up, or unreviewed extensions.",
     "At most one GPU service (localai, stable-diffusion, comfy-backend) may run on a single-GPU host.",
     "Managed stack keeps FORKEDAI_BIND_ADDRESS=127.0.0.1 and does not set LOCALAI_API_KEY until an explicit auth follow-up.",
-    "Video generation is out of scope for managed pins; see docs/use-cases-and-models.md."
+    "Video generation is out of scope for managed pins; see docs/use-cases-and-models.md.",
+    "Upscalers are not managed Hub pins: RealESRGAN and similar Hub releases are often .pth (treat as executable). Prefer reviewed safetensors placed manually under upscale_models/; do not add .pth pins to config/models.json."
   ]
 }

@@ -17,6 +17,8 @@ pages when building or troubleshooting a profile.
    profiles, first run, updates, storage mounts, and daily commands.
 5. [GPU and CPU resource utilization](resource-utilization.md) — single-GPU
    profile switching, host sizing, and monitoring.
+6. [Troubleshooting](troubleshooting.md) — gateway 502, GPU conflicts, empty
+   threads, checkpoint hard links, STT/TTS backends.
 
 ## Service guides
 
@@ -48,9 +50,16 @@ models, GPU details, and Docker state; review it before sharing.
 - `config/*.json` files are the source of truth for repositories, storage,
   models, profile artifacts, and stack topology (`pathWindows` / `pathWsl` /
   `pathPosix`).
-- `.env.example` is a generic Compose override template; copy it to ignored
-  `.env` and replace placeholder paths. Never commit credentials.
+- `.env.example` is a non-secret Compose override template with Windows
+  examples from `config/storage.json` and fork names from `config/repos.json`;
+  copy it to ignored `.env` and adjust for your layout. Never commit credentials.
 - Canonical fork and storage paths live in `config/repos.json` and
   `config/storage.json`; the npm stack runner injects those values.
 - `FORKEDAI_COMPUTE` selects nvidia vs cpu Compose rendering.
 - Run `npm test` after changing documentation links or configuration examples.
+
+## Design history
+
+`docs/superpowers/` holds dated design specs and implementation plans used
+while landing the current ops surface. Prefer the guides above for day-to-day
+operation; treat superpowers notes as historical context, not the live index.
