@@ -50,6 +50,11 @@ if (command === "init") {
     mkdirSync(path.join(pluginsRoot, "inbox", subdir), { recursive: true });
   }
   for (const subdir of ["caddy/data", "localai/data", "localai/backends", "localai/configuration", "private-gpt", "stable-diffusion/data", "stable-diffusion/repositories", "comfy/input", "comfy/user"]) mkdirSync(path.join(hostPath(storage.roots.runtime), subdir), { recursive: true });
+  const authSnippet = path.join(hostPath(storage.roots.runtime), "caddy", "gateway-auth.caddy");
+  if (!existsSync(authSnippet)) {
+    const emptyAuth = readFileSync(new URL("../docker/gateway-auth.empty.caddy", import.meta.url), "utf8");
+    writeFileSync(authSnippet, emptyAuth);
+  }
   for (const subdir of ["inputs", "outputs", "workflows", "artifacts"]) mkdirSync(path.join(hostPath(storage.roots.sharedObjects), subdir), { recursive: true });
   for (const subdir of profileArtifacts.layout?.tensors ?? ["checkpoints", "embeddings", "intermediate"]) mkdirSync(path.join(hostPath(storage.roots.tensors), subdir), { recursive: true });
   for (const subdir of ["bin", "scripts", "configs"]) mkdirSync(path.join(hostPath(storage.roots.tools), subdir), { recursive: true });

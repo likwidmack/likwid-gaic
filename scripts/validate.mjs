@@ -134,7 +134,7 @@ for (const file of documentation) {
     if (!existsSync(target)) throw new Error(`Broken documentation link in ${file}: ${match[1]}`);
   }
 }
-for (const file of ["../compose.yaml", "../compose.cpu.yaml", "../.dockerignore", "../docker/Caddyfile", "../docker/stable-diffusion.Dockerfile", "../docker/comfy-frontend.Dockerfile", "../docker/comfyui.Dockerfile", "../scripts/paths.mjs"]) if (!existsSync(new URL(file, import.meta.url))) throw new Error(`Missing container artifact: ${file}`);
+for (const file of ["../compose.yaml", "../compose.cpu.yaml", "../.dockerignore", "../docker/Caddyfile", "../docker/gateway-auth.empty.caddy", "../docker/gateway-auth.basicauth.example.caddy", "../docker/stable-diffusion.Dockerfile", "../docker/comfy-frontend.Dockerfile", "../docker/comfyui.Dockerfile", "../scripts/paths.mjs"]) if (!existsSync(new URL(file, import.meta.url))) throw new Error(`Missing container artifact: ${file}`);
 const gitignore = readFileSync(new URL("../.gitignore", import.meta.url), "utf8");
 for (const pattern of [".env.*", "docs/inventory.generated.md", "*.gguf", "*.safetensors", "*.sqlite", "documents/", "media/", "models/", "/shared/"]) if (!gitignore.includes(pattern)) throw new Error("Git privacy rules are missing " + pattern);
 const ciWorkflow = readFileSync(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
@@ -207,7 +207,14 @@ const mediaScript = readFileSync(new URL("./media.mjs", import.meta.url), "utf8"
 if (!mediaScript.includes("inbox")) throw new Error("media init must create models/inbox and plugins/inbox staging directories");
 for (const endpoint of ["127.0.0.1:8080/v1/models", "127.0.0.1:7860/", "127.0.0.1:8188/system_stats", "127.0.0.1/"]) if (!compose.includes(endpoint)) throw new Error("Compose health checks are missing " + endpoint);
 const caddyfile = readFileSync(new URL("../docker/Caddyfile", import.meta.url), "utf8");
-for (const route of ["localhost:8443", "localhost:8444", "localhost:8445", "localhost:8446", "localhost:8447"]) if (!caddyfile.includes(route)) throw new Error("Caddy is missing route " + route);
+for (const route of ["{$GATEWAY_HOSTNAME:localhost}:8443", "{$GATEWAY_HOSTNAME:localhost}:8444", "{$GATEWAY_HOSTNAME:localhost}:8445", "{$GATEWAY_HOSTNAME:localhost}:8446", "{$GATEWAY_HOSTNAME:localhost}:8447"]) if (!caddyfile.includes(route)) throw new Error("Caddy is missing hostname route " + route);
+if (!caddyfile.includes("import /etc/caddy/snippets/gateway-auth.caddy")) throw new Error("Caddy must import the gateway-auth snippet");
+if (!caddyfile.includes("import gateway_auth")) throw new Error("Caddy local_security must import gateway_auth");
 for (const upstream of ["localai:8080", "private-gpt:8080", "stable-diffusion:7860", "comfy-frontend:80", "comfy-backend:8188"]) if (!caddyfile.includes(upstream)) throw new Error("Caddy is missing upstream " + upstream);
 if (!caddyfile.includes("tls internal") || !caddyfile.includes("admin off")) throw new Error("Caddy must use its internal CA with the admin API disabled");
+if (!compose.includes("gateway-auth.caddy")) throw new Error("Compose must mount the gateway-auth snippet");
+if (!envKeys.has("GATEWAY_HOSTNAME")) throw new Error(".env.example is missing GATEWAY_HOSTNAME");
+const emptyAuth = readFileSync(new URL("../docker/gateway-auth.empty.caddy", import.meta.url), "utf8");
+if (!emptyAuth.includes("(gateway_auth)")) throw new Error("gateway-auth.empty.caddy must define the gateway_auth snippet");
+if (/\bbasicauth\b/i.test(emptyAuth)) throw new Error("gateway-auth.empty.caddy must not enable basicauth");
 console.log("Storage, model, media, and Compose configuration is valid.");

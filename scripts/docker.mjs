@@ -1,8 +1,10 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import os from "node:os";
+import path from "node:path";
 import { fileURLToPath } from "node:url";
 import process from "node:process";
+import { assertGatewayAuthForBind, isLoopbackBind } from "./gateway-policy.mjs";
 import { hostPath, resolveComputeMode } from "./paths.mjs";
 import {
   assertBackendAllowed,
@@ -111,6 +113,20 @@ function installLocalAiBackend(backend) {
   compose(["--profile", "inference", "up", "--detach", "--force-recreate", "--wait", "--wait-timeout", "300", "localai"]);
 }
 
+function gatewayAuthPath() {
+  return path.join(hostPath(storage.roots.runtime), "caddy", "gateway-auth.caddy");
+}
+
+function enforceGatewayAuthPolicy() {
+  const bindAddress = process.env.FORKEDAI_BIND_ADDRESS ?? "127.0.0.1";
+  const authPath = gatewayAuthPath();
+  const authSnippetText = existsSync(authPath) ? readFileSync(authPath, "utf8") : "";
+  assertGatewayAuthForBind({ bindAddress, authSnippetText });
+  if (!isLoopbackBind(bindAddress)) {
+    console.log(`Gateway bind ${bindAddress}: basicauth snippet OK at ${authPath}`);
+  }
+}
+
 function printSmokeChecklist() {
   console.log(`Compute mode: ${computeMode}`);
   console.log("Local smoke matrix (does not start or stop services):\n");
@@ -189,6 +205,18 @@ if (command === "doctor") {
     const value = hostPath(item);
     console.log(`${existsSync(value) ? "OK" : "MISSING"}  ${item.name}: ${value}`);
   }
+  const bindAddress = process.env.FORKEDAI_BIND_ADDRESS ?? "127.0.0.1";
+  const authPath = gatewayAuthPath();
+  console.log("\nGateway exposure:");
+  console.log(`Bind: ${bindAddress}${isLoopbackBind(bindAddress) ? " (loopback)" : " (non-loopback)"}`);
+  console.log(`${existsSync(authPath) ? "OK" : "MISSING"}  auth snippet: ${authPath}`);
+  try {
+    enforceGatewayAuthPolicy();
+    if (isLoopbackBind(bindAddress)) console.log("Auth: not required on loopback (empty snippet OK)");
+  } catch (error) {
+    console.warn(`WARN  ${error.message}`);
+    failures++;
+  }
   if (failures) {
     console.error("\nInstall missing tools before using the affected features. Run `npm run media -- init` to create storage paths.");
     process.exitCode = 1;
@@ -225,13 +253,17 @@ if (command === "doctor") {
   console.log(`  stop GPU services: ${toStop.length ? toStop.join(", ") : "none"}`);
   console.log(`  keep/start GPU services: ${toKeep.length ? toKeep.join(", ") : "none"}`);
   if (flags.has("dry-run")) process.exit(0);
+  enforceGatewayAuthPolicy();
   if (toStop.length) compose(["stop", ...toStop]);
   assertGpuPreflight(gpuExclusive, computeMode, profile, runningGpuServices(), {
     allowShare: flags.has("allow-gpu-share"),
     gpuExclusiveEnabled: gpuExclusiveEnabled()
   });
   compose([...["--profile", profile], "up", "--detach", "--wait", "--wait-timeout", "300"]);
-} else if (command === "config") compose([...allProfiles, "config"]);
+} else if (command === "config") {
+  enforceGatewayAuthPolicy();
+  compose([...allProfiles, "config"]);
+}
 else if (command === "status" || command === "ps") compose([...allProfiles, "ps", "--all"]);
 else if (command === "profiles") console.log(stack.profiles.join("\n"));
 else if (command === "up") {
@@ -239,6 +271,7 @@ else if (command === "up") {
   if (!profile) throw new Error(`Choose a profile: ${stack.profiles.join(", ")}, or all`);
   const profiles = profile === "all" ? stack.profiles : [profile];
   for (const item of profiles) if (!stack.profiles.includes(item)) throw new Error(`Unknown profile: ${item}`);
+  enforceGatewayAuthPolicy();
   const runningGpu = runningGpuServices();
   for (const item of profiles) {
     assertGpuPreflight(gpuExclusive, computeMode, item, runningGpu, {

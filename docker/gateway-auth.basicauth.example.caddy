@@ -1,0 +1,9 @@
+# Example: copy to RUNTIME_ROOT/caddy/gateway-auth.caddy and replace the hash.
+# Generate a bcrypt hash (never commit the plaintext password):
+#   docker run --rm caddy:2.11.4-alpine caddy hash-password
+# Then set FORKEDAI_BIND_ADDRESS to a LAN/VPN address only after firewall checks.
+(gateway_auth) {
+	basicauth bcrypt {
+		operator JDJhJDE0JEVYQU1QTEVfSEFTSF9SRVBMQUNFX1dJVEhfUkVBTF9IQVNI
+	}
+}

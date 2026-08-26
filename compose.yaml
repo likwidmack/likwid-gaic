@@ -58,7 +58,10 @@ services:
       - "${FORKEDAI_BIND_ADDRESS:-127.0.0.1}:${COMFY_API_HTTPS_PORT:-8447}:8447"
     volumes:
       - {type: bind, source: "${HUB_CONTEXT:-.}/docker/Caddyfile", target: /etc/caddy/Caddyfile, read_only: true}
+      - {type: bind, source: "${RUNTIME_ROOT:-/mnt/e/data/forkedAI/runtime}/caddy/gateway-auth.caddy", target: /etc/caddy/snippets/gateway-auth.caddy, read_only: true}
       - {type: bind, source: "${RUNTIME_ROOT:-/mnt/e/data/forkedAI/runtime}/caddy/data", target: /data}
+    environment:
+      GATEWAY_HOSTNAME: ${GATEWAY_HOSTNAME:-localhost}
     tmpfs:
       - /config
     networks:
