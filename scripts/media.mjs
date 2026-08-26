@@ -13,6 +13,9 @@ function modelLayoutDirs() {
   const layout = profileArtifacts.layout?.models ?? {};
   return [...new Set([...(layout.a1111 ?? []), ...(layout.comfy ?? [])])];
 }
+function pluginLayoutDirs() {
+  return [...new Set(profileArtifacts.layout?.plugins ?? ["localai", "private-gpt", "stable-diffusion", "comfyui"])];
+}
 function scan() {
   const files = [];
   if (!existsSync(mediaRoot)) return files;
@@ -34,13 +37,23 @@ function scan() {
 if (command === "init") {
   for (const entry of Object.values(storage.roots)) mkdirSync(hostPath(entry), { recursive: true });
   for (const kind of Object.keys(storage.mediaKinds)) mkdirSync(path.join(mediaRoot, kind), { recursive: true });
-  for (const subdir of modelLayoutDirs()) mkdirSync(path.join(hostPath(storage.roots.models), subdir), { recursive: true });
+  const modelsRoot = hostPath(storage.roots.models);
+  const pluginsRoot = hostPath(storage.roots.plugins);
+  for (const subdir of modelLayoutDirs()) {
+    mkdirSync(path.join(modelsRoot, subdir), { recursive: true });
+    mkdirSync(path.join(modelsRoot, "inbox", subdir), { recursive: true });
+  }
+  mkdirSync(path.join(modelsRoot, "inbox"), { recursive: true });
+  mkdirSync(path.join(pluginsRoot, "inbox"), { recursive: true });
+  for (const subdir of pluginLayoutDirs()) {
+    mkdirSync(path.join(pluginsRoot, subdir), { recursive: true });
+    mkdirSync(path.join(pluginsRoot, "inbox", subdir), { recursive: true });
+  }
   for (const subdir of ["caddy/data", "localai/data", "localai/backends", "localai/configuration", "private-gpt", "stable-diffusion/data", "stable-diffusion/repositories", "comfy/input", "comfy/user"]) mkdirSync(path.join(hostPath(storage.roots.runtime), subdir), { recursive: true });
   for (const subdir of ["inputs", "outputs", "workflows", "artifacts"]) mkdirSync(path.join(hostPath(storage.roots.sharedObjects), subdir), { recursive: true });
   for (const subdir of profileArtifacts.layout?.tensors ?? ["checkpoints", "embeddings", "intermediate"]) mkdirSync(path.join(hostPath(storage.roots.tensors), subdir), { recursive: true });
-  for (const subdir of profileArtifacts.layout?.plugins ?? ["localai", "private-gpt", "stable-diffusion", "comfyui"]) mkdirSync(path.join(hostPath(storage.roots.plugins), subdir), { recursive: true });
   for (const subdir of ["bin", "scripts", "configs"]) mkdirSync(path.join(hostPath(storage.roots.tools), subdir), { recursive: true });
-  console.log("Initialized configured storage roots.");
+  console.log("Initialized configured storage roots (including models/inbox and plugins/inbox staging).");
 } else if (command === "status") {
   const files = scan();
   const groups = new Map();

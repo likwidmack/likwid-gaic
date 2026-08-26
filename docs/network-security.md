@@ -38,7 +38,16 @@ performance before migrating this stack.
 
 All backend containers can read the common model, plugin, and tool roots and can exchange files through common tensor and object roots. This intentionally creates a data trust boundary: a compromised backend can read every shared model, plugin, and tool and can replace writable tensors or objects consumed by another backend. The static Comfy frontend receives none of these mounts.
 
-Models, plugins, and tools are mounted read-only. Keep service-specific runtime state outside the shared roots, review host-side plugin changes, pin model and plugin revisions, and do not store credentials, personal documents, browser data, or executable secrets in shared objects. Serialized tensors are data exchange, not shared live GPU memory. Avoid pickle-based formats from untrusted sources because deserialization can execute code.
+Models, plugins, and tools are mounted read-only. A nested writable
+`models/inbox` and `plugins/inbox` overlay exists only for staging; promote
+reviewed artifacts into the catalog with `npm run models -- promote` /
+`promote-plugin` before treating them as shared library content. Keep
+service-specific runtime state outside the shared roots, review host-side
+plugin changes, pin model and plugin revisions, and do not store credentials,
+personal documents, browser data, or executable secrets in shared objects.
+Serialized tensors are data exchange, not shared live GPU memory. Avoid
+pickle-based formats from untrusted sources because deserialization can execute
+code.
 
 The host placement is also a recovery boundary: C: contains read-mostly assets, E: contains durable private state, and the two-column Simple Storage Space on D: contains only rebuildable caches and disposable scratch data. Media backups use the host-only `E:/VIMG` root, which is deliberately excluded from Compose mounts so a compromised container cannot alter the backup directly. Do not move the Caddy CA, private documents, generated media that has not been backed up, or the only copy of a workflow onto D: because that Storage Space has no redundancy.
 

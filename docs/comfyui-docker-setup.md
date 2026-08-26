@@ -141,7 +141,9 @@ C:\gaic\models\
 ```
 
 Keeping this mount read-only prevents a container or workflow from modifying the
-canonical model collection.
+canonical model collection. Stage downloads under `models/inbox/` (writable
+overlay), then `npm run models -- promote …` after review. See
+[Models and managed media](models.md).
 
 ## Persistent data
 
@@ -186,7 +188,10 @@ Back up the user directory and generated media according to their importance.
 The Docker build context excludes locally installed third-party custom nodes.
 Reviewed nodes are supplied from `C:\gaic\shared\plugins\comfyui` and mounted
 read-only at `/opt/comfyui/custom_nodes`. This prevents a running container from
-silently changing host-side plugins.
+silently changing host-side plugins. Stage packs under
+`plugins/inbox/comfyui/`, review them, then
+`npm run models -- promote-plugin comfyui <pack>`. Do not use ComfyUI-Manager
+against the read-only mount.
 
 Pin reviewed custom-node revisions and install their Python dependencies in a
 controlled backend image layer. Restart or rebuild the backend after host-side

@@ -64,3 +64,57 @@ export function summarizeReady(requiredStates, recommendedStates) {
     manual
   };
 }
+
+/** Extensions treated as executable / pickle-adjacent; require --allow-pickle to promote. */
+export const PICKLE_EXTENSIONS = new Set([".pt", ".pth", ".ckpt", ".bin", ".pkl", ".pickle"]);
+
+/** Preferred weight formats for the shared catalog. */
+export const PREFERRED_WEIGHT_EXTENSIONS = new Set([".gguf", ".safetensors", ".onnx", ".ggml"]);
+
+export function normalizeRelativePath(value) {
+  if (typeof value !== "string" || !value.trim()) throw new Error("Relative path is required");
+  const normalized = value.replace(/\\/g, "/").replace(/^\/+/, "");
+  if (!normalized || normalized === "." || path.isAbsolute(value) || normalized.split("/").includes("..")) {
+    throw new Error("Path must stay inside the staging inbox (no absolute paths or ..)");
+  }
+  return normalized;
+}
+
+/**
+ * Resolve a promote from models/inbox/<rel> into models/<rel> (same relative layout).
+ * @param {string} relativeFromInbox path under inbox
+ * @param {string[]} allowedTopDirs catalog layout directories (checkpoints, localai, …)
+ */
+export function resolveModelPromote(relativeFromInbox, allowedTopDirs, { allowPickle = false } = {}) {
+  const relative = normalizeRelativePath(relativeFromInbox);
+  const top = relative.split("/")[0];
+  if (!allowedTopDirs.includes(top)) {
+    throw new Error(
+      `Inbox path must start with an allowed layout directory (${allowedTopDirs.join(", ")}), got: ${top}`
+    );
+  }
+  const extension = path.posix.extname(relative).toLowerCase();
+  if (PICKLE_EXTENSIONS.has(extension) && !allowPickle) {
+    throw new Error(
+      `Refusing to promote ${extension} without --allow-pickle (treat as executable). Prefer .gguf or .safetensors.`
+    );
+  }
+  return {
+    relative,
+    top,
+    extension,
+    preferred: PREFERRED_WEIGHT_EXTENSIONS.has(extension) || extension === ""
+  };
+}
+
+/**
+ * Resolve plugin promote: plugins/inbox/<service>/<name> -> plugins/<service>/<name>
+ * @param {"comfyui"|"stable-diffusion"|"localai"|"private-gpt"} service
+ */
+export function resolvePluginPromote(service, relativeFromInbox, allowedServices) {
+  if (!allowedServices.includes(service)) {
+    throw new Error(`Unknown plugin service: ${service}. Choose: ${allowedServices.join(", ")}`);
+  }
+  const relative = normalizeRelativePath(relativeFromInbox);
+  return { service, relative };
+}

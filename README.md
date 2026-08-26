@@ -143,6 +143,9 @@ npm run stack -- stop stable-diffusion
 | `npm run models`                            | List managed model pins                                 |
 | `npm run models -- recommendations PROFILE` | Print required artifacts for a profile                  |
 | `npm run models -- ready PROFILE`           | Exit non-zero if required profile artifacts are missing |
+| `npm run models -- inbox`                   | List staged files under models/inbox and plugins/inbox  |
+| `npm run models -- promote PATH`            | Move a reviewed file from models/inbox into the catalog |
+| `npm run models -- promote-plugin SVC PATH` | Move a reviewed pack from plugins/inbox into plugins    |
 | `npm run models -- plan ALIAS`              | Dry-run download plan for a pin                         |
 | `npm run models -- download ALIAS`          | Download a pinned model                                 |
 | `npm run models -- verify ALIAS`            | Verify selected files against Hub metadata              |

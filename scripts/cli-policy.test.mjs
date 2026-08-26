@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { parseModelAddArgv, summarizeReady, validateModelAddArgs } from "./model-policy.mjs";
+import { parseModelAddArgv, resolveModelPromote, resolvePluginPromote, summarizeReady, validateModelAddArgs } from "./model-policy.mjs";
 import {
   assertBackendAllowed,
   assertCpuAllowsProfile,
@@ -51,6 +51,32 @@ describe("validateModelAddArgs", () => {
     const entry = parseModelAddArgv(["demo", "owner/name", sha, "localai/demo", "--include", "a.gguf", "--include", "b.yaml"]);
     assert.deepEqual(entry.include, ["a.gguf", "b.yaml"]);
     assert.equal(entry.localDir, "localai/demo");
+  });
+});
+
+describe("promote path policy", () => {
+  const allowed = ["checkpoints", "localai", "Stable-diffusion", "loras"];
+
+  it("maps inbox relative paths into the catalog layout", () => {
+    const resolved = resolveModelPromote("checkpoints/demo.safetensors", allowed);
+    assert.equal(resolved.relative, "checkpoints/demo.safetensors");
+    assert.equal(resolved.preferred, true);
+  });
+
+  it("rejects path escape and unknown top dirs", () => {
+    assert.throws(() => resolveModelPromote("../secrets.bin", allowed), /inbox/);
+    assert.throws(() => resolveModelPromote("not-a-layout/x.safetensors", allowed), /allowed layout/);
+  });
+
+  it("requires --allow-pickle for pth/ckpt", () => {
+    assert.throws(() => resolveModelPromote("checkpoints/x.pth", allowed), /allow-pickle/);
+    assert.doesNotThrow(() => resolveModelPromote("checkpoints/x.pth", allowed, { allowPickle: true }));
+  });
+
+  it("resolves plugin promotes under a service", () => {
+    const resolved = resolvePluginPromote("comfyui", "my-node", ["comfyui", "stable-diffusion"]);
+    assert.equal(resolved.service, "comfyui");
+    assert.equal(resolved.relative, "my-node");
   });
 });
 

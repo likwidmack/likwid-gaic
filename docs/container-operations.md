@@ -330,17 +330,19 @@ problem.
 
 ## Shared storage mounts
 
-Each backend receives the same five canonical paths:
+Each backend receives the same canonical paths (plus nested inbox overlays):
 
-| Container path    | Host root                         | Access     | Purpose                                                    |
-| ----------------- | --------------------------------- | ---------- | ---------------------------------------------------------- |
-| `/shared/models`  | `C:/gaic/models`                  | Read-only  | Model weights and LocalAI model definitions                |
-| `/shared/tensors` | `D:/forkedAI/scratch/tensors`     | Read-write | Disposable serialized tensors and intermediate arrays      |
-| `/shared/objects` | `E:/data/forkedAI/shared/objects` | Read-write | Durable workflows, inputs, outputs, and exchange artifacts |
-| `/shared/plugins` | `C:/gaic/shared/plugins`          | Read-only  | Reviewed plugins and custom nodes                          |
-| `/shared/tools`   | `C:/gaic/shared/tools`            | Read-only  | Reviewed helper binaries, scripts, and configuration       |
+| Container path          | Host root                         | Access     | Purpose                                                      |
+| ----------------------- | --------------------------------- | ---------- | ------------------------------------------------------------ |
+| `/shared/models`        | `C:/gaic/models`                  | Read-only  | Model weights and LocalAI model definitions                  |
+| `/shared/models/inbox`  | `C:/gaic/models/inbox`            | Read-write | Staging only; promote into the catalog with `models promote` |
+| `/shared/tensors`       | `D:/forkedAI/scratch/tensors`     | Read-write | Disposable serialized tensors and intermediate arrays        |
+| `/shared/objects`       | `E:/data/forkedAI/shared/objects` | Read-write | Durable workflows, inputs, outputs, and exchange artifacts   |
+| `/shared/plugins`       | `C:/gaic/shared/plugins`          | Read-only  | Reviewed plugins and custom nodes                            |
+| `/shared/plugins/inbox` | `C:/gaic/shared/plugins/inbox`    | Read-write | Staging only; promote with `models promote-plugin`           |
+| `/shared/tools`         | `C:/gaic/shared/tools`            | Read-only  | Reviewed helper binaries, scripts, and configuration         |
 
-`npm run media -- init` creates all host roots and service-specific plugin directories. Stable Diffusion maps `plugins/stable-diffusion` to its extensions directory, and ComfyUI maps `plugins/comfyui` to `custom_nodes`; both mounts remain read-only at runtime. Add or update reviewed plugin code from the host, then rebuild or restart the affected service.
+`npm run media -- init` creates all host roots, service-specific plugin directories, and inbox staging trees. Stable Diffusion maps `plugins/stable-diffusion` to its extensions directory, and ComfyUI maps `plugins/comfyui` to `custom_nodes`; both catalog mounts remain read-only at runtime. Stage untrusted UI downloads under `inbox`, review, then `npm run models -- promote` / `promote-plugin`. Do not enable ComfyUI-Manager or gallery auto-install into the shared catalog. See [Models and managed media](models.md).
 
 Shared objects and tensors are filesystem artifacts only. Live CUDA tensors, GPU memory, Python objects, and process memory cannot be shared through these mounts; serialize them to a safe, documented format first. Treat pickle and arbitrary PyTorch checkpoint files as executable content and load them only from trusted sources.
 

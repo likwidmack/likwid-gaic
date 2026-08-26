@@ -1,8 +1,18 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, statSync, writeFileSync } from "node:fs";
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  renameSync,
+  rmSync,
+  statSync,
+  writeFileSync
+} from "node:fs";
 import path from "node:path";
 import process from "node:process";
-import { parseModelAddArgv, summarizeReady } from "./model-policy.mjs";
+import { parseModelAddArgv, resolveModelPromote, resolvePluginPromote, summarizeReady } from "./model-policy.mjs";
 import { hostPath, pathFlavor, pathModule } from "./paths.mjs";
 
 const modelsUrl = new URL("../config/models.json", import.meta.url);
@@ -13,9 +23,19 @@ const manifest = JSON.parse(readFileSync(modelsUrl, "utf8"));
 const flavor = pathFlavor();
 const windows = flavor === "windows";
 const modelRoot = hostPath(storage.roots.models);
+const pluginRoot = hostPath(storage.roots.plugins);
+const inboxRoot = path.join(modelRoot, "inbox");
+const pluginInboxRoot = path.join(pluginRoot, "inbox");
 const runtimeRoot = hostPath(storage.roots.runtime);
 const command = process.argv[2] ?? "list";
 const extensions = new Set([".bin", ".ckpt", ".ggml", ".gguf", ".onnx", ".pt", ".pth", ".safetensors"]);
+function modelLayoutDirs() {
+  const layout = profileArtifacts.layout?.models ?? {};
+  return [...new Set([...(layout.a1111 ?? []), ...(layout.comfy ?? [])])];
+}
+function pluginServices() {
+  return [...new Set(profileArtifacts.layout?.plugins ?? ["localai", "private-gpt", "stable-diffusion", "comfyui"])];
+}
 function find(alias) {
   const item = manifest.models.find((model) => model.alias === alias);
   if (!item) throw new Error(`Unknown model alias: ${alias}`);
@@ -206,12 +226,72 @@ function walk(root) {
   while (pending.length) {
     const current = pending.pop();
     for (const entry of readdirSync(current, { withFileTypes: true })) {
+      if (current === root && entry.name === "inbox") continue;
       const file = path.join(current, entry.name);
       if (entry.isDirectory() && !entry.isSymbolicLink()) pending.push(file);
       else if (entry.isFile() && extensions.has(path.extname(entry.name).toLowerCase())) files.push({ file, bytes: statSync(file).size });
     }
   }
   return files;
+}
+function walkAllFiles(root) {
+  const files = [];
+  if (!existsSync(root)) return files;
+  const pending = [root];
+  while (pending.length) {
+    const current = pending.pop();
+    for (const entry of readdirSync(current, { withFileTypes: true })) {
+      const file = path.join(current, entry.name);
+      if (entry.isDirectory() && !entry.isSymbolicLink()) pending.push(file);
+      else if (entry.isFile()) files.push(file);
+    }
+  }
+  return files;
+}
+function parseFlags(argv) {
+  const flags = new Set();
+  const positional = [];
+  for (const token of argv) {
+    if (token === "--dry-run" || token === "--force" || token === "--allow-pickle") flags.add(token.slice(2));
+    else positional.push(token);
+  }
+  return { flags, positional };
+}
+function promotePath(source, target, { dryRun = false, force = false } = {}) {
+  if (!existsSync(source)) throw new Error(`Missing staging path: ${source}`);
+  if (existsSync(target) && !force) throw new Error(`Destination exists (pass --force to replace): ${target}`);
+  if (dryRun) {
+    console.log(`DRY-RUN  ${source} -> ${target}`);
+    return;
+  }
+  mkdirSync(path.dirname(target), { recursive: true });
+  if (existsSync(target)) rmSync(target, { recursive: true, force: true });
+  try {
+    renameSync(source, target);
+  } catch {
+    const stats = statSync(source);
+    if (stats.isDirectory()) throw new Error(`Cannot promote directory across volumes; move manually: ${source}`);
+    copyFileSync(source, target);
+    rmSync(source, { force: true });
+  }
+  console.log(`Promoted ${source} -> ${target}`);
+}
+function listInbox(root, label) {
+  if (!existsSync(root)) {
+    console.log(`${label} missing. Run \`npm run media -- init\`.`);
+    return;
+  }
+  const files = walkAllFiles(root).sort();
+  console.log(`${label}: ${root}`);
+  if (!files.length) {
+    console.log("  (empty)");
+    return;
+  }
+  for (const file of files) {
+    const relative = path.relative(root, file).split(path.sep).join("/");
+    const bytes = statSync(file).size;
+    console.log(`  ${(bytes / 2 ** 20).toFixed(2).padStart(10)} MiB  ${relative}`);
+  }
 }
 if (command === "list") {
   if (!manifest.models.length) console.log("No Hub models are registered. Use `npm run models -- add ALIAS REPO REVISION LOCAL_DIR --include FILE`.");
@@ -271,6 +351,37 @@ else if (command === "recommendations") {
   if (!profile) throw new Error(`Usage: npm run models -- ready PROFILE (${stack.profiles.join("|")})`);
   if (!stack.profiles.includes(profile)) throw new Error(`Unknown profile: ${profile}`);
   printReady(profile);
+} else if (command === "inbox") {
+  listInbox(inboxRoot, "Model inbox");
+  console.log("");
+  listInbox(pluginInboxRoot, "Plugin inbox");
+} else if (command === "promote") {
+  const { flags, positional } = parseFlags(process.argv.slice(3));
+  const relative = positional[0];
+  if (!relative) {
+    throw new Error(
+      "Usage: npm run models -- promote REL_PATH_UNDER_INBOX [--dry-run] [--force] [--allow-pickle]\nExample: npm run models -- promote checkpoints/model.safetensors"
+    );
+  }
+  const resolved = resolveModelPromote(relative, modelLayoutDirs(), { allowPickle: flags.has("allow-pickle") });
+  const source = path.join(inboxRoot, ...resolved.relative.split("/"));
+  const target = path.join(modelRoot, ...resolved.relative.split("/"));
+  if (!resolved.preferred && !flags.has("allow-pickle")) {
+    console.warn(`Note: ${resolved.extension || "(no extension)"} is not a preferred catalog format (.gguf/.safetensors/.onnx).`);
+  }
+  promotePath(source, target, { dryRun: flags.has("dry-run"), force: flags.has("force") });
+} else if (command === "promote-plugin") {
+  const { flags, positional } = parseFlags(process.argv.slice(3));
+  const [service, relative] = positional;
+  if (!service || !relative) {
+    throw new Error(
+      "Usage: npm run models -- promote-plugin SERVICE REL_PATH_UNDER_PLUGIN_INBOX [--dry-run] [--force]\nExample: npm run models -- promote-plugin comfyui my-node-pack"
+    );
+  }
+  const resolved = resolvePluginPromote(service, relative, pluginServices());
+  const source = path.join(pluginInboxRoot, resolved.service, ...resolved.relative.split("/"));
+  const target = path.join(pluginRoot, resolved.service, ...resolved.relative.split("/"));
+  promotePath(source, target, { dryRun: flags.has("dry-run"), force: flags.has("force") });
 } else if (command === "inventory") {
   const files = walk(modelRoot).sort((a, b) => b.bytes - a.bytes);
   const total = files.reduce((sum, item) => sum + item.bytes, 0);
@@ -278,6 +389,8 @@ else if (command === "recommendations") {
   for (const item of files.slice(0, 25)) console.log(`${(item.bytes / 2 ** 30).toFixed(2).padStart(7)} GiB  ${item.file}`);
   if (files.length > 25) console.log(`... ${files.length - 25} more`);
 } else {
-  console.error("Usage: npm run models -- <list|add|search|plan|download|verify|sync-localai|recommendations|ready|auth|cache|inventory>");
+  console.error(
+    "Usage: npm run models -- <list|add|search|plan|download|verify|sync-localai|recommendations|ready|inbox|promote|promote-plugin|auth|cache|inventory>"
+  );
   process.exitCode = 2;
 }
