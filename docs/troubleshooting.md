@@ -55,6 +55,20 @@ Stable-diffusion`, so create a hard link (same volume) after download. See
 [Models and managed media](models.md). `npm run models -- ready media` reports
 the WebUI path as missing until that link exists.
 
+## UI auto-download / install failed (read-only models)
+
+The shared model and plugin catalogs are read-only by design. Stage files under
+`models/inbox/…` or `plugins/inbox/<service>/…`, then promote:
+
+```powershell
+npm run models -- inbox
+npm run models -- promote checkpoints/your-file.safetensors
+npm run models -- promote-plugin comfyui your-node-pack
+```
+
+Do not make `/shared/models` writable and do not use ComfyUI-Manager or A1111
+gallery installers against the RO mounts. Details: [Models](models.md).
+
 ## STT / TTS after Whisper and Piper downloads
 
 1. Download and verify `stt-whisper-base` / `tts-piper-en-us`.

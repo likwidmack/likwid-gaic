@@ -95,9 +95,10 @@ Select `sd_xl_base_1.0.safetensors` in the UI and use SDXL-appropriate sizes
 
 ## Extensions
 
-The extensions mount is read-only. Install only reviewed extensions under the
-plugins storage root for Stable Diffusion. Do not auto-install untrusted
-gallery extensions.
+The extensions mount is read-only. Stage reviewed extensions under
+`plugins/inbox/stable-diffusion/`, then
+`npm run models -- promote-plugin stable-diffusion <name>`. Do not auto-install
+untrusted gallery extensions into the shared catalog.
 
 ## Daily commands
 

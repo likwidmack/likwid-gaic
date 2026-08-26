@@ -9,6 +9,11 @@ x-shared-models: &shared-models
   source: ${MODEL_ROOT:-/mnt/c/gaic/models}
   target: /shared/models
   read_only: true
+# Nested RW overlay: UI/host staging only. Canonical catalog stays read-only.
+x-shared-models-inbox: &shared-models-inbox
+  type: bind
+  source: ${MODEL_ROOT:-/mnt/c/gaic/models}/inbox
+  target: /shared/models/inbox
 x-shared-tensors: &shared-tensors
   type: bind
   source: ${TENSOR_ROOT:-/mnt/d/forkedAI/scratch/tensors}
@@ -22,12 +27,15 @@ x-shared-plugins: &shared-plugins
   source: ${PLUGIN_ROOT:-/mnt/c/gaic/shared/plugins}
   target: /shared/plugins
   read_only: true
+x-shared-plugins-inbox: &shared-plugins-inbox
+  type: bind
+  source: ${PLUGIN_ROOT:-/mnt/c/gaic/shared/plugins}/inbox
+  target: /shared/plugins/inbox
 x-shared-tools: &shared-tools
   type: bind
   source: ${TOOL_ROOT:-/mnt/c/gaic/shared/tools}
   target: /shared/tools
   read_only: true
-
 services:
   gateway:
     <<: *security-defaults
@@ -109,11 +117,14 @@ services:
       NVIDIA_DRIVER_CAPABILITIES: compute,utility
     volumes:
       - *shared-models
+      - *shared-models-inbox
       - *shared-tensors
       - *shared-objects
       - *shared-plugins
+      - *shared-plugins-inbox
       - *shared-tools
       - {type: bind, source: "${MODEL_ROOT:-/mnt/c/gaic/models}/localai", target: /models, read_only: true}
+      - {type: bind, source: "${MODEL_ROOT:-/mnt/c/gaic/models}/inbox/localai", target: /models/inbox}
       - {type: bind, source: "${MEDIA_ROOT:-/mnt/e/data/forkedAI/media}/images", target: /tmp/generated/images}
       - {type: bind, source: "${RUNTIME_ROOT:-/mnt/e/data/forkedAI/runtime}/localai/data", target: /data}
       - {type: bind, source: "${RUNTIME_ROOT:-/mnt/e/data/forkedAI/runtime}/localai/backends", target: /backends}
@@ -161,9 +172,11 @@ services:
       LOCAL_INGESTION_ENABLED: "true"
     volumes:
       - *shared-models
+      - *shared-models-inbox
       - *shared-tensors
       - *shared-objects
       - *shared-plugins
+      - *shared-plugins-inbox
       - *shared-tools
       - {type: bind, source: "${HF_CACHE_ROOT:-/mnt/d/forkedAI/cache/huggingface}", target: /cache/huggingface}
       - {type: bind, source: "${DOCUMENT_ROOT:-/mnt/e/data/forkedAI/documents}", target: /documents, read_only: true}
@@ -200,9 +213,11 @@ services:
       STABLE_DIFFUSION_REPO: https://github.com/w-e-w/stablediffusion.git
     volumes:
       - *shared-models
+      - *shared-models-inbox
       - *shared-tensors
       - *shared-objects
       - *shared-plugins
+      - *shared-plugins-inbox
       - *shared-tools
       - {type: bind, source: "${PLUGIN_ROOT:-/mnt/c/gaic/shared/plugins}/stable-diffusion", target: /opt/stable-diffusion/extensions, read_only: true}
       - {type: bind, source: "${RUNTIME_ROOT:-/mnt/e/data/forkedAI/runtime}/stable-diffusion/data", target: /data}
@@ -243,9 +258,11 @@ services:
       TORCH_HOME: /cache/torch
     volumes:
       - *shared-models
+      - *shared-models-inbox
       - *shared-tensors
       - *shared-objects
       - *shared-plugins
+      - *shared-plugins-inbox
       - *shared-tools
       - {type: bind, source: "${PLUGIN_ROOT:-/mnt/c/gaic/shared/plugins}/comfyui", target: /opt/comfyui/custom_nodes, read_only: true}
       - {type: bind, source: "${HF_CACHE_ROOT:-/mnt/d/forkedAI/cache/huggingface}", target: /cache/huggingface}

@@ -196,8 +196,15 @@ for (const binding of ["LOCALAI_HTTPS_PORT:-8443", "PRIVATE_GPT_HTTPS_PORT:-8444
 if (!compose.includes("FORKEDAI_BIND_ADDRESS:-127.0.0.1")) throw new Error("The HTTPS gateway must publish on loopback by default");
 if ((compose.match(/^    ports:/gm) ?? []).length !== 1) throw new Error("Only the HTTPS gateway may publish host ports");
 if (!compose.includes("no-new-privileges:true")) throw new Error("Compose is missing the no-new-privileges baseline");
-for (const mount of ["shared-models", "shared-tensors", "shared-objects", "shared-plugins", "shared-tools"]) if (!compose.includes("&" + mount) || !compose.includes("*" + mount)) throw new Error("Compose is missing shared mount " + mount);
-for (const path of ["/shared/models", "/shared/tensors", "/shared/objects", "/shared/plugins", "/shared/tools"]) if (!compose.includes(path)) throw new Error("Compose is missing shared path " + path);
+for (const mount of ["shared-models", "shared-models-inbox", "shared-tensors", "shared-objects", "shared-plugins", "shared-plugins-inbox", "shared-tools"]) if (!compose.includes("&" + mount) || !compose.includes("*" + mount)) throw new Error("Compose is missing shared mount " + mount);
+for (const sharedPath of ["/shared/models", "/shared/models/inbox", "/shared/tensors", "/shared/objects", "/shared/plugins", "/shared/plugins/inbox", "/shared/tools"]) if (!compose.includes(sharedPath)) throw new Error("Compose is missing shared path " + sharedPath);
+if (!compose.includes("target: /models/inbox")) throw new Error("LocalAI must mount a writable models inbox overlay at /models/inbox");
+const sharedModelsBlock = compose.slice(compose.indexOf("x-shared-models:"), compose.indexOf("x-shared-models-inbox:"));
+if (!sharedModelsBlock.includes("read_only: true")) throw new Error("Canonical shared models mount must remain read_only");
+const modelsInboxBlock = compose.slice(compose.indexOf("x-shared-models-inbox:"), compose.indexOf("x-shared-tensors:"));
+if (modelsInboxBlock.includes("read_only: true")) throw new Error("models inbox mount must be writable (omit read_only)");
+const mediaScript = readFileSync(new URL("./media.mjs", import.meta.url), "utf8");
+if (!mediaScript.includes("inbox")) throw new Error("media init must create models/inbox and plugins/inbox staging directories");
 for (const endpoint of ["127.0.0.1:8080/v1/models", "127.0.0.1:7860/", "127.0.0.1:8188/system_stats", "127.0.0.1/"]) if (!compose.includes(endpoint)) throw new Error("Compose health checks are missing " + endpoint);
 const caddyfile = readFileSync(new URL("../docker/Caddyfile", import.meta.url), "utf8");
 for (const route of ["localhost:8443", "localhost:8444", "localhost:8445", "localhost:8446", "localhost:8447"]) if (!caddyfile.includes(route)) throw new Error("Caddy is missing route " + route);

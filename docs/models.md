@@ -147,7 +147,54 @@ ln "$models/checkpoints/sd_xl_base_1.0.safetensors" \
   "$models/Stable-diffusion/sd_xl_base_1.0.safetensors"
 ```
 
-`npm run media -- init` creates both A1111 and Comfy directory trees under the shared model root.
+`npm run media -- init` creates both A1111 and Comfy directory trees under the shared model root, plus writable **inbox** staging trees.
+
+## Staging inbox and promote (UI / one-off downloads)
+
+The canonical catalog (`/shared/models`, `/shared/plugins`) stays **read-only**
+in containers so one backend cannot overwrite the shared library. A nested
+writable overlay exists only under `inbox`:
+
+| Host path             | Container path                                       | Access     |
+| --------------------- | ---------------------------------------------------- | ---------- |
+| `MODEL_ROOT/inbox/…`  | `/shared/models/inbox` (and LocalAI `/models/inbox`) | Read-write |
+| `PLUGIN_ROOT/inbox/…` | `/shared/plugins/inbox`                              | Read-write |
+
+Preferred flow when a UI offers auto-download, or you stage a one-off file:
+
+1. Write into the matching inbox layout dir (for example
+   `inbox/checkpoints/foo.safetensors` or `inbox/localai/bar.gguf`). Comfy sees
+   this under `models/inbox/` because `/opt/comfyui/models` links to
+   `/shared/models`.
+2. Review license and format (prefer `.gguf` / `.safetensors`).
+3. Promote into the catalog (same relative path without `inbox/`):
+
+```powershell
+npm run models -- inbox
+npm run models -- promote checkpoints/foo.safetensors --dry-run
+npm run models -- promote checkpoints/foo.safetensors
+```
+
+`.pth` / `.ckpt` / similar pickle-adjacent files require `--allow-pickle` and
+are still discouraged. Use `--force` only when replacing an existing catalog
+file deliberately.
+
+### Plugins and custom nodes (no in-UI Manager)
+
+Do not use ComfyUI-Manager or A1111 extension gallery installers against the
+read-only mounts. On the host:
+
+```powershell
+# Stage under plugins/inbox/<service>/<pack>, review the code, then:
+npm run models -- promote-plugin comfyui my-node-pack
+npm run models -- promote-plugin stable-diffusion my-extension
+```
+
+Restart or recreate the affected profile after promote. Extensions remain
+executable content.
+
+Managed Hub pins still use `download` / `verify` / `sync-localai` directly into
+the catalog (not the inbox).
 
 ## Upscalers (not managed)
 
