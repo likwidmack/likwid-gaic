@@ -127,8 +127,10 @@ Additional stack subcommands (no dedicated alias):
 ```powershell
 npm run stack -- profiles
 npm run stack -- resources
+npm run stack -- smoke
 npm run stack -- switch media --dry-run
 npm run stack -- backend
+npm run stack -- backend whisper piper
 npm run stack -- pull
 npm run stack -- logs localai
 npm run stack -- stop stable-diffusion
@@ -140,6 +142,7 @@ npm run stack -- stop stable-diffusion
 | ------------------------------------------- | ------------------------------------------------------- |
 | `npm run models`                            | List managed model pins                                 |
 | `npm run models -- recommendations PROFILE` | Print required artifacts for a profile                  |
+| `npm run models -- ready PROFILE`           | Exit non-zero if required profile artifacts are missing |
 | `npm run models -- plan ALIAS`              | Dry-run download plan for a pin                         |
 | `npm run models -- download ALIAS`          | Download a pinned model                                 |
 | `npm run models -- verify ALIAS`            | Verify selected files against Hub metadata              |
@@ -174,6 +177,7 @@ Full daily-ops detail: [Container operations](docs/container-operations.md).
 | System design   | [Architecture](docs/architecture.md)                                                                                                                                                          |
 | Daily operation | [Container operations](docs/container-operations.md)                                                                                                                                          |
 | Resources       | [GPU and CPU utilization](docs/resource-utilization.md)                                                                                                                                       |
+| Troubleshooting | [Troubleshooting](docs/troubleshooting.md)                                                                                                                                                    |
 | Service setup   | [LocalAI](docs/localai-docker-setup.md) · [PrivateGPT](docs/privategpt-docker-setup.md) · [Stable Diffusion](docs/stable-diffusion-docker-setup.md) · [ComfyUI](docs/comfyui-docker-setup.md) |
 | Workloads       | [Use cases and models](docs/use-cases-and-models.md)                                                                                                                                          |
 | Data            | [Models and managed media](docs/models.md)                                                                                                                                                    |

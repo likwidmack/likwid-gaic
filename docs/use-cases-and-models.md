@@ -37,6 +37,7 @@ Inspect readiness per profile:
 
 ```powershell
 npm run models -- recommendations inference
+npm run models -- ready inference
 npm run models -- recommendations rag
 npm run models -- recommendations media
 npm run models -- recommendations comfy
@@ -80,9 +81,21 @@ With `inference` healthy, LocalAI serves:
 - Speech: `POST /tts` (or `/v1/audio/speech`) with model `en-us-lessac-medium`
 
 Through the gateway, replace `http://localhost:8080` with
-`https://localhost:8443` and trust the Caddy CA. Piper and Whisper backends are
-separate from llama-cpp; install them via LocalAI’s backend mechanism if the
-container image does not already include them.
+`https://localhost:8443` and trust the Caddy CA.
+
+Piper and Whisper backends are separate from llama-cpp. After downloading the
+pins and running `sync-localai`, install backends if the image does not already
+include them (LocalAI must be running):
+
+```powershell
+npm run stack -- up inference
+npm run stack -- backend
+npm run stack -- backend whisper
+npm run stack -- backend piper
+```
+
+On CPU hosts, skip the CUDA llama-cpp default and install `whisper` / `piper`
+only. Cross-cutting notes: [Troubleshooting](troubleshooting.md).
 
 ### Video (out of scope)
 

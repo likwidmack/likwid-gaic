@@ -150,7 +150,15 @@ and, when available, LocalAI model lists and ComfyUI `system_stats`.
 
 ## Manual smoke matrix
 
-After changing resource settings, verify profile isolation:
+After changing resource settings, verify profile isolation. Print the checklist
+(and optionally probe already-running gateways) without starting services:
+
+```powershell
+npm run stack -- smoke
+npm run stack -- smoke --probe
+```
+
+Or run the switches by hand:
 
 1. `npm run stack -- switch inference` — only `localai` holds the GPU; chat API
    responds at `https://localhost:8443`.
@@ -160,7 +168,8 @@ After changing resource settings, verify profile isolation:
    while chat and embed hit the GPU through LocalAI.
 
 Run `npm run stack -- resources` after each step to confirm a single GPU
-service is active.
+service is active. For cross-cutting failures (502, empty threads, hard links,
+STT/TTS), see [Troubleshooting](troubleshooting.md).
 
 ## Troubleshooting
 

@@ -17,6 +17,8 @@ pages when building or troubleshooting a profile.
    profiles, first run, updates, storage mounts, and daily commands.
 5. [GPU and CPU resource utilization](resource-utilization.md) — single-GPU
    profile switching, host sizing, and monitoring.
+6. [Troubleshooting](troubleshooting.md) — gateway 502, GPU conflicts, empty
+   threads, checkpoint hard links, STT/TTS backends.
 
 ## Service guides
 
@@ -55,3 +57,9 @@ models, GPU details, and Docker state; review it before sharing.
   `config/storage.json`; the npm stack runner injects those values.
 - `FORKEDAI_COMPUTE` selects nvidia vs cpu Compose rendering.
 - Run `npm test` after changing documentation links or configuration examples.
+
+## Design history
+
+`docs/superpowers/` holds dated design specs and implementation plans used
+while landing the current ops surface. Prefer the guides above for day-to-day
+operation; treat superpowers notes as historical context, not the live index.

@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import process from "node:process";
+import { parseModelAddArgv, summarizeReady } from "./model-policy.mjs";
 import { hostPath, pathFlavor, pathModule } from "./paths.mjs";
 
 const modelsUrl = new URL("../config/models.json", import.meta.url);
@@ -12,6 +13,7 @@ const manifest = JSON.parse(readFileSync(modelsUrl, "utf8"));
 const flavor = pathFlavor();
 const windows = flavor === "windows";
 const modelRoot = hostPath(storage.roots.models);
+const runtimeRoot = hostPath(storage.roots.runtime);
 const command = process.argv[2] ?? "list";
 const extensions = new Set([".bin", ".ckpt", ".ggml", ".gguf", ".onnx", ".pt", ".pth", ".safetensors"]);
 function find(alias) {
@@ -31,7 +33,20 @@ function isPresent(item) {
   const expected = expectedFiles(item);
   return expected.length ? expected.every((file) => existsSync(path.join(destination(item), file))) : existsSync(destination(item));
 }
+function localAiBackendState() {
+  const backendsRoot = path.join(runtimeRoot, "localai", "backends");
+  if (!existsSync(backendsRoot)) return "missing";
+  try {
+    const entries = readdirSync(backendsRoot, { withFileTypes: true }).filter((entry) => entry.isDirectory());
+    if (!entries.length) return "missing";
+    const hasRunner = entries.some((entry) => existsSync(path.join(backendsRoot, entry.name, "run.sh")));
+    return hasRunner ? "present" : "missing";
+  } catch {
+    return "missing";
+  }
+}
 function artifactState(entry) {
+  if (entry.id === "localai-backend") return localAiBackendState();
   if (entry.modelAlias) return isPresent(find(entry.modelAlias)) ? "present" : "missing";
   if (entry.storageRoot) {
     const root = hostPath(storage.roots[entry.storageRoot]);
@@ -40,7 +55,6 @@ function artifactState(entry) {
   }
   if (entry.relativePath) {
     const target = path.join(modelRoot, entry.relativePath);
-    if (target.endsWith(path.sep) || !path.extname(entry.relativePath)) return existsSync(target) ? "present" : "missing";
     return existsSync(target) ? "present" : "missing";
   }
   return "manual";
@@ -65,6 +79,43 @@ function printRecommendations(profile) {
     console.log("\nNotes:");
     for (const note of profileArtifacts.notes) console.log(`  - ${note}`);
   }
+}
+function printReady(profile) {
+  const spec = profileArtifacts.profiles?.[profile];
+  if (!spec) throw new Error(`Unknown profile: ${profile}. Choose: ${stack.profiles.join(", ")}`);
+  const requiredStates = (spec.required ?? []).map((entry) => ({
+    id: entry.id,
+    purpose: entry.purpose,
+    state: artifactState(entry)
+  }));
+  const recommendedStates = (spec.stronglyRecommended ?? []).map((entry) => ({
+    id: entry.id,
+    purpose: entry.purpose,
+    state: artifactState(entry)
+  }));
+  const summary = summarizeReady(requiredStates, recommendedStates);
+  console.log(`Profile readiness: ${profile}`);
+  for (const item of requiredStates) {
+    console.log(`  [required/${item.state}] ${item.id}: ${item.purpose}`);
+  }
+  for (const item of recommendedStates) {
+    console.log(`  [recommended/${item.state}] ${item.id}: ${item.purpose}`);
+  }
+  if (summary.manual.length) {
+    console.log("\nOperator checks (manual):");
+    for (const item of summary.manual) console.log(`  - ${item.id}: ${item.purpose}`);
+  }
+  if (summary.recommendedMissing.length) {
+    console.log("\nMissing strongly recommended artifacts (non-blocking):");
+    for (const item of summary.recommendedMissing) console.log(`  - ${item.id}`);
+  }
+  if (!summary.ok) {
+    console.error("\nMissing required artifacts. Download/sync/link before `npm run stack -- up` / `switch`.");
+    console.error("See docs/models.md and docs/troubleshooting.md.");
+    process.exitCode = 1;
+    return;
+  }
+  console.log("\nRequired artifacts present.");
 }
 function hfRunner() {
   if (windows) {
@@ -163,18 +214,20 @@ function walk(root) {
   return files;
 }
 if (command === "list") {
-  if (!manifest.models.length) console.log("No Hub models are registered. Use `npm run models -- add ALIAS REPO [REVISION] [LOCAL_DIR]`.");
+  if (!manifest.models.length) console.log("No Hub models are registered. Use `npm run models -- add ALIAS REPO REVISION LOCAL_DIR --include FILE`.");
   for (const item of manifest.models) console.log(`${item.alias}\n  repo: ${item.repo}@${item.revision}\n  path: ${destination(item)}\n  state: ${isPresent(item) ? "present" : "missing"}`);
 } else if (command === "add") {
-  const [alias, repo, revision = "main", localDir = alias] = process.argv.slice(3);
-  if (!alias || !repo) throw new Error("Usage: npm run models -- add ALIAS REPO [REVISION] [LOCAL_DIR]");
-  if (!/^[a-z0-9][a-z0-9._-]*$/i.test(alias)) throw new Error("Invalid alias");
-  if (!/^[\w.-]+\/[\w.-]+$/.test(repo)) throw new Error("Repository must use owner/name");
-  if (path.isAbsolute(localDir) || localDir.split(/[\\/]/).includes("..")) throw new Error("LOCAL_DIR must stay inside the model root");
-  if (manifest.models.some((model) => model.alias === alias)) throw new Error(`Alias already exists: ${alias}`);
-  manifest.models.push({ alias, repo, revision, localDir, include: [] });
+  const entry = parseModelAddArgv(process.argv.slice(3));
+  if (manifest.models.some((model) => model.alias === entry.alias)) throw new Error(`Alias already exists: ${entry.alias}`);
+  manifest.models.push({
+    alias: entry.alias,
+    repo: entry.repo,
+    revision: entry.revision,
+    localDir: entry.localDir,
+    include: entry.include
+  });
   writeFileSync(modelsUrl, `${JSON.stringify(manifest, null, 2)}\n`);
-  console.log(`Registered ${alias}. Review config/models.json, then run \`npm run models -- plan ${alias}\`.`);
+  console.log(`Registered ${entry.alias}. Review config/models.json, then run \`npm run models -- plan ${entry.alias}\`.`);
 } else if (command === "plan") runHf(downloadArgs(find(process.argv[3]), true));
 else if (command === "download") runHf(downloadArgs(find(process.argv[3])));
 else if (command === "verify") {
@@ -213,6 +266,11 @@ else if (command === "recommendations") {
   if (!profile) throw new Error(`Usage: npm run models -- recommendations PROFILE (${stack.profiles.join("|")})`);
   if (!stack.profiles.includes(profile)) throw new Error(`Unknown profile: ${profile}`);
   printRecommendations(profile);
+} else if (command === "ready") {
+  const profile = process.argv[3];
+  if (!profile) throw new Error(`Usage: npm run models -- ready PROFILE (${stack.profiles.join("|")})`);
+  if (!stack.profiles.includes(profile)) throw new Error(`Unknown profile: ${profile}`);
+  printReady(profile);
 } else if (command === "inventory") {
   const files = walk(modelRoot).sort((a, b) => b.bytes - a.bytes);
   const total = files.reduce((sum, item) => sum + item.bytes, 0);
@@ -220,6 +278,6 @@ else if (command === "recommendations") {
   for (const item of files.slice(0, 25)) console.log(`${(item.bytes / 2 ** 30).toFixed(2).padStart(7)} GiB  ${item.file}`);
   if (files.length > 25) console.log(`... ${files.length - 25} more`);
 } else {
-  console.error("Usage: npm run models -- <list|add|search|plan|download|verify|sync-localai|recommendations|auth|cache|inventory>");
+  console.error("Usage: npm run models -- <list|add|search|plan|download|verify|sync-localai|recommendations|ready|auth|cache|inventory>");
   process.exitCode = 2;
 }

@@ -211,6 +211,7 @@ npm run models -- download embed-nomic-v1.5
 npm run models -- verify chat-qwen2.5-3b
 npm run models -- verify embed-nomic-v1.5
 npm run models -- sync-localai
+npm run models -- ready inference
 npm run stack -- up inference
 npm run stack -- backend
 npm run stack -- up rag
@@ -230,14 +231,17 @@ npm run models -- download embed-nomic-v1.5
 npm run models -- verify chat-qwen2.5-3b
 npm run models -- verify embed-nomic-v1.5
 npm run models -- sync-localai
+npm run models -- ready inference
 npm run stack -- up inference
 npm run stack -- up rag
 ```
 
 Skip `npm run stack -- backend` in CPU mode (CUDA backend install is
-NVIDIA-only). Optional media and Comfy starters (**nvidia** compute only;
-download once; see [Models and managed media](models.md) for the WebUI
-hard link):
+NVIDIA-only). For optional Whisper/Piper audio backends after downloading those
+pins, see [Troubleshooting](troubleshooting.md) and
+[Use cases and models](use-cases-and-models.md). Optional media and Comfy
+starters (**nvidia** compute only; download once; see
+[Models and managed media](models.md) for the WebUI hard link):
 
 ```powershell
 npm run models -- recommendations media
