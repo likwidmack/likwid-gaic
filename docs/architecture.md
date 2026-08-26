@@ -14,15 +14,16 @@ inventory is generated locally and excluded from Git.
 | `config/storage.json`  | Canonical host storage roots (Windows, WSL, and POSIX)               |
 | `config/models.json`   | Pinned Hugging Face selections and LocalAI metadata                  |
 | `config/stack.json`    | Profiles, services, networks, gateway ports, and shared mount policy |
-| `.env.example`         | Generic, non-secret Compose override template (placeholders only)    |
+| `.env.example`         | Non-secret Compose override template (storage/repos examples)        |
 | `compose.yaml`         | Executable container topology (NVIDIA defaults)                      |
 | `compose.cpu.yaml`     | CPU overlay for inference/RAG when `FORKEDAI_COMPUTE=cpu`            |
 
 The npm stack runner injects fork and storage paths from JSON configuration via
-`scripts/paths.mjs`. `.env.example` lists every Compose variable with
-portable placeholder paths; copy it to the ignored `.env` and replace those
-values when running Compose directly. Canonical workstation roots remain in
-`config/storage.json` and `config/repos.json`.
+`scripts/paths.mjs`. `.env.example` lists every Compose variable with Windows
+examples from `config/storage.json` and fork names from `config/repos.json`;
+copy it to the ignored `.env` and adjust when running Compose directly.
+Canonical workstation roots remain in `config/storage.json` and
+`config/repos.json`.
 
 ## Managed topology
 
