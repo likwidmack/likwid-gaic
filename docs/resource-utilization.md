@@ -156,9 +156,12 @@ After changing resource settings, verify profile isolation. Print the checklist
 ```powershell
 npm run stack -- smoke
 npm run stack -- smoke --probe
+npm run stack -- smoke --run
 ```
 
-Or run the switches by hand:
+`smoke` alone prints the checklist. `--probe` curls already-running gateways.
+`--run` executes the switch matrix on an **NVIDIA workstation** (starts/stops
+profiles; not for CI or CPU mode). Or run the switches by hand:
 
 1. `npm run stack -- switch inference` — only `localai` holds the GPU; chat API
    responds at `https://localhost:8443`.

@@ -11,6 +11,7 @@ import {
   gpuConflictsForProfile,
   gpuServicesForProfile,
   parseProfileCommand,
+  assertSmokeRunAllowed,
   smokeMatrix
 } from "./stack-policy.mjs";
 
@@ -166,5 +167,10 @@ describe("stack GPU and CPU policy", () => {
     assert.equal(smokeMatrix[0].profile, "inference");
     assert.equal(smokeMatrix[1].profile, "media");
     assert.equal(smokeMatrix[2].profile, "rag");
+  });
+
+  it("refuses smoke --run in CPU mode", () => {
+    assert.throws(() => assertSmokeRunAllowed("cpu"), /nvidia/);
+    assert.doesNotThrow(() => assertSmokeRunAllowed("nvidia"));
   });
 });

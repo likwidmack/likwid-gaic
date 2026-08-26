@@ -9,6 +9,7 @@ import {
   assertCpuAllowsProfile,
   assertCpuAllowsService,
   assertGpuPreflight,
+  assertSmokeRunAllowed,
   gatewayProbeTargets,
   gpuConflictsForProfile,
   gpuServicesForProfile,
@@ -122,6 +123,62 @@ function printSmokeChecklist() {
   console.log("\nAfter each switch: npm run stack -- resources");
   console.log("Optional readiness: npm run models -- ready PROFILE");
   console.log("Optional live probes: npm run stack -- smoke --probe");
+  console.log("Workstation run (NVIDIA only, not CI): npm run stack -- smoke --run");
+}
+
+function switchProfile(profile, { dryRun = false, allowShare = false } = {}) {
+  if (!stack.profiles.includes(profile)) throw new Error(`Unknown profile: ${profile}`);
+  assertCpuAllowsProfile(computeMode, profile);
+  const toStop = gpuConflictsForProfile(gpuExclusive, profile, runningGpuServices());
+  const toKeep = [...gpuServicesForProfile(gpuExclusive, profile)];
+  console.log(`Switch plan for profile "${profile}" (compute=${computeMode}):`);
+  console.log(`  stop GPU services: ${toStop.length ? toStop.join(", ") : "none"}`);
+  console.log(`  keep/start GPU services: ${toKeep.length ? toKeep.join(", ") : "none"}`);
+  if (dryRun) return;
+  if (toStop.length) compose(["stop", ...toStop]);
+  assertGpuPreflight(gpuExclusive, computeMode, profile, runningGpuServices(), {
+    allowShare,
+    gpuExclusiveEnabled: gpuExclusiveEnabled()
+  });
+  compose([...["--profile", profile], "up", "--detach", "--wait", "--wait-timeout", "300"]);
+}
+
+function runSmokeMatrix() {
+  assertSmokeRunAllowed(computeMode);
+  const docker = run("docker", ["version"], { capture: true, env: process.env });
+  if (!docker.ok) throw new Error(`Docker is required for smoke --run: ${docker.output}`);
+  console.log("Running workstation smoke matrix (starts/stops profiles; not for CI).\n");
+  let failures = 0;
+  for (const item of smokeMatrix) {
+    console.log(`\n=== Smoke step ${item.step}: ${item.profile} ===`);
+    switchProfile(item.profile);
+    const activeGpu = runningGpuServices();
+    const unexpected = activeGpu.filter((service) => !item.expectGpu.includes(service));
+    const missing = item.expectGpu.filter((service) => !activeGpu.includes(service));
+    if (unexpected.length || missing.length || activeGpu.length !== item.expectGpu.length) {
+      console.error(`FAIL  GPU services: got [${activeGpu.join(", ") || "none"}], expected [${item.expectGpu.join(", ")}]`);
+      failures++;
+    } else {
+      console.log(`OK    GPU services: ${activeGpu.join(", ")}`);
+    }
+    const probe = run(
+      "curl",
+      ["-kfsS", "-o", "/dev/null", "-w", "%{http_code}", "--connect-timeout", "3", "--max-time", "15", item.gateway],
+      { capture: true, env: process.env }
+    );
+    const code = probe.output.trim();
+    if (probe.ok && /^[23]\d\d$/.test(code)) console.log(`OK    ${item.gateway} -> ${code}`);
+    else {
+      console.error(`FAIL  ${item.gateway} -> ${code || probe.output}`);
+      failures++;
+    }
+  }
+  if (failures) {
+    process.exitCode = 1;
+    console.error(`\nSmoke matrix finished with ${failures} failure(s).`);
+  } else {
+    console.log("\nSmoke matrix passed.");
+  }
 }
 
 function probeGateways() {
@@ -212,25 +269,16 @@ if (command === "doctor") {
   }
 } else if (command === "smoke") {
   const probe = process.argv.includes("--probe");
-  printSmokeChecklist();
-  if (probe) probeGateways();
+  const runMatrix = process.argv.includes("--run");
+  if (runMatrix) runSmokeMatrix();
+  else {
+    printSmokeChecklist();
+    if (probe) probeGateways();
+  }
 } else if (command === "switch") {
   const { profile, flags } = parseProfileCommand(process.argv);
   if (!profile) throw new Error(`Choose a profile: ${stack.profiles.join(", ")}`);
-  if (!stack.profiles.includes(profile)) throw new Error(`Unknown profile: ${profile}`);
-  assertCpuAllowsProfile(computeMode, profile);
-  const toStop = gpuConflictsForProfile(gpuExclusive, profile, runningGpuServices());
-  const toKeep = [...gpuServicesForProfile(gpuExclusive, profile)];
-  console.log(`Switch plan for profile "${profile}" (compute=${computeMode}):`);
-  console.log(`  stop GPU services: ${toStop.length ? toStop.join(", ") : "none"}`);
-  console.log(`  keep/start GPU services: ${toKeep.length ? toKeep.join(", ") : "none"}`);
-  if (flags.has("dry-run")) process.exit(0);
-  if (toStop.length) compose(["stop", ...toStop]);
-  assertGpuPreflight(gpuExclusive, computeMode, profile, runningGpuServices(), {
-    allowShare: flags.has("allow-gpu-share"),
-    gpuExclusiveEnabled: gpuExclusiveEnabled()
-  });
-  compose([...["--profile", profile], "up", "--detach", "--wait", "--wait-timeout", "300"]);
+  switchProfile(profile, { dryRun: flags.has("dry-run"), allowShare: flags.has("allow-gpu-share") });
 } else if (command === "config") compose([...allProfiles, "config"]);
 else if (command === "status" || command === "ps") compose([...allProfiles, "ps", "--all"]);
 else if (command === "profiles") console.log(stack.profiles.join("\n"));
@@ -279,7 +327,7 @@ else if (command === "stop") compose([...allProfiles, "stop", ...process.argv.sl
 else if (command === "down") compose([...allProfiles, "down", "--remove-orphans"]);
 else {
   console.error(
-    "Usage: npm run stack -- <doctor|config|profiles|status|resources|smoke [--probe]|switch PROFILE [--dry-run]|up PROFILE [--allow-gpu-share]|build [SERVICE]|backend [ID...]|pull|logs [SERVICE]|stop [SERVICE]|down>"
+    "Usage: npm run stack -- <doctor|config|profiles|status|resources|smoke [--probe|--run]|switch PROFILE [--dry-run]|up PROFILE [--allow-gpu-share]|build [SERVICE]|backend [ID...]|pull|logs [SERVICE]|stop [SERVICE]|down>"
   );
   process.exitCode = 2;
 }
