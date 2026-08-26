@@ -86,6 +86,14 @@ export function assertBackendAllowed(computeMode, backend) {
   }
 }
 
+export function assertSmokeRunAllowed(computeMode) {
+  if (computeMode === "cpu") {
+    throw new Error(
+      "smoke --run requires FORKEDAI_COMPUTE=nvidia on a GPU workstation. Use `npm run stack -- smoke` for the checklist only."
+    );
+  }
+}
+
 export const smokeMatrix = [
   {
     step: 1,
