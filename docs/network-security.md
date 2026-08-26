@@ -59,16 +59,46 @@ ComfyUI model files are mounted read-only. Input, output, user state, temporary 
 
 ## Gateway authentication follow-up
 
-Caddy is the only host-facing container. It uses an internal development CA for `localhost`, serving LocalAI on 8443, PrivateGPT on 8444, Stable Diffusion on 8445, the Comfy UI on 8446, and the Comfy API on 8447. Backend traffic remains HTTP within its trust-zone bridge. Each reverse proxy imports a shared `bridge_upstream` health probe so Caddy re-dials Docker DNS after a backend recreate instead of holding a stale address. The Caddy admin API is disabled, configuration is mounted read-only, and CA state is persisted under `RUNTIME_ROOT/caddy/data`.
+Caddy is the only host-facing container. It uses an internal development CA for
+`GATEWAY_HOSTNAME` (default `localhost`), serving LocalAI on 8443, PrivateGPT on
+8444, Stable Diffusion on 8445, the Comfy UI on 8446, and the Comfy API on 8447.
+Backend traffic remains HTTP within its trust-zone bridge. Each reverse proxy
+imports a shared `bridge_upstream` health probe so Caddy re-dials Docker DNS
+after a backend recreate instead of holding a stale address. The Caddy admin API
+is disabled, configuration is mounted read-only, and CA state is persisted under
+`RUNTIME_ROOT/caddy/data`.
 
-The gateway is deliberately unauthenticated while it remains bound to loopback; HTTPS protects transport and server identity but does not authorize a client. Before binding it to a LAN or VPN address, complete this follow-up:
+The gateway is deliberately unauthenticated while it remains bound to loopback;
+HTTPS protects transport and server identity but does not authorize a client.
+`npm run media -- init` installs a no-op auth snippet at
+`RUNTIME_ROOT/caddy/gateway-auth.caddy`. Before binding to a LAN or VPN address,
+complete this follow-up:
 
-1. Replace `localhost` with controlled LAN or VPN DNS names and configure certificates trusted by every intended client.
-2. Add reviewed authentication at the gateway, such as an identity-aware forward-auth provider, securely managed hashed basic-auth credentials, or mTLS for API clients.
-3. Restrict Windows Firewall to the required profile, gateway port, interface, and source addresses.
-4. Verify that no backend service has a published port and test both permitted and rejected clients.
+1. Set `GATEWAY_HOSTNAME` to a controlled LAN or VPN DNS name and configure
+   certificates trusted by every intended client (or keep `tls internal` only for
+   lab clients that trust the Caddy CA).
+2. Generate a bcrypt hash (never commit plaintext):
 
-Do not place plaintext passwords or CA private keys in Compose, the Caddyfile, `.env`, or Git. Until the follow-up is complete, keep `FORKEDAI_BIND_ADDRESS=127.0.0.1`.
+```powershell
+docker run --rm caddy:2.11.4-alpine caddy hash-password
+```
+
+3. Replace `RUNTIME_ROOT/caddy/gateway-auth.caddy` with a `basicauth` snippet
+   based on [docker/gateway-auth.basicauth.example.caddy](../docker/gateway-auth.basicauth.example.caddy).
+4. Restrict Windows Firewall to the required profile, gateway port, interface,
+   and source addresses.
+5. Optionally set managed-stack `LOCALAI_API_KEY` as a second layer after gateway
+   auth is working (still never commit the secret).
+6. Verify that no backend service has a published port and test both permitted
+   and rejected clients.
+
+`npm run stack -- up` / `switch` / `config` refuse a non-loopback
+`FORKEDAI_BIND_ADDRESS` unless the auth snippet contains `basicauth`.
+`stack:doctor` reports the same gate as a WARN/failing check.
+
+Do not place plaintext passwords or CA private keys in Compose, the Caddyfile,
+`.env`, or Git. Until the follow-up is complete, keep
+`FORKEDAI_BIND_ADDRESS=127.0.0.1`.
 
 ## Preparing an exposure change
 
