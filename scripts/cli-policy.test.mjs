@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { describe, it } from "node:test";
 import { parseModelAddArgv, resolveModelPromote, resolvePluginPromote, summarizeReady, validateModelAddArgs } from "./model-policy.mjs";
 import {
@@ -22,6 +24,27 @@ const gpuExclusive = {
 };
 
 const sha = "0123456789abcdef0123456789abcdef01234567";
+const modelsScript = fileURLToPath(new URL("./models.mjs", import.meta.url));
+
+function runModels(...args) {
+  return spawnSync(process.execPath, [modelsScript, ...args], { encoding: "utf8" });
+}
+
+describe("models download guidance", () => {
+  it("directs non-Hub artifacts to each profile's recommendations", () => {
+    const backend = runModels("download", "localai-backend");
+    assert.equal(backend.status, 1);
+    assert.match(backend.stderr, /npm run models -- recommendations inference/);
+    assert.doesNotMatch(backend.stderr, /sdxl-base|sd15-starter/);
+
+    const vae = runModels("download", "vae-directory");
+    assert.equal(vae.status, 1);
+    assert.match(vae.stderr, /media.*VAE/s);
+    assert.match(vae.stderr, /comfy.*vae/s);
+    assert.match(vae.stderr, /npm run models -- recommendations media/);
+    assert.match(vae.stderr, /npm run models -- recommendations comfy/);
+  });
+});
 
 describe("validateModelAddArgs", () => {
   it("requires a 40-character revision and include list", () => {

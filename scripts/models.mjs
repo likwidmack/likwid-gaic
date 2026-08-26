@@ -36,10 +36,33 @@ function modelLayoutDirs() {
 function pluginServices() {
   return [...new Set(profileArtifacts.layout?.plugins ?? ["localai", "private-gpt", "stable-diffusion", "comfyui"])];
 }
+function artifactEntries() {
+  const entries = [];
+  for (const [profile, spec] of Object.entries(profileArtifacts.profiles ?? {})) {
+    for (const tier of ["required", "stronglyRecommended"]) {
+      for (const entry of spec[tier] ?? []) entries.push({ ...entry, profile, tier });
+    }
+  }
+  return entries;
+}
 function find(alias) {
+  if (!alias) throw new Error("Model alias is required");
   const item = manifest.models.find((model) => model.alias === alias);
-  if (!item) throw new Error(`Unknown model alias: ${alias}`);
-  return item;
+  if (item) return item;
+  const artifacts = artifactEntries().filter((entry) => entry.id === alias || entry.modelAlias === alias);
+  const manualArtifacts = artifacts.filter((entry) => !entry.modelAlias);
+  if (manualArtifacts.length) {
+    const guidance = manualArtifacts
+      .map((artifact) => {
+        const pathHint = artifact.relativePath ? ` at ${artifact.relativePath}` : "";
+        return `  - ${artifact.profile}: ${artifact.kind}${pathHint} — ${artifact.purpose}\n    Run \`npm run models -- recommendations ${artifact.profile}\`.`;
+      })
+      .join("\n");
+    throw new Error(
+      `${alias} is a profile artifact, not a Hub model. Follow the setup guidance for each matching profile:\n${guidance}`
+    );
+  }
+  throw new Error(`Unknown model alias: ${alias}. Use \`npm run models -- list\` for Hub pins.`);
 }
 function destination(item, style = flavor) {
   const module = pathModule(style);
@@ -91,8 +114,8 @@ function printRecommendations(profile) {
     console.log(`\n${tier === "required" ? "Required" : "Strongly recommended"}:`);
     for (const entry of items) {
       const state = artifactState(entry);
-      const alias = entry.modelAlias ? ` (${entry.modelAlias})` : "";
-      console.log(`  [${state}] ${entry.id}${alias}: ${entry.purpose}`);
+      const downloadable = entry.modelAlias ? ` download: ${entry.modelAlias}` : " not a Hub download";
+      console.log(`  [${state}] ${entry.kind} ${entry.id}:${downloadable} — ${entry.purpose}`);
     }
   }
   if (profileArtifacts.notes?.length) {
