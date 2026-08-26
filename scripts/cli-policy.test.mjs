@@ -11,6 +11,7 @@ import {
   gpuConflictsForProfile,
   gpuServicesForProfile,
   parseProfileCommand,
+  readinessAction,
   smokeMatrix
 } from "./stack-policy.mjs";
 
@@ -174,9 +175,17 @@ describe("stack GPU and CPU policy", () => {
   });
 
   it("parses profile command flags", () => {
-    const parsed = parseProfileCommand(["node", "docker.mjs", "up", "inference", "--allow-gpu-share"], 3);
+    const parsed = parseProfileCommand(["node", "docker.mjs", "up", "inference", "--allow-gpu-share", "--require-ready"], 3);
     assert.equal(parsed.profile, "inference");
     assert.ok(parsed.flags.has("allow-gpu-share"));
+    assert.ok(parsed.flags.has("require-ready"));
+  });
+
+  it("maps soft readiness actions", () => {
+    assert.equal(readinessAction({ missingRequired: false }), "continue");
+    assert.equal(readinessAction({ missingRequired: true }), "warn");
+    assert.equal(readinessAction({ missingRequired: true, requireReady: true }), "fail");
+    assert.equal(readinessAction({ missingRequired: true, skipReady: true }), "continue");
   });
 
   it("exposes the three-step smoke matrix", () => {
