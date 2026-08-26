@@ -108,10 +108,22 @@ Managed image pins download under `checkpoints/`. ComfyUI reads that tree
 directly. Stable Diffusion WebUI uses `--ckpt-dir Stable-diffusion`, so expose
 the same bytes without duplicating the file.
 
+`npm run models -- download sd15-starter` (and `sdxl-base`) automatically creates
+the WebUI hard link when the download succeeds. You can also run:
+
+```powershell
+npm run models -- link-webui
+npm run models -- link-webui sd15-starter
+```
+
+Promoting a `checkpoints/…` file from the inbox also creates the matching
+`Stable-diffusion/` hard link.
+
 NTFS **junctions only work for directories**. For checkpoint _files_, use a hard
 link (same volume) or a symbolic link. Prefer a hard link over copying
 multi-gigabyte weights. Hard links require source and target on the same
-filesystem volume.
+filesystem volume. If the platform cannot hard-link, `link-webui` copies and
+warns.
 
 SD 1.5 starter (PowerShell on Windows):
 
