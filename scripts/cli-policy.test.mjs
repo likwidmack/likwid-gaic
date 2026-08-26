@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { describe, it } from "node:test";
-import { parseModelAddArgv, resolveModelPromote, resolvePluginPromote, summarizeReady, validateModelAddArgs } from "./model-policy.mjs";
+import { parseModelAddArgv, resolveModelPromote, resolvePluginPromote, summarizeReady, validateModelAddArgs, webuiHardLinkFromPromote, webuiHardLinkPlans } from "./model-policy.mjs";
 import {
   assertBackendAllowed,
   assertCpuAllowsProfile,
@@ -101,6 +101,24 @@ describe("promote path policy", () => {
     const resolved = resolvePluginPromote("comfyui", "my-node", ["comfyui", "stable-diffusion"]);
     assert.equal(resolved.service, "comfyui");
     assert.equal(resolved.relative, "my-node");
+  });
+});
+
+describe("webui hard link plans", () => {
+  it("maps checkpoint pins into Stable-diffusion/", () => {
+    const plans = webuiHardLinkPlans({
+      localDir: "checkpoints",
+      include: ["v1-5-pruned-emaonly-fp16.safetensors"]
+    });
+    assert.equal(plans.length, 1);
+    assert.equal(plans[0].sourceRel, "checkpoints/v1-5-pruned-emaonly-fp16.safetensors");
+    assert.equal(plans[0].targetRel, "Stable-diffusion/v1-5-pruned-emaonly-fp16.safetensors");
+  });
+
+  it("plans links after promoting checkpoints files", () => {
+    const plan = webuiHardLinkFromPromote("checkpoints/demo.safetensors");
+    assert.equal(plan.targetRel, "Stable-diffusion/demo.safetensors");
+    assert.equal(webuiHardLinkFromPromote("localai/x.gguf"), null);
   });
 });
 
