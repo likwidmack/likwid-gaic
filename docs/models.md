@@ -161,6 +161,23 @@ ln "$models/checkpoints/sd_xl_base_1.0.safetensors" \
 
 `npm run media -- init` creates both A1111 and Comfy directory trees under the shared model root, plus writable **inbox** staging trees.
 
+To download several optional pins, sync LocalAI YAML, and create both WebUI
+hard links in one step:
+
+```bash
+npm run models:bootstrap-optional
+# or: bash scripts/bootstrap-optional-models.sh
+```
+
+PowerShell fallback:
+
+```powershell
+powershell -NoProfile -File scripts/bootstrap-optional-models.ps1
+```
+
+Use `--links-only` / `-LinksOnly` when the weights are already present and you
+only need `Stable-diffusion/` hard links.
+
 ## Staging inbox and promote (UI / one-off downloads)
 
 The canonical catalog (`/shared/models`, `/shared/plugins`) stays **read-only**

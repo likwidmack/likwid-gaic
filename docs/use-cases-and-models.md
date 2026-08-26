@@ -23,6 +23,25 @@ ComfyUI at a time. Prefer `npm run stack -- switch PROFILE` (or
 
 ## Download recommended pins
 
+Batch download, verify, LocalAI YAML sync, and WebUI hard links (bash default):
+
+```bash
+npm run models:bootstrap-optional
+# or: bash scripts/bootstrap-optional-models.sh
+```
+
+PowerShell when bash is unavailable:
+
+```powershell
+powershell -NoProfile -File scripts/bootstrap-optional-models.ps1
+```
+
+Useful flags (bash / PowerShell): `--all` / `-All` (starters + optional),
+`--links-only` / `-LinksOnly`, `--force-links` / `-ForceLinks`, or pass
+specific aliases. See the script headers for the full list.
+
+Manual equivalent:
+
 ```powershell
 npm run models -- download chat-qwen2.5-7b
 npm run models -- download chat-qwen2.5-coder-7b
