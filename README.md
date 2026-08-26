@@ -141,6 +141,7 @@ npm run stack -- stop stable-diffusion
 | Script                                      | What it does                                            |
 | ------------------------------------------- | ------------------------------------------------------- |
 | `npm run models`                            | List managed model pins                                 |
+| `npm run models:bootstrap-optional`         | Download optional pins, sync LocalAI YAML, WebUI links  |
 | `npm run models -- recommendations PROFILE` | Print required artifacts for a profile                  |
 | `npm run models -- ready PROFILE`           | Exit non-zero if required profile artifacts are missing |
 | `npm run models -- inbox`                   | List staged files under models/inbox and plugins/inbox  |

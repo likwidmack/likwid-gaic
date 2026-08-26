@@ -33,6 +33,7 @@
     "stack:media": "node scripts/docker.mjs switch media",
     "stack:comfy": "node scripts/docker.mjs switch comfy",
     "models": "node scripts/models.mjs",
+    "models:bootstrap-optional": "bash scripts/bootstrap-optional-models.sh",
     "media": "node scripts/media.mjs",
     "repos:status": "node scripts/repos.mjs status",
     "repos:fetch": "node scripts/repos.mjs fetch",
