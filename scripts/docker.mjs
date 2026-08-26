@@ -14,10 +14,12 @@ import {
   gpuConflictsForProfile,
   gpuServicesForProfile,
   parseProfileCommand,
+  readinessAction,
   smokeMatrix
 } from "./stack-policy.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
+const modelsScript = fileURLToPath(new URL("./models.mjs", import.meta.url));
 const readJson = (name) => JSON.parse(readFileSync(new URL(`../config/${name}`, import.meta.url), "utf8"));
 const repos = readJson("repos.json");
 const storage = readJson("storage.json");
@@ -77,6 +79,58 @@ function runningGpuServices() {
   return runningServices().filter((service) => gpuServices.includes(service));
 }
 
+function checkProfileReady(profile) {
+  const result = spawnSync(process.execPath, [modelsScript, "ready", profile], {
+    cwd: root,
+    env: process.env,
+    encoding: "utf8"
+  });
+  const output = `${result.stdout ?? ""}${result.stderr ?? ""}`.trim();
+  return { ok: result.status === 0, output };
+}
+
+function enforceProfileReady(profile, flags) {
+  const report = checkProfileReady(profile);
+  const action = readinessAction({
+    missingRequired: !report.ok,
+    requireReady: flags.has("require-ready"),
+    skipReady: flags.has("skip-ready")
+  });
+  if (action === "continue") return;
+  const missingLines = report.output
+    .split("\n")
+    .filter((line) => line.includes("[required/missing]"))
+    .join("\n");
+  const detail = missingLines || report.output || "required artifacts missing";
+  if (action === "warn") {
+    console.warn(`WARN  Profile "${profile}" is not ready:\n${detail}\n  Fix with downloads/sync/links, or pass --require-ready to fail, --skip-ready to silence.`);
+    return;
+  }
+  throw new Error(
+    `Profile "${profile}" is not ready (required artifacts missing). Run \`npm run models -- ready ${profile}\`, or pass --skip-ready to override.`
+  );
+}
+
+function softDoctorReadyChecks() {
+  console.log("\nProfile artifact readiness (soft):");
+  for (const profile of stack.profiles) {
+    if (computeMode === "cpu" && (profile === "media" || profile === "comfy")) {
+      console.log(`SKIP  ${profile}: NVIDIA-only under FORKEDAI_COMPUTE=cpu`);
+      continue;
+    }
+    const report = checkProfileReady(profile);
+    if (report.ok) {
+      console.log(`OK    ${profile}: required artifacts present`);
+      continue;
+    }
+    const missing = report.output
+      .split("\n")
+      .filter((line) => line.includes("[required/missing]"))
+      .map((line) => line.trim())
+      .join("; ");
+    console.warn(`WARN  ${profile}: ${missing || "required artifacts missing"} (run npm run models -- ready ${profile})`);
+  }
+}
 function physicalCoreCount() {
   if (windows) {
     const result = run("powershell.exe", ["-NoProfile", "-Command", "(Get-CimInstance Win32_Processor | Measure-Object -Property NumberOfCores -Sum).Sum"], { capture: true, env: process.env });
@@ -126,7 +180,7 @@ function printSmokeChecklist() {
   console.log("Workstation run (NVIDIA only, not CI): npm run stack -- smoke --run");
 }
 
-function switchProfile(profile, { dryRun = false, allowShare = false } = {}) {
+function switchProfile(profile, { dryRun = false, allowShare = false, flags = new Set() } = {}) {
   if (!stack.profiles.includes(profile)) throw new Error(`Unknown profile: ${profile}`);
   assertCpuAllowsProfile(computeMode, profile);
   const toStop = gpuConflictsForProfile(gpuExclusive, profile, runningGpuServices());
@@ -135,6 +189,7 @@ function switchProfile(profile, { dryRun = false, allowShare = false } = {}) {
   console.log(`  stop GPU services: ${toStop.length ? toStop.join(", ") : "none"}`);
   console.log(`  keep/start GPU services: ${toKeep.length ? toKeep.join(", ") : "none"}`);
   if (dryRun) return;
+  enforceProfileReady(profile, flags);
   if (toStop.length) compose(["stop", ...toStop]);
   assertGpuPreflight(gpuExclusive, computeMode, profile, runningGpuServices(), {
     allowShare,
@@ -246,6 +301,7 @@ if (command === "doctor") {
     const value = hostPath(item);
     console.log(`${existsSync(value) ? "OK" : "MISSING"}  ${item.name}: ${value}`);
   }
+  softDoctorReadyChecks();
   if (failures) {
     console.error("\nInstall missing tools before using the affected features. Run `npm run media -- init` to create storage paths.");
     process.exitCode = 1;
@@ -278,7 +334,11 @@ if (command === "doctor") {
 } else if (command === "switch") {
   const { profile, flags } = parseProfileCommand(process.argv);
   if (!profile) throw new Error(`Choose a profile: ${stack.profiles.join(", ")}`);
-  switchProfile(profile, { dryRun: flags.has("dry-run"), allowShare: flags.has("allow-gpu-share") });
+  switchProfile(profile, {
+    dryRun: flags.has("dry-run"),
+    allowShare: flags.has("allow-gpu-share"),
+    flags
+  });
 } else if (command === "config") compose([...allProfiles, "config"]);
 else if (command === "status" || command === "ps") compose([...allProfiles, "ps", "--all"]);
 else if (command === "profiles") console.log(stack.profiles.join("\n"));
@@ -293,6 +353,7 @@ else if (command === "up") {
       allowShare: flags.has("allow-gpu-share"),
       gpuExclusiveEnabled: gpuExclusiveEnabled()
     });
+    enforceProfileReady(item, flags);
   }
   compose([...profiles.flatMap((item) => ["--profile", item]), "up", "--detach", "--wait", "--wait-timeout", "300"]);
 } else if (command === "build") {
@@ -327,7 +388,7 @@ else if (command === "stop") compose([...allProfiles, "stop", ...process.argv.sl
 else if (command === "down") compose([...allProfiles, "down", "--remove-orphans"]);
 else {
   console.error(
-    "Usage: npm run stack -- <doctor|config|profiles|status|resources|smoke [--probe|--run]|switch PROFILE [--dry-run]|up PROFILE [--allow-gpu-share]|build [SERVICE]|backend [ID...]|pull|logs [SERVICE]|stop [SERVICE]|down>"
+    "Usage: npm run stack -- <doctor|config|profiles|status|resources|smoke [--probe|--run]|switch PROFILE [--dry-run|--require-ready|--skip-ready]|up PROFILE [--allow-gpu-share|--require-ready|--skip-ready]|build [SERVICE]|backend [ID...]|pull|logs [SERVICE]|stop [SERVICE]|down>"
   );
   process.exitCode = 2;
 }
