@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { describe, it } from "node:test";
-import { parseModelAddArgv, resolveModelPromote, resolvePluginPromote, summarizeReady, validateModelAddArgs } from "./model-policy.mjs";
+import { parseModelAddArgv, resolveModelPromote, resolvePluginPromote, summarizeReady, validateModelAddArgs, webuiHardLinkFromPromote, webuiHardLinkPlans } from "./model-policy.mjs";
 import {
   assertBackendAllowed,
   assertCpuAllowsProfile,
@@ -11,6 +11,8 @@ import {
   gpuConflictsForProfile,
   gpuServicesForProfile,
   parseProfileCommand,
+  assertSmokeRunAllowed,
+  readinessAction,
   smokeMatrix
 } from "./stack-policy.mjs";
 
@@ -103,6 +105,24 @@ describe("promote path policy", () => {
   });
 });
 
+describe("webui hard link plans", () => {
+  it("maps checkpoint pins into Stable-diffusion/", () => {
+    const plans = webuiHardLinkPlans({
+      localDir: "checkpoints",
+      include: ["v1-5-pruned-emaonly-fp16.safetensors"]
+    });
+    assert.equal(plans.length, 1);
+    assert.equal(plans[0].sourceRel, "checkpoints/v1-5-pruned-emaonly-fp16.safetensors");
+    assert.equal(plans[0].targetRel, "Stable-diffusion/v1-5-pruned-emaonly-fp16.safetensors");
+  });
+
+  it("plans links after promoting checkpoints files", () => {
+    const plan = webuiHardLinkFromPromote("checkpoints/demo.safetensors");
+    assert.equal(plan.targetRel, "Stable-diffusion/demo.safetensors");
+    assert.equal(webuiHardLinkFromPromote("localai/x.gguf"), null);
+  });
+});
+
 describe("summarizeReady", () => {
   it("fails when required artifacts are missing", () => {
     const summary = summarizeReady(
@@ -156,9 +176,17 @@ describe("stack GPU and CPU policy", () => {
   });
 
   it("parses profile command flags", () => {
-    const parsed = parseProfileCommand(["node", "docker.mjs", "up", "inference", "--allow-gpu-share"], 3);
+    const parsed = parseProfileCommand(["node", "docker.mjs", "up", "inference", "--allow-gpu-share", "--require-ready"], 3);
     assert.equal(parsed.profile, "inference");
     assert.ok(parsed.flags.has("allow-gpu-share"));
+    assert.ok(parsed.flags.has("require-ready"));
+  });
+
+  it("maps soft readiness actions", () => {
+    assert.equal(readinessAction({ missingRequired: false }), "continue");
+    assert.equal(readinessAction({ missingRequired: true }), "warn");
+    assert.equal(readinessAction({ missingRequired: true, requireReady: true }), "fail");
+    assert.equal(readinessAction({ missingRequired: true, skipReady: true }), "continue");
   });
 
   it("exposes the three-step smoke matrix", () => {
@@ -166,5 +194,10 @@ describe("stack GPU and CPU policy", () => {
     assert.equal(smokeMatrix[0].profile, "inference");
     assert.equal(smokeMatrix[1].profile, "media");
     assert.equal(smokeMatrix[2].profile, "rag");
+  });
+
+  it("refuses smoke --run in CPU mode", () => {
+    assert.throws(() => assertSmokeRunAllowed("cpu"), /nvidia/);
+    assert.doesNotThrow(() => assertSmokeRunAllowed("nvidia"));
   });
 });

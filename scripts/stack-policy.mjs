@@ -56,10 +56,24 @@ export function parseProfileCommand(argv, startIndex = 3) {
   const positional = [];
   for (let index = startIndex; index < argv.length; index++) {
     const token = argv[index];
-    if (token === "--dry-run" || token === "--force" || token === "--allow-gpu-share") flags.add(token.slice(2));
-    else positional.push(token);
+    if (
+      token === "--dry-run" ||
+      token === "--force" ||
+      token === "--allow-gpu-share" ||
+      token === "--require-ready" ||
+      token === "--skip-ready"
+    ) {
+      flags.add(token.slice(2));
+    } else positional.push(token);
   }
   return { profile: positional[0], flags };
+}
+
+/** Soft readiness: warn by default; hard-fail only when requireReady is set. */
+export function readinessAction({ missingRequired, requireReady = false, skipReady = false }) {
+  if (skipReady || !missingRequired) return "continue";
+  if (requireReady) return "fail";
+  return "warn";
 }
 
 /** CUDA backends require nvidia compute; whisper/piper may install on cpu. */
@@ -68,6 +82,14 @@ export function assertBackendAllowed(computeMode, backend) {
   if (needsCuda && computeMode === "cpu") {
     throw new Error(
       "CUDA backend install is NVIDIA-only. With FORKEDAI_COMPUTE=cpu, LocalAI uses the CPU image backends; set FORKEDAI_COMPUTE=nvidia to install CUDA backends, or install whisper/piper without a cuda id."
+    );
+  }
+}
+
+export function assertSmokeRunAllowed(computeMode) {
+  if (computeMode === "cpu") {
+    throw new Error(
+      "smoke --run requires FORKEDAI_COMPUTE=nvidia on a GPU workstation. Use `npm run stack -- smoke` for the checklist only."
     );
   }
 }
