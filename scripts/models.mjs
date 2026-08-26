@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process";
 import {
   copyFileSync,
   existsSync,
+  linkSync,
   mkdirSync,
   readFileSync,
   readdirSync,
@@ -12,7 +13,14 @@ import {
 } from "node:fs";
 import path from "node:path";
 import process from "node:process";
-import { parseModelAddArgv, resolveModelPromote, resolvePluginPromote, summarizeReady } from "./model-policy.mjs";
+import {
+  parseModelAddArgv,
+  resolveModelPromote,
+  resolvePluginPromote,
+  summarizeReady,
+  webuiHardLinkFromPromote,
+  webuiHardLinkPlans
+} from "./model-policy.mjs";
 import { hostPath, pathFlavor, pathModule } from "./paths.mjs";
 
 const modelsUrl = new URL("../config/models.json", import.meta.url);
@@ -181,7 +189,44 @@ function runHf(args) {
   const runner = hfRunner();
   const result = spawnSync(runner.program, [...runner.prefix, ...args], { stdio: "inherit", env: runner.env });
   if (result.error || result.status == 127) throw new Error("Hugging Face CLI is unavailable. Install the current `hf` CLI; see docs/models.md.");
-  process.exitCode = result.status ?? 1;
+  const status = result.status ?? 1;
+  process.exitCode = status;
+  return status;
+}
+function ensureWebuiHardLinks(item, { dryRun = false, force = false } = {}) {
+  const plans = webuiHardLinkPlans(item);
+  if (!plans.length) return;
+  for (const plan of plans) {
+    const source = path.join(modelRoot, ...plan.sourceRel.split("/"));
+    const target = path.join(modelRoot, ...plan.targetRel.split("/"));
+    if (!existsSync(source)) {
+      console.warn(`SKIP  WebUI hard link: missing source ${source}`);
+      continue;
+    }
+    if (existsSync(target)) {
+      if (!force) {
+        console.log(`OK    WebUI hard link already present: ${target}`);
+        continue;
+      }
+      if (!dryRun) rmSync(target, { force: true });
+    }
+    if (dryRun) {
+      console.log(`DRY-RUN  hardlink ${source} -> ${target}`);
+      continue;
+    }
+    mkdirSync(path.dirname(target), { recursive: true });
+    try {
+      linkSync(source, target);
+      console.log(`Linked ${source} -> ${target}`);
+    } catch (error) {
+      if (error && (error.code === "EXDEV" || error.code === "EPERM")) {
+        copyFileSync(source, target);
+        console.warn(`WARN  Hard link unavailable (${error.code}); copied instead: ${target}`);
+      } else {
+        throw error;
+      }
+    }
+  }
 }
 function downloadArgs(item, dryRun = false) {
   const runner = hfRunner();
@@ -332,8 +377,11 @@ if (command === "list") {
   writeFileSync(modelsUrl, `${JSON.stringify(manifest, null, 2)}\n`);
   console.log(`Registered ${entry.alias}. Review config/models.json, then run \`npm run models -- plan ${entry.alias}\`.`);
 } else if (command === "plan") runHf(downloadArgs(find(process.argv[3]), true));
-else if (command === "download") runHf(downloadArgs(find(process.argv[3])));
-else if (command === "verify") {
+else if (command === "download") {
+  const item = find(process.argv[3]);
+  const status = runHf(downloadArgs(item));
+  if (status === 0) ensureWebuiHardLinks(item);
+} else if (command === "verify") {
   const item = find(process.argv[3]);
   const missing = expectedFiles(item).filter((file) => !existsSync(path.join(destination(item), file)));
   if (missing.length) throw new Error(`Missing selected files for ${item.alias}: ${missing.join(", ")}`);
@@ -393,6 +441,15 @@ else if (command === "recommendations") {
     console.warn(`Note: ${resolved.extension || "(no extension)"} is not a preferred catalog format (.gguf/.safetensors/.onnx).`);
   }
   promotePath(source, target, { dryRun: flags.has("dry-run"), force: flags.has("force") });
+  if (!flags.has("dry-run")) {
+    const linkPlan = webuiHardLinkFromPromote(resolved.relative);
+    if (linkPlan) {
+      ensureWebuiHardLinks(
+        { localDir: "checkpoints", include: [path.posix.basename(linkPlan.sourceRel)] },
+        { force: flags.has("force") }
+      );
+    }
+  }
 } else if (command === "promote-plugin") {
   const { flags, positional } = parseFlags(process.argv.slice(3));
   const [service, relative] = positional;
@@ -405,6 +462,17 @@ else if (command === "recommendations") {
   const source = path.join(pluginInboxRoot, resolved.service, ...resolved.relative.split("/"));
   const target = path.join(pluginRoot, resolved.service, ...resolved.relative.split("/"));
   promotePath(source, target, { dryRun: flags.has("dry-run"), force: flags.has("force") });
+} else if (command === "link-webui") {
+  const { flags, positional } = parseFlags(process.argv.slice(3));
+  const alias = positional[0];
+  const items = alias ? [find(alias)] : manifest.models.filter((item) => webuiHardLinkPlans(item).length);
+  if (!items.length) {
+    console.log("No checkpoint pins with WebUI hard-link plans.");
+  }
+  for (const item of items) {
+    console.log(`WebUI links for ${item.alias}:`);
+    ensureWebuiHardLinks(item, { dryRun: flags.has("dry-run"), force: flags.has("force") });
+  }
 } else if (command === "inventory") {
   const files = walk(modelRoot).sort((a, b) => b.bytes - a.bytes);
   const total = files.reduce((sum, item) => sum + item.bytes, 0);
@@ -413,7 +481,7 @@ else if (command === "recommendations") {
   if (files.length > 25) console.log(`... ${files.length - 25} more`);
 } else {
   console.error(
-    "Usage: npm run models -- <list|add|search|plan|download|verify|sync-localai|recommendations|ready|inbox|promote|promote-plugin|auth|cache|inventory>"
+    "Usage: npm run models -- <list|add|search|plan|download|verify|sync-localai|recommendations|ready|inbox|promote|promote-plugin|link-webui|auth|cache|inventory>"
   );
   process.exitCode = 2;
 }

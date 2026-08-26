@@ -118,3 +118,36 @@ export function resolvePluginPromote(service, relativeFromInbox, allowedServices
   const relative = normalizeRelativePath(relativeFromInbox);
   return { service, relative };
 }
+
+/**
+ * Plan A1111 hard links from a managed checkpoint pin into Stable-diffusion/.
+ * @returns {{ sourceRel: string, targetRel: string, file: string }[]}
+ */
+export function webuiHardLinkPlans(item) {
+  if (!item || item.localDir !== "checkpoints") return [];
+  const files = (item.include ?? []).filter((pattern) => typeof pattern === "string" && !/[?*\[]/.test(pattern));
+  return files.map((file) => {
+    const base = path.posix.basename(file.replace(/\\/g, "/"));
+    return {
+      file: base,
+      sourceRel: path.posix.join("checkpoints", base),
+      targetRel: path.posix.join("Stable-diffusion", base)
+    };
+  });
+}
+
+/**
+ * Plan a WebUI hard link after promoting a checkpoints/ inbox file.
+ * @returns {{ sourceRel: string, targetRel: string } | null}
+ */
+export function webuiHardLinkFromPromote(relativeCatalogPath) {
+  const relative = normalizeRelativePath(relativeCatalogPath);
+  const parts = relative.split("/");
+  if (parts[0] !== "checkpoints" || parts.length !== 2) return null;
+  const file = parts[1];
+  if (!file || file.includes("..")) return null;
+  return {
+    sourceRel: relative,
+    targetRel: path.posix.join("Stable-diffusion", file)
+  };
+}
