@@ -56,10 +56,24 @@ export function parseProfileCommand(argv, startIndex = 3) {
   const positional = [];
   for (let index = startIndex; index < argv.length; index++) {
     const token = argv[index];
-    if (token === "--dry-run" || token === "--force" || token === "--allow-gpu-share") flags.add(token.slice(2));
-    else positional.push(token);
+    if (
+      token === "--dry-run" ||
+      token === "--force" ||
+      token === "--allow-gpu-share" ||
+      token === "--require-ready" ||
+      token === "--skip-ready"
+    ) {
+      flags.add(token.slice(2));
+    } else positional.push(token);
   }
   return { profile: positional[0], flags };
+}
+
+/** Soft readiness: warn by default; hard-fail only when requireReady is set. */
+export function readinessAction({ missingRequired, requireReady = false, skipReady = false }) {
+  if (skipReady || !missingRequired) return "continue";
+  if (requireReady) return "fail";
+  return "warn";
 }
 
 /** CUDA backends require nvidia compute; whisper/piper may install on cpu. */

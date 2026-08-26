@@ -14,8 +14,12 @@ npm run stack -- smoke
 npm run stack -- resources
 ```
 
-`ready` exits non-zero when required profile artifacts are missing. `smoke`
-prints the local switch matrix; add `--probe` to curl loopback HTTPS only for
+`ready` exits non-zero when required profile artifacts are missing. `stack:doctor`
+prints the same gaps as soft WARN lines (does not fail the doctor exit solely for
+missing artifacts). `stack -- up` / `switch` also warn by default; pass
+`--require-ready` to fail closed or `--skip-ready` to silence.
+
+`smoke` prints the local switch matrix; add `--probe` to curl loopback HTTPS only for
 services that are already running (nothing is started or stopped).
 
 ## Gateway returns 502 while the backend is healthy
