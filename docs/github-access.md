@@ -12,6 +12,31 @@ and credential boundaries for the hub and its managed forks.
 
 The ownership boundary is stored in `config/accounts.json`; fork URLs and preferred SSH origins are stored in `config/repos.json`.
 
+## Repository About and topics
+
+GitHub search ranks the repository **About** description, **topics**, and
+README. Those fields are not stored in Git; keep them aligned with
+[`package.json`](../package.json) `keywords` and the README lead.
+
+| Field          | Intended value                                                                                                                                                                       |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| About          | Local-first Docker Compose hub for LocalAI, PrivateGPT, Stable Diffusion WebUI, and ComfyUI on a GPU workstation.                                                                    |
+| Website        | `https://github.com/likwidmack/likwid-gaic#readme`                                                                                                                                   |
+| Topics         | `local-ai`, `local-llm`, `rag`, `gpu`, `nvidia`, `workstation`, `docker-compose`, `localai`, `privategpt`, `stable-diffusion`, `comfyui`, `huggingface`, `wsl2`, `openai-compatible` |
+| Social preview | Upload [`.github/social-preview.png`](../.github/social-preview.png) (1280×640) in repository Settings → General → Social preview                                                    |
+
+Apply or verify with the GitHub CLI as `likwidmack`:
+
+```powershell
+gh auth status --hostname github.com
+gh repo edit likwidmack/likwid-gaic --description "Local-first Docker Compose hub for LocalAI, PrivateGPT, Stable Diffusion WebUI, and ComfyUI on a GPU workstation." --homepage "https://github.com/likwidmack/likwid-gaic#readme"
+gh repo edit likwidmack/likwid-gaic --add-topic local-ai --add-topic local-llm --add-topic rag --add-topic gpu --add-topic nvidia --add-topic workstation --add-topic docker-compose --add-topic localai --add-topic privategpt --add-topic stable-diffusion --add-topic comfyui --add-topic huggingface --add-topic wsl2 --add-topic openai-compatible
+gh repo view likwidmack/likwid-gaic --json description,homepage,repositoryTopics
+```
+
+Do not use the word **Private** in the About line; the hub is public. Avoid
+filler topics (`hacktoberfest`, year tags, `seo`).
+
 ## Hub remote and SSH rewriting
 
 The hub's raw `origin` should use the canonical GitHub SSH form:
