@@ -7,6 +7,14 @@
 Local-first control plane for a GPU AI workstation: Compose profiles, model
 pins, storage policy, and managed forks.
 
+![likwid-gaic — GPU AI Control](.github/social-preview.png)
+
+This repository is the ops hub for [LocalAI](docs/localai-docker-setup.md),
+[PrivateGPT](docs/privategpt-docker-setup.md), [Stable Diffusion
+WebUI](docs/stable-diffusion-docker-setup.md), and
+[ComfyUI](docs/comfyui-docker-setup.md). It orchestrates those applications with
+Docker Compose; it does not replace them.
+
 **GAIC** stands for GPU AI Control (aligned with a read-mostly model/asset root
 such as `C:\gaic` on the reference workstation).
 
@@ -30,6 +38,14 @@ maintain a [profile README](https://docs.github.com/en/account-and-profile/conce
 you can pin this repository and link to it from your bio so visitors see what
 you work on and how to reach you. See [Personalize your profile](https://docs.github.com/en/account-and-profile/tutorials/personalize-your-profile)
 for optional profile fields (bio, links, pinned repositories).
+
+## Who this is for
+
+- Operators running a Windows / WSL2 / NVIDIA workstation with Docker Desktop
+- macOS or Linux hosts using CPU inference and RAG (`FORKEDAI_COMPUTE=cpu`)
+- Teams that want pinned Hugging Face models, storage policy, and Compose
+  profiles instead of ad hoc container setup
+- Maintainers tracking managed upstream forks without editing their worktrees
 
 ## What you get
 
