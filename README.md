@@ -157,8 +157,10 @@ still require a GPU). Lifecycle commands and HTTPS CA trust live in
 <details id="npm-scripts">
 <summary>npm scripts</summary>
 
-Scripts are defined in [`package.json`](package.json). Keywords:
-`local-ai`, `docker-compose`, `gpu`, `workstation`, `orchestration`.
+Scripts are defined in [`package.json`](package.json). Keywords (aligned with GitHub topics in
+[GitHub access](docs/github-access.md)):
+`local-ai`, `local-llm`, `rag`, `gpu`, `nvidia`, `workstation`, `docker-compose`, `localai`,
+`privategpt`, `stable-diffusion`, `comfyui`, `huggingface`, `wsl2`, `openai-compatible`.
 
 ### Stack (Compose)
 

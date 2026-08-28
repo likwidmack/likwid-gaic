@@ -93,12 +93,13 @@ npm run models -- recommendations comfy
 ```
 
 `ready` exits with status 1 when any **required** artifact is missing (recommended gaps are reported but non-blocking).
-| Profile | Required managed models / artifacts | Strongly recommended |
+
+| Profile     | Required managed models / artifacts           | Strongly recommended                                       |
 | ----------- | --------------------------------------------- | ---------------------------------------------------------- |
-| `inference` | `chat-qwen2.5-3b`, LocalAI YAML, CUDA backend | 7B chat/coder, Whisper STT, Piper TTS |
-| `rag` | Both LocalAI starter pins, YAML, documents | Sample docs; optional `chat-qwen2.5-7b` |
-| `media` | `sd15-starter` plus WebUI checkpoint path | `sdxl-base` + hard link; reviewed extensions |
-| `comfy` | `sd15-starter`, Comfy model layout dirs | `sdxl-base`; optional VAE/upscalers; reviewed custom nodes |
+| `inference` | `chat-qwen2.5-3b`, LocalAI YAML, CUDA backend | 7B chat/coder, Whisper STT, Piper TTS                      |
+| `rag`       | Both LocalAI starter pins, YAML, documents    | Sample docs; optional `chat-qwen2.5-7b`                    |
+| `media`     | `sd15-starter` plus WebUI checkpoint path     | `sdxl-base` + hard link; reviewed extensions               |
+| `comfy`     | `sd15-starter`, Comfy model layout dirs       | `sdxl-base`; optional VAE/upscalers; reviewed custom nodes |
 
 Upstream fork quickstarts may suggest larger models (for example PrivateGPT with Ollama Qwen 35B or Comfy partner API nodes). This hub keeps smaller local GGUF starters, optional 7B upgrades, and disables Comfy API nodes by default for loopback privacy.
 
