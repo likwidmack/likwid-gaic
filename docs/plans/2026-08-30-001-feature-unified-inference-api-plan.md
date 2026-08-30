@@ -123,11 +123,11 @@ gateway on loopback.
 
 ### U1 — Caddy dual upstream (`docker/Caddyfile`)
 
-- [ ] Add `(inference_upstream)` snippet: LocalAI `reverse_proxy` with
+- [x] Add `(inference_upstream)` snippet: LocalAI `reverse_proxy` with
       `/readyz`, Ollama fallback via `handle_errors` and `/api/tags`.
-- [ ] Apply snippet to `:8443`; add `handle /v1/models*` with
+- [x] Apply snippet to `:8443`; add `handle /v1/models*` with
       `Cache-Control: no-store`.
-- [ ] Leave `:8444`–`:8448` routes unchanged.
+- [x] Leave `:8444`–`:8448` routes unchanged.
 
 **Verify:** `MSYS_NO_PATHCONV=1 docker run … caddy validate` (or
 `npm run stack:config` after gateway mount exists); manual switch between
@@ -135,11 +135,11 @@ gateway on loopback.
 
 ### U2 — `models-refresh` CLI (`scripts/docker.mjs`, `scripts/stack-policy.mjs`)
 
-- [ ] `gatewayModelsUrl`, `parseGatewayModelIds`, `inferActiveEngine` in
+- [x] `gatewayModelsUrl`, `parseGatewayModelIds`, `inferActiveEngine` in
       `stack-policy.mjs`.
-- [ ] `models-refresh` command: `curl -kfsS` probe, print engine/models/status,
+- [x] `models-refresh` command: `curl -kfsS` probe, print engine/models/status,
       exit non-zero on failure.
-- [ ] `printModelsRefreshHint` after successful `switch` for `inference`, `rag`,
+- [x] `printModelsRefreshHint` after successful `switch` for `inference`, `rag`,
       `ollama`.
 
 **Verify:** `npm run stack -- models-refresh` with inference up; repeat after
@@ -147,18 +147,18 @@ gateway on loopback.
 
 ### U3 — Validation and tests
 
-- [ ] `scripts/validate.mjs`: assert `:8443` dual upstream, health paths,
+- [x] `scripts/validate.mjs`: assert `:8443` dual upstream, health paths,
       `no-store`, `models-refresh` wiring.
-- [ ] `scripts/cli-policy.test.mjs`: URL builder, JSON parse, engine inference.
+- [x] `scripts/cli-policy.test.mjs`: URL builder, JSON parse, engine inference.
 
 **Verify:** `npm test`.
 
 ### U4 — Documentation
 
-- [ ] `docs/container-operations.md` — unified URL, refresh command, switch hint.
-- [ ] `docs/ollama-docker-setup.md` — `:8443` primary, `:8448` secondary.
-- [ ] `docs/architecture.md` — gateway routing note.
-- [ ] `README.md` — profiles table and npm scripts.
+- [x] `docs/container-operations.md` — unified URL, refresh command, switch hint.
+- [x] `docs/ollama-docker-setup.md` — `:8443` primary, `:8448` secondary.
+- [x] `docs/architecture.md` — gateway routing note.
+- [x] `README.md` — profiles table and npm scripts.
 
 **Verify:** `npm test` (Markdown link check); Prettier on maintained Markdown.
 
