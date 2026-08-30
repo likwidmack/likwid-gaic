@@ -5,7 +5,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import process from "node:process";
 import { assertGatewayAuthForBind, isLoopbackBind } from "./gateway-policy.mjs";
-import { hostPath, resolveComputeMode } from "./paths.mjs";
+import { hostPath, isAutoComputeEnv, resolveComputeMode } from "./paths.mjs";
 import {
   assertBackendAllowed,
   assertCpuAllowsProfile,
@@ -28,7 +28,9 @@ const storage = readJson("storage.json");
 const stack = readJson("stack.json");
 const gpuExclusive = stack.gpuExclusive;
 const windows = process.platform === "win32";
+const computeAuto = isAutoComputeEnv();
 const computeMode = resolveComputeMode();
+const computeModeLabel = `${computeMode}${computeAuto ? " (auto)" : ""}`;
 const repoPath = (name) => {
   const item = repos.repositories.find((repo) => repo.name === name);
   if (!item) throw new Error(`Unknown repository: ${name}`);
@@ -183,7 +185,7 @@ function enforceGatewayAuthPolicy() {
 }
 
 function printSmokeChecklist() {
-  console.log(`Compute mode: ${computeMode}`);
+  console.log(`Compute mode: ${computeModeLabel}`);
   console.log("Local smoke matrix (does not start or stop services):\n");
   for (const item of smokeMatrix) {
     console.log(`${item.step}. npm run stack -- switch ${item.profile}`);
@@ -199,8 +201,8 @@ function printSmokeChecklist() {
 function switchProfile(profile, { dryRun = false, allowShare = false, flags = new Set() } = {}) {
   if (!stack.profiles.includes(profile)) throw new Error(`Unknown profile: ${profile}`);
   assertCpuAllowsProfile(computeMode, profile);
-  const toStop = gpuConflictsForProfile(gpuExclusive, profile, runningGpuServices());
-  const toKeep = [...gpuServicesForProfile(gpuExclusive, profile)];
+  const toStop = computeMode === "cpu" ? [] : gpuConflictsForProfile(gpuExclusive, profile, runningGpuServices());
+  const toKeep = computeMode === "cpu" ? [] : [...gpuServicesForProfile(gpuExclusive, profile)];
   console.log(`Switch plan for profile "${profile}" (compute=${computeMode}):`);
   console.log(`  stop GPU services: ${toStop.length ? toStop.join(", ") : "none"}`);
   console.log(`  keep/start GPU services: ${toKeep.length ? toKeep.join(", ") : "none"}`);
@@ -288,7 +290,7 @@ if (command === "doctor") {
     ["Hugging Face CLI", ...hfCheck]
   ];
   let failures = 0;
-  console.log(`Compute mode: ${computeMode}${process.env.FORKEDAI_COMPUTE ? "" : " (default)"}`);
+  console.log(`Compute mode: ${computeModeLabel}`);
   for (const [label, program, args] of checks) {
     const result = run(program, args, { capture: true, env: process.env });
     const softGpu = label === "NVIDIA GPU" && computeMode === "cpu";
@@ -302,11 +304,13 @@ if (command === "doctor") {
   const cores = physicalCoreCount();
   const threads = suggestedLocalAiThreads();
   if (cores) console.log(`\nHost CPU: ${cores} physical cores${threads ? `; suggested LOCALAI_THREADS=${threads}` : ""}`);
-  const activeGpu = runningGpuServices();
-  if (activeGpu.length > 1) {
-    console.warn(`\nWARN  Multiple GPU services running (${activeGpu.join(", ")}). On a single GPU, run one profile at a time.`);
-  } else if (activeGpu.length === 1) {
-    console.log(`\nGPU workload: ${activeGpu[0]}`);
+  if (computeMode !== "cpu") {
+    const activeGpu = runningGpuServices();
+    if (activeGpu.length > 1) {
+      console.warn(`\nWARN  Multiple GPU services running (${activeGpu.join(", ")}). On a single GPU, run one profile at a time.`);
+    } else if (activeGpu.length === 1) {
+      console.log(`\nGPU workload: ${activeGpu[0]}`);
+    }
   }
   console.log("\nConfigured paths:");
   for (const [name, entry] of Object.entries(storage.roots)) {
@@ -336,12 +340,14 @@ if (command === "doctor") {
     process.exitCode = 1;
   }
 } else if (command === "resources") {
-  console.log(`Compute mode: ${computeMode}`);
+  console.log(`Compute mode: ${computeModeLabel}`);
   const gpu = run("nvidia-smi", ["--query-gpu=index,name,memory.total,memory.used,memory.free,utilization.gpu,temperature.gpu", "--format=csv,noheader"], { capture: true, env: process.env });
   console.log(gpu.ok ? `GPU\n${gpu.output}` : `GPU\nunavailable: ${gpu.output}`);
-  const activeGpu = runningGpuServices();
-  console.log(`\nRunning GPU services: ${activeGpu.length ? activeGpu.join(", ") : "none"}`);
-  if (activeGpu.length > 1) console.warn("WARN  More than one GPU service is running; expect VRAM contention on a single GPU.");
+  if (computeMode !== "cpu") {
+    const activeGpu = runningGpuServices();
+    console.log(`\nRunning GPU services: ${activeGpu.length ? activeGpu.join(", ") : "none"}`);
+    if (activeGpu.length > 1) console.warn("WARN  More than one GPU service is running; expect VRAM contention on a single GPU.");
+  }
   const services = run("docker", [...base, ...allProfiles, "ps", "--format", "table {{.Service}}\t{{.Status}}\t{{.Image}}"], { capture: true });
   if (services.ok && services.output) console.log(`\nCompose services\n${services.output}`);
   if (runningServices().includes("localai")) {
@@ -393,6 +399,9 @@ else if (command === "up") {
   if (service) {
     const metadata = stack.services.find((item) => item.name === service);
     if (!metadata) throw new Error(`Unknown service: ${service}`);
+    if (!metadata.repository) {
+      throw new Error(`Service "${service}" uses a registry image; use \`npm run stack -- pull\` instead of build.`);
+    }
     assertCpuAllowsService(computeMode, service);
     assertCpuAllowsProfile(computeMode, metadata.profile);
     compose(["--profile", metadata.profile, "build", service]);

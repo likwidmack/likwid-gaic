@@ -66,3 +66,10 @@ https://{$GATEWAY_HOSTNAME:localhost}:8447 {
 		import bridge_upstream /system_stats
 	}
 }
+
+https://{$GATEWAY_HOSTNAME:localhost}:8448 {
+	import local_security
+	reverse_proxy ollama:11434 {
+		import bridge_upstream /api/tags
+	}
+}

@@ -16,7 +16,7 @@ x-shared-models-inbox: &shared-models-inbox
   target: /shared/models/inbox
 x-shared-tensors: &shared-tensors
   type: bind
-  source: ${TENSOR_ROOT:-/mnt/d/forkedAI/scratch/tensors}
+  source: ${TENSOR_ROOT:-/mnt/c/gaic/shared/tensors}
   target: /shared/tensors
 x-shared-objects: &shared-objects
   type: bind
@@ -39,7 +39,7 @@ x-shared-tools: &shared-tools
 services:
   gateway:
     <<: *security-defaults
-    profiles: ["inference", "rag", "media", "comfy"]
+    profiles: ["inference", "rag", "media", "comfy", "ollama"]
     image: ${CADDY_IMAGE:-caddy:2.11.4-alpine}
     init: true
     restart: unless-stopped
@@ -56,6 +56,7 @@ services:
       - "${FORKEDAI_BIND_ADDRESS:-127.0.0.1}:${STABLE_DIFFUSION_HTTPS_PORT:-8445}:8445"
       - "${FORKEDAI_BIND_ADDRESS:-127.0.0.1}:${COMFY_HTTPS_PORT:-8446}:8446"
       - "${FORKEDAI_BIND_ADDRESS:-127.0.0.1}:${COMFY_API_HTTPS_PORT:-8447}:8447"
+      - "${FORKEDAI_BIND_ADDRESS:-127.0.0.1}:${OLLAMA_HTTPS_PORT:-8448}:8448"
     volumes:
       - {type: bind, source: "${HUB_CONTEXT:-.}/docker/Caddyfile", target: /etc/caddy/Caddyfile, read_only: true}
       - {type: bind, source: "${RUNTIME_ROOT:-/mnt/e/data/forkedAI/runtime}/caddy/gateway-auth.caddy", target: /etc/caddy/snippets/gateway-auth.caddy, read_only: true}
@@ -83,6 +84,9 @@ services:
         condition: service_healthy
         required: false
       comfy-frontend:
+        condition: service_healthy
+        required: false
+      ollama:
         condition: service_healthy
         required: false
     deploy:
@@ -310,6 +314,34 @@ services:
       resources:
         reservations:
           cpus: "0.5"
+
+  ollama:
+    <<: *security-defaults
+    profiles: ["ollama"]
+    image: ${OLLAMA_IMAGE:-ollama/ollama:0.32.6}
+    init: true
+    restart: unless-stopped
+    # Official ollama/ollama images do not ship curl; use the CLI for health.
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    expose:
+      - "11434"
+    networks:
+      - forkedai-inference
+    environment:
+      NVIDIA_VISIBLE_DEVICES: ${NVIDIA_VISIBLE_DEVICES:-0}
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+    volumes:
+      - {type: bind, source: "${MODEL_ROOT:-/mnt/c/gaic/models}", target: /root/.ollama}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - {driver: nvidia, count: all, capabilities: [gpu]}
 
 networks:
   forkedai-edge:

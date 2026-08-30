@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import os from "node:os";
 import path from "node:path";
 import { describe, it } from "node:test";
-import { expandHome, hostPath, pathFlavor, pathKey, pathModule, resolveComputeMode, usesPosixPaths } from "./paths.mjs";
+import { expandHome, hostPath, isAutoComputeEnv, pathFlavor, pathKey, pathModule, resolveComputeMode, usesPosixPaths } from "./paths.mjs";
 
 describe("expandHome", () => {
   it("expands ~/ relative paths with os.homedir()", () => {
@@ -55,18 +55,38 @@ describe("path helpers", () => {
 });
 
 describe("resolveComputeMode", () => {
-  it("honors explicit nvidia and cpu values", () => {
-    assert.equal(resolveComputeMode({ FORKEDAI_COMPUTE: "nvidia" }, "darwin"), "nvidia");
-    assert.equal(resolveComputeMode({ FORKEDAI_COMPUTE: "CPU" }, "win32"), "cpu");
+  it("honors explicit nvidia and cpu values without probing", () => {
+    let probed = 0;
+    const probe = () => {
+      probed += 1;
+      return true;
+    };
+    assert.equal(resolveComputeMode({ FORKEDAI_COMPUTE: "nvidia" }, "darwin", { probe }), "nvidia");
+    assert.equal(resolveComputeMode({ FORKEDAI_COMPUTE: "CPU" }, "win32", { probe }), "cpu");
+    assert.equal(probed, 0);
   });
 
-  it("defaults to cpu on darwin and nvidia elsewhere when unset", () => {
-    assert.equal(resolveComputeMode({}, "darwin"), "cpu");
-    assert.equal(resolveComputeMode({}, "win32"), "nvidia");
-    assert.equal(resolveComputeMode({}, "linux"), "nvidia");
+  it("treats unset and auto as probe-driven", () => {
+    assert.equal(resolveComputeMode({}, "darwin", { probe: () => true }), "nvidia");
+    assert.equal(resolveComputeMode({ FORKEDAI_COMPUTE: "auto" }, "linux", { probe: () => true }), "nvidia");
+    assert.equal(resolveComputeMode({}, "win32", { probe: () => false }), "cpu");
+    assert.equal(resolveComputeMode({ FORKEDAI_COMPUTE: "AUTO" }, "darwin", { probe: () => false }), "cpu");
   });
 
   it("rejects invalid values", () => {
-    assert.throws(() => resolveComputeMode({ FORKEDAI_COMPUTE: "metal" }, "darwin"), /Invalid FORKEDAI_COMPUTE/);
+    assert.throws(
+      () => resolveComputeMode({ FORKEDAI_COMPUTE: "metal" }, "darwin", { probe: () => true }),
+      /Invalid FORKEDAI_COMPUTE/
+    );
+  });
+});
+
+describe("isAutoComputeEnv", () => {
+  it("is true for unset and auto, false for pinned modes", () => {
+    assert.equal(isAutoComputeEnv({}), true);
+    assert.equal(isAutoComputeEnv({ FORKEDAI_COMPUTE: "auto" }), true);
+    assert.equal(isAutoComputeEnv({ FORKEDAI_COMPUTE: " AUTO " }), true);
+    assert.equal(isAutoComputeEnv({ FORKEDAI_COMPUTE: "nvidia" }), false);
+    assert.equal(isAutoComputeEnv({ FORKEDAI_COMPUTE: "cpu" }), false);
   });
 });

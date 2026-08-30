@@ -46,8 +46,9 @@ or derived from these files.
 - Use Docker Desktop in Linux-container mode with current WSL2 integration on
   Windows. Do not recommend a second Docker Engine or Linux NVIDIA display
   driver inside the integrated WSL distribution.
-- Set `FORKEDAI_COMPUTE=cpu` on macOS (default) or non-NVIDIA Linux for
-  inference/RAG; `media`/`comfy` require `nvidia`.
+- Unset or `FORKEDAI_COMPUTE=auto` probes host `nvidia-smi` and resolves `nvidia`
+  or `cpu`. Pin `nvidia` or `cpu` to skip the probe. `media` and `comfy` require
+  `nvidia` after resolution.
 
 ## Skill: first run
 
@@ -130,12 +131,11 @@ npx --yes prettier@3.6.2 --write README.md $docs
 ## Skill: Docker and Compose
 
 - Prefer `npm run stack -- ...`; `scripts/docker.mjs` injects canonical fork
-  contexts and storage roots and appends `compose.cpu.yaml` when
-  `FORKEDAI_COMPUTE=cpu` (default on macOS).
-- Supported profiles are `inference`, `rag`, `media`, and `comfy`. In CPU mode
-  only `inference` and `rag` are allowed; media/comfy require `nvidia`.
-- On a single-GPU host, at most one of `localai`, `stable-diffusion`, or
-  `comfy-backend` may run. Use `npm run stack -- switch PROFILE` to stop
+  contexts and storage roots and appends `compose.cpu.yaml` when resolved mode is
+  `cpu`. In CPU mode `inference`, `rag`, and `ollama` are allowed; `media` and
+  `comfy` require `nvidia`.
+- On a single-GPU host, at most one of `localai`, `stable-diffusion`,
+  `comfy-backend`, or `ollama` may run. Use `npm run stack -- switch PROFILE` to stop
   conflicting GPU services before starting another profile. `up` refuses GPU
   conflicts unless `--allow-gpu-share` is passed. See
   [docs/resource-utilization.md](docs/resource-utilization.md).
@@ -175,8 +175,8 @@ Storage policy:
 
 | Role               | Root               | Rule                                                   |
 | ------------------ | ------------------ | ------------------------------------------------------ |
-| Read-mostly assets | `C:\gaic`          | Models, reviewed plugins, and tools                    |
-| Rebuildable data   | `D:\forkedAI`      | Caches, tensors, and temporary files only              |
+| Read-mostly assets | `C:\gaic`          | Models, plugins, tools, and shared tensor exchange     |
+| Rebuildable data   | `D:\forkedAI`      | Hugging Face / Torch caches and Comfy temp only        |
 | Durable state      | `E:\data\forkedAI` | Media, documents, objects, runtime state, and Caddy CA |
 | Host-only backup   | `E:\VIMG`          | Never mount into a container                           |
 

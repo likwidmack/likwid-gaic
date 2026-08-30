@@ -22,6 +22,7 @@ import {
   webuiHardLinkPlans
 } from "./model-policy.mjs";
 import { hostPath, pathFlavor, pathModule } from "./paths.mjs";
+import { ensureWebuiDirBridges } from "./webui-share.mjs";
 
 const modelsUrl = new URL("../config/models.json", import.meta.url);
 const storage = JSON.parse(readFileSync(new URL("../config/storage.json", import.meta.url), "utf8"));
@@ -465,6 +466,14 @@ else if (command === "recommendations") {
 } else if (command === "link-webui") {
   const { flags, positional } = parseFlags(process.argv.slice(3));
   const alias = positional[0];
+  const bridgeResult = ensureWebuiDirBridges(modelRoot, {
+    dryRun: flags.has("dry-run"),
+    force: flags.has("force")
+  });
+  for (const line of bridgeResult.ok) console.log(`OK    dir bridge ${line}`);
+  for (const line of bridgeResult.skipped) console.log(`SKIP  dir bridge ${line}`);
+  for (const line of bridgeResult.errors) console.error(`ERROR dir bridge ${line}`);
+  if (bridgeResult.errors.length) process.exitCode = 1;
   const items = alias ? [find(alias)] : manifest.models.filter((item) => webuiHardLinkPlans(item).length);
   if (!items.length) {
     console.log("No checkpoint pins with WebUI hard-link plans.");

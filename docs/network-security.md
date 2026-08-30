@@ -7,7 +7,7 @@ This is a local AI development stack, not an internet-facing deployment. Its def
 | Control               | Default                                                                   | Why                                                                    |
 | --------------------- | ------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
 | Networks              | Named bridges `forkedai-edge`, `forkedai-inference`, and `forkedai-media` | Service-name DNS with inference/media trust-zone separation            |
-| Host publishing       | Caddy HTTPS gateway on IPv4 loopback ports 8443-8447                      | One reviewed ingress service without intentional LAN exposure          |
+| Host publishing       | Caddy HTTPS gateway on IPv4 loopback ports 8443-8448                      | One reviewed ingress service without intentional LAN exposure          |
 | Standalone attachment | Not enabled by Compose                                                    | Reduces accidental attachment of unrelated containers                  |
 | Privilege escalation  | `no-new-privileges:true`                                                  | Blocks gaining additional privileges through setuid/setgid executables |
 | Docker socket         | Never mounted                                                             | Prevents a compromised AI service from controlling the Docker daemon   |
@@ -130,7 +130,7 @@ Keep:
 FORKEDAI_BIND_ADDRESS=127.0.0.1
 ```
 
-This is the implemented default. Host applications use `https://localhost` on the service-specific gateway ports 8443-8447, while containers use service DNS such as `http://localai:8080`.
+This is the implemented default. Host applications use `https://localhost` on the service-specific gateway ports 8443-8448, while containers use service DNS such as `http://localai:8080`.
 
 **Setbacks:** Other computers and phones cannot reach the services, and remote access requires a separate VPN or tunnel. Loopback binding is not authentication: untrusted software running on the computer can still attempt to connect to the published ports.
 
@@ -161,7 +161,7 @@ Prefer a WireGuard or Tailscale-style private VPN over router port forwarding. B
 The implemented topology uses multiple networks:
 
 - `forkedai-edge`: HTTPS gateway ingress.
-- `forkedai-inference`: gateway, PrivateGPT, and LocalAI.
+- `forkedai-inference`: gateway, PrivateGPT, LocalAI, and Ollama.
 - `forkedai-media`: gateway and media services.
 
 Only the gateway joins more than one network. This reduces lateral movement but adds routing and troubleshooting overhead. Further split a zone if services within it are not mutually trusted; a bridge cannot provide per-service firewall isolation.
@@ -191,7 +191,7 @@ docker network inspect forkedai-edge forkedai-inference forkedai-media
 docker ps --format "table {{.Names}}\t{{.Ports}}\t{{.Networks}}"
 ```
 
-The only published bindings should belong to the gateway at `127.0.0.1:8443` through `127.0.0.1:8447`; backend services should show no host port. The network inspection should show only the intended ForkedAI containers. Re-run these checks after adding a service, changing `.env`, or upgrading Docker.
+The only published bindings should belong to the gateway at `127.0.0.1:8443` through `127.0.0.1:8448`; backend services should show no host port. The network inspection should show only the intended ForkedAI containers. Re-run these checks after adding a service, changing `.env`, or upgrading Docker.
 
 ## Incident response
 

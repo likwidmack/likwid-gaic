@@ -155,7 +155,7 @@ overlay), then `npm run models -- promote …` after review. See
 | Caddy CA and state          | `E:\data\forkedAI\runtime\caddy\data`  |
 | Shared serialized objects   | `E:\data\forkedAI\shared\objects`      |
 | Temporary files             | `D:\forkedAI\scratch\comfy\temp`       |
-| Shared tensor files         | `D:\forkedAI\scratch\tensors`          |
+| Shared tensor files         | `C:\gaic\shared\tensors`               |
 | Torch cache                 | `D:\forkedAI\cache\torch`              |
 | Hugging Face cache          | `D:\forkedAI\cache\huggingface`        |
 | Reviewed custom nodes       | `C:\gaic\shared\plugins\comfyui`       |

@@ -33,8 +33,10 @@ const requiredScripts = [
   "stack:rag",
   "stack:media",
   "stack:comfy",
+  "stack:ollama",
   "models",
   "media",
+  "ollama",
   "repos:status",
 ];
 for (const script of requiredScripts) {
@@ -84,10 +86,10 @@ for (const [profile, spec] of Object.entries(profileArtifacts.profiles ?? {})) {
 for (const group of Object.values(profileArtifacts.layout?.models ?? {})) {
   if (!Array.isArray(group) || !group.length) throw new Error("profile-artifacts layout.models groups must be non-empty arrays");
 }
-for (const dir of ["localai", "Stable-diffusion"]) {
+for (const dir of ["localai", "Stable-diffusion", "VAE", "Lora", "ControlNet", "embeddings"]) {
   if (!profileArtifacts.layout?.models?.a1111?.includes(dir)) throw new Error(`profile-artifacts layout.models.a1111 must include ${dir}`);
 }
-for (const dir of ["checkpoints", "vae", "loras", "upscale_models"]) {
+for (const dir of ["checkpoints", "vae", "loras", "controlnet", "upscale_models"]) {
   if (!profileArtifacts.layout?.models?.comfy?.includes(dir)) throw new Error(`profile-artifacts layout.models.comfy must include ${dir}`);
 }
 for (const alias of ["chat-qwen2.5-3b", "embed-nomic-v1.5", "sd15-starter"]) {
@@ -95,7 +97,7 @@ for (const alias of ["chat-qwen2.5-3b", "embed-nomic-v1.5", "sd15-starter"]) {
 }
 const repoNames = new Set(config.repositories.map((repo) => repo.name));
 if (stack.gateway?.defaultBindAddress !== "127.0.0.1") throw new Error("The HTTPS gateway must default to loopback");
-for (const [service, port] of Object.entries({localai: 8443, "private-gpt": 8444, "stable-diffusion": 8445, comfy: 8446, "comfy-api": 8447})) if (stack.gateway?.defaultPorts?.[service] !== port) throw new Error(`Invalid HTTPS gateway port for ${service}`);
+for (const [service, port] of Object.entries({localai: 8443, "private-gpt": 8444, "stable-diffusion": 8445, comfy: 8446, "comfy-api": 8447, ollama: 8448})) if (stack.gateway?.defaultPorts?.[service] !== port) throw new Error(`Invalid HTTPS gateway port for ${service}`);
 const networkKeys = new Set((stack.networks ?? []).map((network) => network.key));
 for (const key of ["forkedai-edge", "forkedai-inference", "forkedai-media"]) if (!networkKeys.has(key)) throw new Error("Missing stack network: " + key);
 for (const network of stack.networks ?? []) if (network.driver !== "bridge") throw new Error(`Stack network ${network.key} must use the bridge driver`);
@@ -106,7 +108,7 @@ for (const shared of stack.sharedStorage ?? []) {
 }
 for (const service of stack.services ?? []) {
   if (!stack.profiles.includes(service.profile)) throw new Error(`Unknown profile for ${service.name}`);
-  if (!repoNames.has(service.repository)) throw new Error(`Unknown repository for ${service.name}`);
+  if (service.repository != null && !repoNames.has(service.repository)) throw new Error(`Unknown repository for ${service.name}`);
 }
 const gpuExclusive = stack.gpuExclusive;
 if (!gpuExclusive?.services?.length) throw new Error("stack.gpuExclusive.services is required");
@@ -144,7 +146,7 @@ const dockerignore = readFileSync(new URL("../.dockerignore", import.meta.url), 
 for (const pattern of ["**", "!docker/", "!docker/**"]) if (!dockerignore.includes(pattern)) throw new Error("Docker build-context rules are missing " + pattern);
 const stableDockerfile = readFileSync(new URL("../docker/stable-diffusion.Dockerfile", import.meta.url), "utf8");
 for (const repository of ["stable-diffusion-webui-assets", "stable-diffusion-stability-ai", "generative-models", "k-diffusion", "BLIP"]) if (!stableDockerfile.includes("safe.directory '/opt/stable-diffusion/repositories/" + repository + "'")) throw new Error("Stable Diffusion is missing scoped Git trust for " + repository);
-for (const pattern of ["--exclude=.git", "--exclude=.env.*", "--exclude=models", "--exclude=outputs", "-r requirements_versions.txt"]) if (!stableDockerfile.includes(pattern)) throw new Error("Stable Diffusion build rules are missing " + pattern);
+for (const pattern of ["--exclude=.git", "--exclude=.env.*", "--exclude=models", "--exclude=outputs", "-r requirements_versions.txt", "--lora-dir", "/shared/models/Lora", "--vae-dir", "/shared/models/VAE"]) if (!stableDockerfile.includes(pattern)) throw new Error("Stable Diffusion build rules are missing " + pattern);
 const comfyFrontendDockerfile = readFileSync(new URL("../docker/comfy-frontend.Dockerfile", import.meta.url), "utf8");
 for (const pattern of ["--exclude=.git", "--exclude=.env.*", "--exclude=node_modules", "--exclude=dist"]) if (!comfyFrontendDockerfile.includes(pattern)) throw new Error("Comfy frontend build privacy rules are missing " + pattern);
 const comfyNginx = readFileSync(new URL("../docker/comfy-nginx.conf.template", import.meta.url), "utf8");
@@ -170,7 +172,7 @@ for (const variable of new Set([...compose.matchAll(/\$\{([A-Z][A-Z0-9_]*)(?::-[
 }
 if (!composeCpu.includes("localai/localai:v4.8.0")) throw new Error("compose.cpu.yaml must default LocalAI to the CPU image tag");
 if (!composeCpu.includes("!reset")) throw new Error("compose.cpu.yaml must reset NVIDIA device reservations");
-for (const service of ["localai", "stable-diffusion", "comfy-backend"]) {
+for (const service of ["localai", "stable-diffusion", "comfy-backend", "ollama"]) {
   if (!composeCpu.includes(`  ${service}:`)) throw new Error(`compose.cpu.yaml is missing ${service}`);
 }
 const storageBindings = {
@@ -192,7 +194,7 @@ for (const service of stack.services) if (!compose.includes(`  ${service.name}:`
 for (const service of gpuExclusive.services) if (!compose.includes(`  ${service}:`)) throw new Error(`GPU exclusive service ${service} is missing from Compose`);
 if (!compose.includes("  " + stack.gateway.service + ":")) throw new Error("Compose is missing the HTTPS gateway");
 for (const network of stack.networks) if (!compose.includes("  " + network.key + ":")) throw new Error("Compose is missing network " + network.key);
-for (const binding of ["LOCALAI_HTTPS_PORT:-8443", "PRIVATE_GPT_HTTPS_PORT:-8444", "STABLE_DIFFUSION_HTTPS_PORT:-8445", "COMFY_HTTPS_PORT:-8446", "COMFY_API_HTTPS_PORT:-8447"]) if (!compose.includes(binding)) throw new Error("Compose is missing HTTPS gateway binding " + binding);
+for (const binding of ["LOCALAI_HTTPS_PORT:-8443", "PRIVATE_GPT_HTTPS_PORT:-8444", "STABLE_DIFFUSION_HTTPS_PORT:-8445", "COMFY_HTTPS_PORT:-8446", "COMFY_API_HTTPS_PORT:-8447", "OLLAMA_HTTPS_PORT:-8448"]) if (!compose.includes(binding)) throw new Error("Compose is missing HTTPS gateway binding " + binding);
 if (!compose.includes("FORKEDAI_BIND_ADDRESS:-127.0.0.1")) throw new Error("The HTTPS gateway must publish on loopback by default");
 if ((compose.match(/^    ports:/gm) ?? []).length !== 1) throw new Error("Only the HTTPS gateway may publish host ports");
 if (!compose.includes("no-new-privileges:true")) throw new Error("Compose is missing the no-new-privileges baseline");
@@ -205,12 +207,19 @@ const modelsInboxBlock = compose.slice(compose.indexOf("x-shared-models-inbox:")
 if (modelsInboxBlock.includes("read_only: true")) throw new Error("models inbox mount must be writable (omit read_only)");
 const mediaScript = readFileSync(new URL("./media.mjs", import.meta.url), "utf8");
 if (!mediaScript.includes("inbox")) throw new Error("media init must create models/inbox and plugins/inbox staging directories");
+if (!mediaScript.includes("ensureWebuiDirBridges")) throw new Error("media init must ensure WebUI dir bridges for VAE/Lora/ControlNet");
+const webuiShare = readFileSync(new URL("./webui-share.mjs", import.meta.url), "utf8");
+if (!webuiShare.includes("WEBUI_DIR_BRIDGES") || !webuiShare.includes("junction")) {
+  throw new Error("webui-share.mjs must create WEBUI_DIR_BRIDGES junctions/symlinks");
+}
+if (webuiShare.includes("rmSync")) throw new Error("webui-share.mjs must not recursively delete directories; media init is non-destructive");
 for (const endpoint of ["127.0.0.1:8080/v1/models", "127.0.0.1:7860/", "127.0.0.1:8188/system_stats", "127.0.0.1/"]) if (!compose.includes(endpoint)) throw new Error("Compose health checks are missing " + endpoint);
+if (!compose.includes('"ollama", "list"')) throw new Error('Compose ollama healthcheck must use CMD ollama list (image has no curl)');
 const caddyfile = readFileSync(new URL("../docker/Caddyfile", import.meta.url), "utf8");
-for (const route of ["{$GATEWAY_HOSTNAME:localhost}:8443", "{$GATEWAY_HOSTNAME:localhost}:8444", "{$GATEWAY_HOSTNAME:localhost}:8445", "{$GATEWAY_HOSTNAME:localhost}:8446", "{$GATEWAY_HOSTNAME:localhost}:8447"]) if (!caddyfile.includes(route)) throw new Error("Caddy is missing hostname route " + route);
+for (const route of ["{$GATEWAY_HOSTNAME:localhost}:8443", "{$GATEWAY_HOSTNAME:localhost}:8444", "{$GATEWAY_HOSTNAME:localhost}:8445", "{$GATEWAY_HOSTNAME:localhost}:8446", "{$GATEWAY_HOSTNAME:localhost}:8447", "{$GATEWAY_HOSTNAME:localhost}:8448"]) if (!caddyfile.includes(route)) throw new Error("Caddy is missing hostname route " + route);
 if (!caddyfile.includes("import /etc/caddy/snippets/gateway-auth.caddy")) throw new Error("Caddy must import the gateway-auth snippet");
 if (!caddyfile.includes("import gateway_auth")) throw new Error("Caddy local_security must import gateway_auth");
-for (const upstream of ["localai:8080", "private-gpt:8080", "stable-diffusion:7860", "comfy-frontend:80", "comfy-backend:8188"]) if (!caddyfile.includes(upstream)) throw new Error("Caddy is missing upstream " + upstream);
+for (const upstream of ["localai:8080", "private-gpt:8080", "stable-diffusion:7860", "comfy-frontend:80", "comfy-backend:8188", "ollama:11434"]) if (!caddyfile.includes(upstream)) throw new Error("Caddy is missing upstream " + upstream);
 if (!caddyfile.includes("tls internal") || !caddyfile.includes("admin off")) throw new Error("Caddy must use its internal CA with the admin API disabled");
 if (!compose.includes("gateway-auth.caddy")) throw new Error("Compose must mount the gateway-auth snippet");
 if (!envKeys.has("GATEWAY_HOSTNAME")) throw new Error(".env.example is missing GATEWAY_HOSTNAME");

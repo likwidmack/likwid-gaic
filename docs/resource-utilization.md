@@ -13,9 +13,9 @@ generation, and the root README
 
 ## Single-GPU exclusivity
 
-Three services request the NVIDIA GPU: `localai`, `stable-diffusion`, and
-`comfy-backend`. Docker grants GPU access but does not serialize workloads. On a
-single-GPU host, run **at most one** of those services at a time.
+Four GPU services request the NVIDIA GPU: `localai`, `stable-diffusion`,
+`comfy-backend`, and `ollama`. Docker grants GPU access but does not serialize
+workloads. On a single-GPU host, run **at most one** of those services at a time.
 
 | Profile     | GPU service        | CPU companions              |
 | ----------- | ------------------ | --------------------------- |
@@ -23,6 +23,7 @@ single-GPU host, run **at most one** of those services at a time.
 | `rag`       | `localai`          | `private-gpt`, `gateway`    |
 | `media`     | `stable-diffusion` | `gateway`                   |
 | `comfy`     | `comfy-backend`    | `comfy-frontend`, `gateway` |
+| `ollama`    | `ollama`           | `gateway`                   |
 
 PrivateGPT is CPU-side for ingestion and orchestration; it calls LocalAI over
 HTTP for LLM and embedding inference. Shared bind mounts exchange files only;
@@ -37,6 +38,7 @@ npm run stack -- switch inference
 npm run stack -- switch rag
 npm run stack -- switch media
 npm run stack -- switch comfy
+npm run stack -- switch ollama
 ```
 
 Preview the stop/start plan without changing containers:

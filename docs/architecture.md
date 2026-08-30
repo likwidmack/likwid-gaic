@@ -7,16 +7,16 @@ inventory is generated locally and excluded from Git.
 
 ## Configuration model
 
-| File                   | Responsibility                                                       |
-| ---------------------- | -------------------------------------------------------------------- |
-| `config/accounts.json` | GitHub account boundary, SSH host aliases, and credential policy     |
-| `config/repos.json`    | Five managed fork identities and Windows / WSL / POSIX source paths  |
-| `config/storage.json`  | Canonical host storage roots (Windows, WSL, and POSIX)               |
-| `config/models.json`   | Pinned Hugging Face selections and LocalAI metadata                  |
-| `config/stack.json`    | Profiles, services, networks, gateway ports, and shared mount policy |
-| `.env.example`         | Non-secret Compose override template (storage/repos examples)        |
-| `compose.yaml`         | Executable container topology (NVIDIA defaults)                      |
-| `compose.cpu.yaml`     | CPU overlay for inference/RAG when `FORKEDAI_COMPUTE=cpu`            |
+| File                   | Responsibility                                                         |
+| ---------------------- | ---------------------------------------------------------------------- |
+| `config/accounts.json` | GitHub account boundary, SSH host aliases, and credential policy       |
+| `config/repos.json`    | Five managed fork identities and Windows / WSL / POSIX source paths    |
+| `config/storage.json`  | Canonical host storage roots (Windows, WSL, and POSIX)                 |
+| `config/models.json`   | Pinned Hugging Face selections and LocalAI metadata                    |
+| `config/stack.json`    | Profiles, services, networks, gateway ports, and shared mount policy   |
+| `.env.example`         | Non-secret Compose override template (storage/repos examples)          |
+| `compose.yaml`         | Executable container topology (NVIDIA defaults)                        |
+| `compose.cpu.yaml`     | CPU overlay for inference, rag, and ollama when resolved mode is `cpu` |
 
 The npm stack runner injects fork and storage paths from JSON configuration via
 `scripts/paths.mjs`. `.env.example` lists every Compose variable with Windows
@@ -44,10 +44,10 @@ See [Container operations](container-operations.md) for lifecycle commands and
   backend and exposes the NVIDIA GPU through the current Windows driver. Do not
   install a second Docker Engine or NVIDIA Linux display driver inside the
   integrated WSL distribution.
-- **macOS:** Docker Desktop without NVIDIA passthrough; default
-  `FORKEDAI_COMPUTE=cpu` for inference/RAG.
+- **macOS:** Docker Desktop without NVIDIA passthrough; unset or `auto` probes
+  host `nvidia-smi` and falls back to `cpu` for inference/RAG/Ollama.
 - **Native Linux:** Docker Engine or Desktop; NVIDIA Container Toolkit for GPU
-  profiles, or `FORKEDAI_COMPUTE=cpu` without a GPU.
+  profiles. Without NVIDIA, unset/`auto` resolves to `cpu`.
 - LocalAI uses the configured CUDA 13 image in nvidia mode, or the CPU tag in
   cpu mode. Stable Diffusion and ComfyUI images remain CUDA-based and
   NVIDIA-only.

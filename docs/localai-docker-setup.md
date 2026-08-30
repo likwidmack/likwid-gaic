@@ -212,10 +212,11 @@ LocalAI documents a known SYCL issue with memory mapping. If an Intel model hang
   Allocate sufficient RAM, CPU, swap, and Docker disk capacity to Docker
   Desktop/WSL2. Confirm GPU access with the NVIDIA Docker test before starting
   LocalAI in nvidia mode.
-- **macOS:** Use Docker Desktop and `FORKEDAI_COMPUTE=cpu` (default). NVIDIA
-  LocalAI and media/comfy profiles are not supported.
+- **macOS:** Use Docker Desktop. Unset or `FORKEDAI_COMPUTE=auto` probes host
+  `nvidia-smi` and falls back to `cpu` when CUDA is unavailable. NVIDIA LocalAI and
+  media/comfy profiles require a GPU after resolution.
 - **Native Linux:** Use Docker Engine or Desktop. For GPU profiles install the
-  NVIDIA Container Toolkit; otherwise set `FORKEDAI_COMPUTE=cpu`.
+  NVIDIA Container Toolkit; without NVIDIA, unset/`auto` resolves to `cpu`.
 
 See [Container operations](container-operations.md) for the platform matrix and
 first-run commands.

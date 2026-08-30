@@ -2,7 +2,17 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { describe, it } from "node:test";
-import { parseModelAddArgv, resolveModelPromote, resolvePluginPromote, summarizeReady, validateModelAddArgs, webuiHardLinkFromPromote, webuiHardLinkPlans } from "./model-policy.mjs";
+import {
+  parseModelAddArgv,
+  resolveModelPromote,
+  resolvePluginPromote,
+  summarizeReady,
+  validateModelAddArgs,
+  WEBUI_DIR_BRIDGES,
+  webuiAliasFromPromote,
+  webuiHardLinkFromPromote,
+  webuiHardLinkPlans
+} from "./model-policy.mjs";
 import {
   assertBackendAllowed,
   assertCpuAllowsProfile,
@@ -17,11 +27,12 @@ import {
 } from "./stack-policy.mjs";
 
 const gpuExclusive = {
-  services: ["localai", "stable-diffusion", "comfy-backend"],
+  services: ["localai", "stable-diffusion", "comfy-backend", "ollama"],
   profilesByService: {
     localai: ["inference", "rag"],
     "stable-diffusion": ["media"],
-    "comfy-backend": ["comfy"]
+    "comfy-backend": ["comfy"],
+    ollama: ["ollama"]
   }
 };
 
@@ -121,6 +132,16 @@ describe("webui hard link plans", () => {
     assert.equal(plan.targetRel, "Stable-diffusion/demo.safetensors");
     assert.equal(webuiHardLinkFromPromote("localai/x.gguf"), null);
   });
+
+  it("maps Comfy dirs to WebUI aliases for shared catalog bridges", () => {
+    assert.deepEqual(
+      WEBUI_DIR_BRIDGES.map((entry) => `${entry.canonical}->${entry.webui}`),
+      ["vae->VAE", "loras->Lora", "controlnet->ControlNet"]
+    );
+    assert.equal(webuiAliasFromPromote("loras/style.safetensors").targetRel, "Lora/style.safetensors");
+    assert.equal(webuiAliasFromPromote("controlnet/canny.safetensors").targetRel, "ControlNet/canny.safetensors");
+    assert.equal(webuiAliasFromPromote("checkpoints/x.safetensors"), null);
+  });
 });
 
 describe("summarizeReady", () => {
@@ -154,10 +175,18 @@ describe("stack GPU and CPU policy", () => {
     assert.deepEqual(gpuConflictsForProfile(gpuExclusive, "inference", ["localai"]), []);
   });
 
-  it("refuses media/comfy in CPU mode", () => {
-    assert.throws(() => assertCpuAllowsProfile("cpu", "media"), /nvidia/);
+  it("refuses media/comfy in CPU mode but allows ollama", () => {
+    assert.throws(() => assertCpuAllowsProfile("cpu", "media"), /inference, rag, or ollama/);
+    assert.throws(() => assertCpuAllowsProfile("cpu", "comfy"), /inference, rag, or ollama/);
+    assert.doesNotThrow(() => assertCpuAllowsProfile("cpu", "ollama"));
     assert.throws(() => assertCpuAllowsService("cpu", "comfy-backend"), /nvidia/);
+    assert.doesNotThrow(() => assertCpuAllowsService("cpu", "ollama"));
     assert.doesNotThrow(() => assertCpuAllowsProfile("cpu", "inference"));
+  });
+
+  it("maps ollama profile to the ollama GPU service", () => {
+    assert.deepEqual([...gpuServicesForProfile(gpuExclusive, "ollama")], ["ollama"]);
+    assert.deepEqual(gpuConflictsForProfile(gpuExclusive, "ollama", ["localai"]), ["localai"]);
   });
 
   it("blocks up when another GPU service is running", () => {

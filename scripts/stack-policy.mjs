@@ -20,7 +20,7 @@ export function assertCpuAllowsProfile(computeMode, profile) {
   if (computeMode !== "cpu") return;
   if (nvidiaOnlyProfiles.has(profile)) {
     throw new Error(
-      `Profile "${profile}" requires NVIDIA GPU images and is not supported when FORKEDAI_COMPUTE=cpu. Use inference or rag, or set FORKEDAI_COMPUTE=nvidia on a CUDA host.`
+      `Profile "${profile}" requires NVIDIA GPU images and is not supported when FORKEDAI_COMPUTE=cpu. Use inference, rag, or ollama, or set FORKEDAI_COMPUTE=nvidia on a CUDA host.`
     );
   }
 }
@@ -123,5 +123,6 @@ export const gatewayProbeTargets = [
   { service: "private-gpt", url: "https://localhost:8444/", profiles: ["rag"] },
   { service: "stable-diffusion", url: "https://localhost:8445/", profiles: ["media"] },
   { service: "comfy-frontend", url: "https://localhost:8446/", profiles: ["comfy"] },
-  { service: "comfy-backend", url: "https://localhost:8447/", profiles: ["comfy"] }
+  { service: "comfy-backend", url: "https://localhost:8447/", profiles: ["comfy"] },
+  { service: "ollama", url: "https://localhost:8448/api/tags", profiles: ["ollama"] }
 ];

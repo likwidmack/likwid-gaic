@@ -120,6 +120,17 @@ export function resolvePluginPromote(service, relativeFromInbox, allowedServices
 }
 
 /**
+ * Comfy canonical catalog dirs → WebUI alias dirs under the same MODEL_ROOT.
+ * Checkpoints stay file-level hard links (see webuiHardLinkPlans); these are
+ * directory bridges (junction on Windows, symlink elsewhere).
+ */
+export const WEBUI_DIR_BRIDGES = [
+  { canonical: "vae", webui: "VAE" },
+  { canonical: "loras", webui: "Lora" },
+  { canonical: "controlnet", webui: "ControlNet" }
+];
+
+/**
  * Plan A1111 hard links from a managed checkpoint pin into Stable-diffusion/.
  * @returns {{ sourceRel: string, targetRel: string, file: string }[]}
  */
@@ -149,5 +160,21 @@ export function webuiHardLinkFromPromote(relativeCatalogPath) {
   return {
     sourceRel: relative,
     targetRel: path.posix.join("Stable-diffusion", file)
+  };
+}
+
+/**
+ * Map a promoted Comfy catalog path to a WebUI alias path when a dir bridge applies.
+ * @returns {{ sourceRel: string, targetRel: string } | null}
+ */
+export function webuiAliasFromPromote(relativeCatalogPath) {
+  const relative = normalizeRelativePath(relativeCatalogPath);
+  const parts = relative.split("/");
+  const top = parts[0];
+  const bridge = WEBUI_DIR_BRIDGES.find((entry) => entry.canonical === top);
+  if (!bridge || parts.length < 2) return null;
+  return {
+    sourceRel: relative,
+    targetRel: path.posix.join(bridge.webui, ...parts.slice(1))
   };
 }
