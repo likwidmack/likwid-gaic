@@ -10,7 +10,7 @@
     "documents": {"pathWindows": "E:\\data\\forkedAI\\documents", "pathWsl": "/mnt/e/data/forkedAI/documents", "pathPosix": "~/data/forkedAI/documents"},
     "runtime": {"pathWindows": "E:\\data\\forkedAI\\runtime", "pathWsl": "/mnt/e/data/forkedAI/runtime", "pathPosix": "~/data/forkedAI/runtime"},
     "sharedObjects": {"pathWindows": "E:\\data\\forkedAI\\shared\\objects", "pathWsl": "/mnt/e/data/forkedAI/shared/objects", "pathPosix": "~/data/forkedAI/shared/objects"},
-    "tensors": {"pathWindows": "D:\\forkedAI\\scratch\\tensors", "pathWsl": "/mnt/d/forkedAI/scratch/tensors", "pathPosix": "~/forkedAI/scratch/tensors"},
+    "tensors": {"pathWindows": "C:\\gaic\\shared\\tensors", "pathWsl": "/mnt/c/gaic/shared/tensors", "pathPosix": "~/gaic/shared/tensors"},
     "plugins": {"pathWindows": "C:\\gaic\\shared\\plugins", "pathWsl": "/mnt/c/gaic/shared/plugins", "pathPosix": "~/gaic/shared/plugins"},
     "tools": {"pathWindows": "C:\\gaic\\shared\\tools", "pathWsl": "/mnt/c/gaic/shared/tools", "pathPosix": "~/gaic/shared/tools"}
   },

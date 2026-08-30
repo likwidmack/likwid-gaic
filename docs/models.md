@@ -7,12 +7,16 @@ managed media storage.
 
 - `config/storage.json` defines the shared model root: `C:\gaic\models` on
   Windows, `/mnt/c/gaic/models` in WSL, and `~/gaic/models` on macOS/Linux
-  (`pathPosix`, with `~` expanded by the npm runner).
+  (`pathPosix`, with `~` expanded by the npm runner). All AI model weights for
+  LocalAI, Ollama, Stable Diffusion WebUI, and ComfyUI live under this root
+  (engine-specific subdirectories and Ollama library blobs). Rebuildable Hugging
+  Face / Torch download caches stay on the D: scratch roots, not as a second
+  model tree.
 - `config/models.json` contains managed Hugging Face repository IDs, immutable revisions, selected files, destinations, and optional LocalAI metadata.
 - `config/profile-artifacts.json` lists required and strongly recommended models, directories, plugins, and other objects per Compose profile.
 - Model weights, generated media, and local inventories are never committed.
 
-Stable Diffusion and ComfyUI consume the same shared model tree. Legacy `E:\models` and fork-local model directories are not authoritative stack storage.
+Legacy `E:\models` and fork-local model directories are not authoritative stack storage.
 
 ## Hugging Face CLI
 
@@ -93,15 +97,50 @@ npm run models -- recommendations comfy
 ```
 
 `ready` exits with status 1 when any **required** artifact is missing (recommended gaps are reported but non-blocking).
-
-| Profile     | Required managed models / artifacts           | Strongly recommended                                       |
+| Profile | Required managed models / artifacts | Strongly recommended |
 | ----------- | --------------------------------------------- | ---------------------------------------------------------- |
-| `inference` | `chat-qwen2.5-3b`, LocalAI YAML, CUDA backend | 7B chat/coder, Whisper STT, Piper TTS                      |
-| `rag`       | Both LocalAI starter pins, YAML, documents    | Sample docs; optional `chat-qwen2.5-7b`                    |
-| `media`     | `sd15-starter` plus WebUI checkpoint path     | `sdxl-base` + hard link; reviewed extensions               |
-| `comfy`     | `sd15-starter`, Comfy model layout dirs       | `sdxl-base`; optional VAE/upscalers; reviewed custom nodes |
+| `inference` | `chat-qwen2.5-3b`, LocalAI YAML, CUDA backend | 7B chat/coder, Whisper STT, Piper TTS |
+| `rag` | Both LocalAI starter pins, YAML, documents | Sample docs; optional `chat-qwen2.5-7b` |
+| `media` | `sd15-starter` plus WebUI checkpoint path | `sdxl-base` + hard link; reviewed extensions |
+| `comfy` | `sd15-starter`, Comfy model layout dirs | `sdxl-base`; optional VAE/upscalers; reviewed custom nodes |
+| `ollama` | `MODEL_ROOT` directory | Pull library models with `npm run ollama -- pull MODEL` |
 
 Upstream fork quickstarts may suggest larger models (for example PrivateGPT with Ollama Qwen 35B or Comfy partner API nodes). This hub keeps smaller local GGUF starters, optional 7B upgrades, and disables Comfy API nodes by default for loopback privacy.
+
+### Shared catalog (media / comfy / backends)
+
+Every backend mounts the same host roots:
+
+| Host                              | Container              | Notes                                                      |
+| --------------------------------- | ---------------------- | ---------------------------------------------------------- |
+| `C:\gaic\models`                  | `/shared/models` (RO)  | One weight catalog                                         |
+| `C:\gaic\shared\tensors`          | `/shared/tensors` (RW) | Serialized exchange                                        |
+| `E:\data\forkedAI\shared\objects` | `/shared/objects` (RW) | Durable shared artifacts                                   |
+| `C:\gaic\shared\tools`            | `/shared/tools` (RO)   | Reviewed helpers                                           |
+| `C:\gaic\shared\plugins`          | `/shared/plugins` (RO) | Per-service packs under `comfyui/`, `stable-diffusion/`, … |
+
+Comfy and WebUI use different **folder names** for some model types. Canonical
+(Comfy) dirs hold the files; WebUI aliases are directory bridges (junction on
+Windows, symlink elsewhere), created by `npm run media -- init` and
+`npm run models -- link-webui`:
+
+| Comfy (canonical)                | WebUI (alias)             |
+| -------------------------------- | ------------------------- |
+| `checkpoints/` → file hard links | `Stable-diffusion/`       |
+| `vae/`                           | `VAE/`                    |
+| `loras/`                         | `Lora/`                   |
+| `controlnet/`                    | `ControlNet/`             |
+| `embeddings/`                    | `embeddings/` (same name) |
+
+Put new ControlNet / VAE / LoRA weights under the Comfy names (`controlnet/`,
+`vae/`, `loras/`). WebUI reads VAE and LoRA through the alias dirs
+(`--vae-dir` / `--lora-dir`). After you promote the ControlNet extension, set
+its models directory to `/shared/models/ControlNet` (same bytes as
+`controlnet/` via the bridge). Do not add `--controlnet-dir` to the image CMD
+until that extension is installed — A1111 rejects unknown launch args.
+
+Plugins stay **service-specific** under the shared plugins root (A1111 extensions
+≠ Comfy custom nodes). Stage under `plugins/inbox/<service>/` then promote.
 
 ### Shared checkpoint layout (media and comfy)
 
@@ -116,6 +155,8 @@ the WebUI hard link when the download succeeds. You can also run:
 npm run models -- link-webui
 npm run models -- link-webui sd15-starter
 ```
+
+`link-webui` also ensures the VAE / LoRA / ControlNet directory bridges above.
 
 Promoting a `checkpoints/…` file from the inbox also creates the matching
 `Stable-diffusion/` hard link.
