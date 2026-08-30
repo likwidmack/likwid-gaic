@@ -22,6 +22,35 @@ missing artifacts). `stack -- up` / `switch` also warn by default; pass
 `smoke` prints the local switch matrix; add `--probe` to curl loopback HTTPS only for
 services that are already running (nothing is started or stopped).
 
+## Container cannot resolve external hostnames
+
+Symptoms include `URLError: Temporary failure in name resolution` in Stable
+Diffusion WebUI (Extensions **Load From** URL), failed `git pull` inside a
+service container, or `wget: bad address` from `gateway` while the Windows or
+macOS host resolves the same name.
+
+Compose sets upstream DNS on every service (`FORKEDAI_CONTAINER_DNS_PRIMARY` /
+`FORKEDAI_CONTAINER_DNS_SECONDARY`, defaulting to Google Public DNS). Docker
+keeps the embedded resolver at `127.0.0.11` for Compose service names; the
+upstream list bypasses a broken Docker Desktop forward to the host resolver
+(`192.168.65.7` on Docker Desktop).
+
+Diagnose from a running service (Git Bash: prefix with `MSYS_NO_PATHCONV=1`):
+
+```powershell
+npm run stack -- exec stable-diffusion python -c "import socket; print(socket.getaddrinfo('raw.githubusercontent.com', 443)[0][4])"
+```
+
+If that fails after recreating the stack, set corporate or LAN resolvers in
+`.env`, then recreate affected services:
+
+```powershell
+npm run stack -- up media -d --force-recreate
+```
+
+Also review Docker Desktop **Settings → Resources → Network** and WSL
+`/etc/resolv.conf` when the host itself cannot resolve public names.
+
 ## Gateway returns 502 while the backend is healthy
 
 After recreating LocalAI or another upstream, Caddy can briefly hold a stale
