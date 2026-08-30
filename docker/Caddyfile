@@ -1,5 +1,6 @@
 {
 	admin off
+	order handle_errors before reverse_proxy
 }
 
 # Named snippet (gateway_auth) comes from the mounted runtime file. Default is the
