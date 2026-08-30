@@ -11,8 +11,8 @@ pins, storage policy, and managed forks.
 
 This repository is the ops hub for [LocalAI](docs/localai-docker-setup.md),
 [PrivateGPT](docs/privategpt-docker-setup.md), [Stable Diffusion
-WebUI](docs/stable-diffusion-docker-setup.md), and
-[ComfyUI](docs/comfyui-docker-setup.md). It orchestrates those applications with
+WebUI](docs/stable-diffusion-docker-setup.md), [ComfyUI](docs/comfyui-docker-setup.md),
+and optional [Ollama](docs/ollama-docker-setup.md). It orchestrates those applications with
 Docker Compose; it does not replace them.
 
 **GAIC** stands for GPU AI Control (aligned with a read-mostly model/asset root
@@ -42,14 +42,15 @@ for optional profile fields (bio, links, pinned repositories).
 ## Who this is for
 
 - Operators running a Windows / WSL2 / NVIDIA workstation with Docker Desktop
-- macOS or Linux hosts using CPU inference and RAG (`FORKEDAI_COMPUTE=cpu`)
+- macOS or Linux hosts without NVIDIA (resolved `cpu` after auto-detect, or pin
+  `FORKEDAI_COMPUTE=cpu`)
 - Teams that want pinned Hugging Face models, storage policy, and Compose
   profiles instead of ad hoc container setup
 - Maintainers tracking managed upstream forks without editing their worktrees
 
 ## What you get
 
-- Docker Compose profiles for inference, RAG, media, and ComfyUI
+- Docker Compose profiles for inference, RAG, media, ComfyUI, and optional Ollama
 - Pinned Hugging Face model metadata and LocalAI sync helpers
 - Storage policy that keeps durable data off disposable disks
 - Read-only tracking for five managed upstream forks
@@ -70,7 +71,10 @@ for optional profile fields (bio, links, pinned repositories).
 - Git, Node.js 20+ (`engines.node` in [`package.json`](package.json)), and npm
 - Docker Desktop or Docker Engine with Compose
 - **NVIDIA path (Windows/WSL or Linux):** current NVIDIA driver / Container Toolkit for GPU profiles
-- **CPU path (macOS default, or Linux without NVIDIA):** `FORKEDAI_COMPUTE=cpu` for inference/RAG
+- **Compute mode:** unset or `FORKEDAI_COMPUTE=auto` probes host `nvidia-smi`
+  (`nvidia` if a GPU is reported, else `cpu`). Pin `nvidia` or `cpu` to skip the
+  probe. `media` and `comfy` require `nvidia` after resolution; `inference`, `rag`,
+  and `ollama` work on CPU.
 - Hugging Face `hf` CLI (WSL on the Windows workstation; host PATH on macOS/Linux)
 
 ## Quick start
@@ -106,17 +110,18 @@ For first-run profiles, compute modes, model downloads, and HTTPS trust, see
 <details id="profiles">
 <summary>Compose profiles</summary>
 
-Four Compose profiles are defined in [`config/stack.json`](config/stack.json).
+Five Compose profiles are defined in [`config/stack.json`](config/stack.json).
 Caddy is the only host-facing service; backends stay on private bridges and are
 reached through local HTTPS. Prefer `npm run stack:PROFILE` on a single-GPU host
 — those aliases call `switch`, which stops conflicting GPU services first.
 
-| Profile     | Services                         | HTTPS endpoints                                    | Compute     | Start                     |
-| ----------- | -------------------------------- | -------------------------------------------------- | ----------- | ------------------------- |
-| `inference` | LocalAI                          | `https://localhost:8443`                           | nvidia, cpu | `npm run stack:inference` |
-| `rag`       | LocalAI + PrivateGPT             | `https://localhost:8443`, `https://localhost:8444` | nvidia, cpu | `npm run stack:rag`       |
-| `media`     | Stable Diffusion WebUI           | `https://localhost:8445`                           | nvidia only | `npm run stack:media`     |
-| `comfy`     | ComfyUI backend + frontend proxy | `https://localhost:8446`, `https://localhost:8447` | nvidia only | `npm run stack:comfy`     |
+| Profile     | Services                         | HTTPS endpoints                                    | Compute      | Start                     |
+| ----------- | -------------------------------- | -------------------------------------------------- | ------------ | ------------------------- |
+| `inference` | LocalAI                          | `https://localhost:8443`                           | nvidia, cpu  | `npm run stack:inference` |
+| `rag`       | LocalAI + PrivateGPT             | `https://localhost:8443`, `https://localhost:8444` | nvidia, cpu  | `npm run stack:rag`       |
+| `media`     | Stable Diffusion WebUI           | `https://localhost:8445`                           | nvidia only  | `npm run stack:media`     |
+| `comfy`     | ComfyUI backend + frontend proxy | `https://localhost:8446`, `https://localhost:8447` | nvidia only  | `npm run stack:comfy`     |
+| `ollama`    | Ollama (optional)                | `https://localhost:8448`                           | cpu / nvidia | `npm run stack:ollama`    |
 
 ### What each profile does
 
@@ -134,6 +139,11 @@ reached through local HTTPS. Prefer `npm run stack:PROFILE` on a single-GPU host
 - **`comfy`** — ComfyUI workflow API (`8447`) and editor UI (`8446`). Needs a
   starter checkpoint and the Comfy model directory layout under the shared model
   root. NVIDIA only; API nodes stay disabled by default.
+- **`ollama`** — Optional Ollama library runtime (`8448`). Pull models with
+  `npm run ollama -- pull MODEL` after `npm run stack:ollama`. All AI model
+  weights live under `MODEL_ROOT` (`C:\gaic\models`); Ollama writes its library
+  blobs there alongside LocalAI, WebUI, and Comfy subtrees. Runs on CPU or NVIDIA;
+  not used by PrivateGPT in this hub.
 
 Minimum artifacts per profile are listed in
 [`config/profile-artifacts.json`](config/profile-artifacts.json). Inspect local
@@ -143,13 +153,17 @@ requirements with `npm run models -- recommendations PROFILE`. Before `up` or
 
 ### Single-GPU rule
 
-At most one of `localai`, `stable-diffusion`, or `comfy-backend` may run at a
-time. `rag` shares LocalAI with `inference` and is safe together; do not combine
-`media` or `comfy` with an active LocalAI without deliberately sharing the GPU.
+At most one of `localai`, `stable-diffusion`, `comfy-backend`, or `ollama` may hold
+the GPU at a time when `FORKEDAI_COMPUTE=nvidia`. `rag` shares LocalAI with
+`inference` and is safe together; do not combine `media`, `comfy`, or `ollama`
+with an active LocalAI without deliberately sharing the GPU. On CPU hosts,
+`ollama` does not stop LocalAI during `switch`.
 Details and monitoring: [GPU and CPU resource utilization](docs/resource-utilization.md).
 
-Set `FORKEDAI_COMPUTE=cpu` for inference/RAG without NVIDIA (`media` and `comfy`
-still require a GPU). Lifecycle commands and HTTPS CA trust live in
+Pin `FORKEDAI_COMPUTE=cpu` or leave unset/`auto` on hosts without NVIDIA;
+`media` and `comfy` still require `nvidia` after resolution. On macOS and other
+CPU hosts, `inference`, `rag`, and `ollama` are supported. Lifecycle commands and
+HTTPS CA trust live in
 [Container operations](docs/container-operations.md).
 
 </details>
@@ -157,10 +171,8 @@ still require a GPU). Lifecycle commands and HTTPS CA trust live in
 <details id="npm-scripts">
 <summary>npm scripts</summary>
 
-Scripts are defined in [`package.json`](package.json). Keywords (aligned with GitHub topics in
-[GitHub access](docs/github-access.md)):
-`local-ai`, `local-llm`, `rag`, `gpu`, `nvidia`, `workstation`, `docker-compose`, `localai`,
-`privategpt`, `stable-diffusion`, `comfyui`, `huggingface`, `wsl2`, `openai-compatible`.
+Scripts are defined in [`package.json`](package.json). Keywords:
+`local-ai`, `docker-compose`, `gpu`, `workstation`, `orchestration`.
 
 ### Stack (Compose)
 
@@ -177,6 +189,7 @@ Scripts are defined in [`package.json`](package.json). Keywords (aligned with Gi
 | `npm run stack:rag`           | `switch rag` — LocalAI + PrivateGPT                                                               |
 | `npm run stack:media`         | `switch media` — Stable Diffusion WebUI                                                           |
 | `npm run stack:comfy`         | `switch comfy` — ComfyUI backend + frontend                                                       |
+| `npm run stack:ollama`        | `switch ollama` — Ollama library runtime (optional)                                               |
 
 Additional stack subcommands (no dedicated alias):
 
@@ -222,10 +235,18 @@ see [Network security](docs/network-security.md).
 | `npm run media -- status`                   | Read-only storage check                                 |
 | `npm run media -- latest [KIND]`            | Show recent media files                                 |
 | `npm run media -- index`                    | Refresh local media index metadata                      |
-| `npm run repos:status`                      | Read-only managed-fork status                           |
-| `npm run repos:fetch`                       | Fetch remotes only                                      |
-| `npm run repos:update`                      | Fetch + fast-forward-only upstream updates              |
-| `npm run inventory`                         | Write `docs/inventory.generated.md` (Git-ignored)       |
+
+### Ollama (optional CPU/NVIDIA profile)
+
+| Script                         | What it does                                           |
+| ------------------------------ | ------------------------------------------------------ |
+| `npm run ollama -- pull MODEL` | Pull a library model into the running Ollama container |
+| `npm run ollama -- list`       | List pulled tags                                       |
+| `npm run ollama -- status`     | Container state and tag list                           |
+| `npm run repos:status`         | Read-only managed-fork status                          |
+| `npm run repos:fetch`          | Fetch remotes only                                     |
+| `npm run repos:update`         | Fetch + fast-forward-only upstream updates             |
+| `npm run inventory`            | Write `docs/inventory.generated.md` (Git-ignored)      |
 
 ### Validation
 
@@ -242,19 +263,19 @@ Full daily-ops detail: [Container operations](docs/container-operations.md).
 <details>
 <summary>Documentation index</summary>
 
-| Area            | Guide                                                                                                                                                                                         |
-| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Index           | [Documentation](docs/README.md)                                                                                                                                                               |
-| Profiles        | [Compose profiles](#profiles) · [npm scripts](#npm-scripts)                                                                                                                                   |
-| System design   | [Architecture](docs/architecture.md)                                                                                                                                                          |
-| Daily operation | [Container operations](docs/container-operations.md)                                                                                                                                          |
-| Resources       | [GPU and CPU utilization](docs/resource-utilization.md)                                                                                                                                       |
-| Troubleshooting | [Troubleshooting](docs/troubleshooting.md)                                                                                                                                                    |
-| Service setup   | [LocalAI](docs/localai-docker-setup.md) · [PrivateGPT](docs/privategpt-docker-setup.md) · [Stable Diffusion](docs/stable-diffusion-docker-setup.md) · [ComfyUI](docs/comfyui-docker-setup.md) |
-| Workloads       | [Use cases and models](docs/use-cases-and-models.md)                                                                                                                                          |
-| Data            | [Models and managed media](docs/models.md)                                                                                                                                                    |
-| Security        | [Network security](docs/network-security.md) · [GitHub access](docs/github-access.md)                                                                                                         |
-| Contributing    | [CONTRIBUTING.md](CONTRIBUTING.md) · [SECURITY.md](SECURITY.md)                                                                                                                               |
+| Area            | Guide                                                                                                                                                                                                                                            |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Index           | [Documentation](docs/README.md)                                                                                                                                                                                                                  |
+| Profiles        | [Compose profiles](#profiles) · [npm scripts](#npm-scripts)                                                                                                                                                                                      |
+| System design   | [Architecture](docs/architecture.md)                                                                                                                                                                                                             |
+| Daily operation | [Container operations](docs/container-operations.md)                                                                                                                                                                                             |
+| Resources       | [GPU and CPU utilization](docs/resource-utilization.md)                                                                                                                                                                                          |
+| Troubleshooting | [Troubleshooting](docs/troubleshooting.md)                                                                                                                                                                                                       |
+| Service setup   | [LocalAI](docs/localai-docker-setup.md) · [PrivateGPT](docs/privategpt-docker-setup.md) · [Stable Diffusion](docs/stable-diffusion-docker-setup.md) · [ComfyUI](docs/comfyui-docker-setup.md) · [Ollama](docs/ollama-docker-setup.md) (optional) |
+| Workloads       | [Use cases and models](docs/use-cases-and-models.md)                                                                                                                                                                                             |
+| Data            | [Models and managed media](docs/models.md)                                                                                                                                                                                                       |
+| Security        | [Network security](docs/network-security.md) · [GitHub access](docs/github-access.md)                                                                                                                                                            |
+| Contributing    | [CONTRIBUTING.md](CONTRIBUTING.md) · [SECURITY.md](SECURITY.md)                                                                                                                                                                                  |
 
 </details>
 

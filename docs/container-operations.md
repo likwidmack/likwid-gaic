@@ -6,16 +6,18 @@ The root `compose.yaml` is the control plane for the managed forks. It does not 
 
 ## Platforms and compute modes
 
-| Host                      | Path keys used        | Default `FORKEDAI_COMPUTE`          | Supported profiles                  |
-| ------------------------- | --------------------- | ----------------------------------- | ----------------------------------- |
-| Windows (Node on Windows) | `pathWindows`         | `nvidia`                            | All (CUDA)                          |
-| WSL (Node inside WSL)     | `pathWsl`             | `nvidia`                            | All (CUDA via Docker Desktop)       |
-| macOS                     | `pathPosix` (`~/...`) | `cpu`                               | `inference`, `rag` only             |
-| Native Linux              | `pathPosix` (`~/...`) | `nvidia` (set `cpu` without NVIDIA) | All with NVIDIA; else inference/rag |
+| Host                      | Path keys used        | Default `FORKEDAI_COMPUTE`                          | Supported profiles                         |
+| ------------------------- | --------------------- | --------------------------------------------------- | ------------------------------------------ |
+| Windows (Node on Windows) | `pathWindows`         | `auto` (`nvidia` if `nvidia-smi` ok, else `cpu`)    | All with NVIDIA; else inference/rag/ollama |
+| WSL (Node inside WSL)     | `pathWsl`             | `auto` (`nvidia` if `nvidia-smi` ok, else `cpu`)    | All with NVIDIA; else inference/rag/ollama |
+| macOS                     | `pathPosix` (`~/...`) | `auto` (falls back to `cpu`; no NVIDIA passthrough) | inference, rag, ollama                     |
+| Native Linux              | `pathPosix` (`~/...`) | `auto` (`nvidia` if `nvidia-smi` ok, else `cpu`)    | All with NVIDIA; else inference/rag/ollama |
 
-Set `FORKEDAI_COMPUTE=cpu` or `nvidia` explicitly when needed. CPU mode appends
+Set `FORKEDAI_COMPUTE=cpu` or `nvidia` explicitly to pin the mode. Unset or `auto`
+probes host `nvidia-smi` and resolves `cpu` when the probe fails. CPU mode appends
 [`compose.cpu.yaml`](../compose.cpu.yaml) (CPU LocalAI image, no NVIDIA devices).
-`media` and `comfy` require NVIDIA images and are refused in CPU mode.
+`media` and `comfy` require NVIDIA images and are refused in CPU mode. `ollama`
+runs on CPU or NVIDIA.
 
 ## Current Docker recommendations
 
@@ -55,11 +57,13 @@ performance. The reference workstation keeps shared assets and durable data on
 C:, D:, and E: for Windows interoperability and backup policy.
 
 **macOS:** Docker Desktop (Linux containers). There is no NVIDIA GPU passthrough;
-keep `FORKEDAI_COMPUTE=cpu` (the default on Darwin). Use host-native paths under
+unset or `FORKEDAI_COMPUTE=auto` probes host `nvidia-smi` and falls back to `cpu`
+when no GPU is reported. Pin `FORKEDAI_COMPUTE=cpu` if needed. Use host-native paths under
 `$HOME` from `config/storage.json` `pathPosix` entries.
 
 **Native Linux:** Docker Engine or Desktop plus the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
-for GPU profiles. Without NVIDIA, set `FORKEDAI_COMPUTE=cpu`.
+for GPU profiles. Without NVIDIA, unset/`auto` resolves to `cpu`; pin
+`FORKEDAI_COMPUTE=cpu` explicitly if needed.
 
 ### Compose trust and credentials
 
@@ -121,14 +125,15 @@ Quick reference (services, HTTPS ports, compute modes, and start aliases):
 [Profiles](../README.md#profiles) in the root README. npm script catalog:
 [npm scripts](../README.md#npm-scripts).
 
-| Profile     | Services                              | HTTPS gateway endpoint                             | Compute     |
-| ----------- | ------------------------------------- | -------------------------------------------------- | ----------- |
-| `inference` | LocalAI (CUDA 13 or CPU image)        | `https://localhost:8443`                           | nvidia, cpu |
-| `rag`       | LocalAI + PrivateGPT                  | `https://localhost:8443`, `https://localhost:8444` | nvidia, cpu |
-| `media`     | Stable Diffusion WebUI                | `https://localhost:8445`                           | nvidia only |
-| `comfy`     | ComfyUI CUDA backend + frontend proxy | `https://localhost:8447`, `https://localhost:8446` | nvidia only |
+| Profile     | Services                              | HTTPS gateway endpoint                             | Compute      |
+| ----------- | ------------------------------------- | -------------------------------------------------- | ------------ |
+| `inference` | LocalAI (CUDA 13 or CPU image)        | `https://localhost:8443`                           | nvidia, cpu  |
+| `rag`       | LocalAI + PrivateGPT                  | `https://localhost:8443`, `https://localhost:8444` | nvidia, cpu  |
+| `media`     | Stable Diffusion WebUI                | `https://localhost:8445`                           | nvidia only  |
+| `comfy`     | ComfyUI CUDA backend + frontend proxy | `https://localhost:8447`, `https://localhost:8446` | nvidia only  |
+| `ollama`    | Ollama (optional library runtime)     | `https://localhost:8448`                           | cpu / nvidia |
 
-The Caddy gateway is the only service with published host ports. It terminates HTTPS on loopback ports 8443 through 8447 and forwards plain HTTP over the appropriate private bridge. The Comfy frontend reaches its backend at `http://comfy-backend:8188`; direct backend ports are not published.
+The Caddy gateway is the only service with published host ports. It terminates HTTPS on loopback ports 8443 through 8448 and forwards plain HTTP over the appropriate private bridge. The Comfy frontend reaches its backend at `http://comfy-backend:8188`; direct backend ports are not published.
 
 The gateway declares optional `depends_on` entries with `condition: service_healthy` and `required: false`, so profile-scoped starts still wait for backends that are in the active project without failing when a backend is omitted. LocalAI overrides the image's long `HEALTHCHECK` start period with a Compose healthcheck against `http://127.0.0.1:8080/v1/models` so `--wait` and dependents observe API readiness promptly.
 
@@ -136,16 +141,19 @@ Caddy's `bridge_upstream` snippet probes each backend, sets a short dial timeout
 
 ## Segmented bridges
 
-Services explicitly join one trust-zone bridge. `localai` and `private-gpt` use `forkedai-inference`; Stable Diffusion and both Comfy services use `forkedai-media`; the gateway joins those networks plus `forkedai-edge`. Docker provides service-name DNS within each network, so fixed container IP addresses are unnecessary. The gateway is the only multi-homed service. A 502 from the gateway while `docker exec` into the backend succeeds usually means a stale upstream dial after recreate, not a missing bridge attachment—recreate or restart the gateway if probes have not recovered yet.
+Services explicitly join one trust-zone bridge. `localai`, `private-gpt`, and
+`ollama` use `forkedai-inference`; Stable Diffusion and both Comfy services use
+`forkedai-media`; the gateway joins those networks plus `forkedai-edge`. Docker provides service-name DNS within each network, so fixed container IP addresses are unnecessary. The gateway is the only multi-homed service. A 502 from the gateway while `docker exec` into the backend succeeds usually means a stale upstream dial after recreate, not a missing bridge attachment—recreate or restart the gateway if probes have not recovered yet.
 
 The gateway binds to `127.0.0.1` by default. It is available to applications and browsers on this computer but not intentionally exposed to the LAN. Compose does not opt into standalone attachment, each service runs with `no-new-privileges`, and Docker-daemon access remains a privileged administrative boundary.
 
-The five `*_HTTPS_PORT` variables change host-side published ports only; Caddy continues to listen on container ports 8443 through 8447. Changing `FORKEDAI_BIND_ADDRESS` does not by itself configure a usable LAN hostname, certificate, authentication policy, or firewall rule.
+The six `*_HTTPS_PORT` variables change host-side published ports only; Caddy continues to listen on container ports 8443 through 8448. Changing `FORKEDAI_BIND_ADDRESS` does not by itself configure a usable LAN hostname, certificate, authentication policy, or firewall rule.
 
 See the dedicated [LocalAI setup guide](localai-docker-setup.md),
 [PrivateGPT setup guide](privategpt-docker-setup.md),
-[Stable Diffusion WebUI setup guide](stable-diffusion-docker-setup.md), and
-[ComfyUI setup guide](comfyui-docker-setup.md) for service-specific requirements
+[Stable Diffusion WebUI setup guide](stable-diffusion-docker-setup.md),
+[ComfyUI setup guide](comfyui-docker-setup.md), and
+[Ollama setup guide](ollama-docker-setup.md) for service-specific requirements
 and troubleshooting. Workload-to-model mapping:
 [Use cases and models](use-cases-and-models.md).
 
@@ -221,7 +229,7 @@ npm run stack -- up rag
 
 ```bash
 cp -n .env.example .env || true
-# macOS defaults to cpu; on Linux without NVIDIA:
+# macOS or Linux without NVIDIA:
 # export FORKEDAI_COMPUTE=cpu
 npm run stack:doctor
 npm run media -- init
@@ -296,6 +304,7 @@ Convenience aliases (thin wrappers around `scripts/docker.mjs`). Full catalog:
 | `npm run stack:rag`           | `switch rag`                                                              |
 | `npm run stack:media`         | `switch media`                                                            |
 | `npm run stack:comfy`         | `switch comfy`                                                            |
+| `npm run stack:ollama`        | `switch ollama` (CPU or NVIDIA)                                           |
 
 Profile scripts use `switch`. Prefer them on a single-GPU host. Keep using
 `npm run stack -- …` for commands without an alias (`pull`, `logs`, `stop`,
@@ -332,21 +341,28 @@ problem.
 
 Each backend receives the same canonical paths (plus nested inbox overlays):
 
-| Container path          | Host root                         | Access     | Purpose                                                      |
-| ----------------------- | --------------------------------- | ---------- | ------------------------------------------------------------ |
-| `/shared/models`        | `C:/gaic/models`                  | Read-only  | Model weights and LocalAI model definitions                  |
-| `/shared/models/inbox`  | `C:/gaic/models/inbox`            | Read-write | Staging only; promote into the catalog with `models promote` |
-| `/shared/tensors`       | `D:/forkedAI/scratch/tensors`     | Read-write | Disposable serialized tensors and intermediate arrays        |
-| `/shared/objects`       | `E:/data/forkedAI/shared/objects` | Read-write | Durable workflows, inputs, outputs, and exchange artifacts   |
-| `/shared/plugins`       | `C:/gaic/shared/plugins`          | Read-only  | Reviewed plugins and custom nodes                            |
-| `/shared/plugins/inbox` | `C:/gaic/shared/plugins/inbox`    | Read-write | Staging only; promote with `models promote-plugin`           |
-| `/shared/tools`         | `C:/gaic/shared/tools`            | Read-only  | Reviewed helper binaries, scripts, and configuration         |
+| Container path          | Host root                         | Access     | Purpose                                                             |
+| ----------------------- | --------------------------------- | ---------- | ------------------------------------------------------------------- |
+| `/shared/models`        | `C:/gaic/models`                  | Read-only  | Model weights and LocalAI model definitions                         |
+| `/shared/models/inbox`  | `C:/gaic/models/inbox`            | Read-write | Staging only; promote into the catalog with `models promote`        |
+| `/shared/tensors`       | `C:/gaic/shared/tensors`          | Read-write | Serialized tensors and intermediate arrays (shared by all backends) |
+| `/shared/objects`       | `E:/data/forkedAI/shared/objects` | Read-write | Durable workflows, inputs, outputs, and exchange artifacts          |
+| `/shared/plugins`       | `C:/gaic/shared/plugins`          | Read-only  | Reviewed plugins/custom nodes (per-service subdirs)                 |
+| `/shared/plugins/inbox` | `C:/gaic/shared/plugins/inbox`    | Read-write | Staging only; promote with `models promote-plugin`                  |
+| `/shared/tools`         | `C:/gaic/shared/tools`            | Read-only  | Reviewed helper binaries, scripts, and configuration                |
 
 `npm run media -- init` creates all host roots, service-specific plugin directories, and inbox staging trees. Stable Diffusion maps `plugins/stable-diffusion` to its extensions directory, and ComfyUI maps `plugins/comfyui` to `custom_nodes`; both catalog mounts remain read-only at runtime. Stage untrusted UI downloads under `inbox`, review, then `npm run models -- promote` / `promote-plugin`. Do not enable ComfyUI-Manager or gallery auto-install into the shared catalog. See [Models and managed media](models.md).
 
 Shared objects and tensors are filesystem artifacts only. Live CUDA tensors, GPU memory, Python objects, and process memory cannot be shared through these mounts; serialize them to a safe, documented format first. Treat pickle and arbitrary PyTorch checkpoint files as executable content and load them only from trusted sources.
 
-The drive layout separates workloads by durability and SSD role. Read-mostly models, plugins, and tools use C:. Durable shared objects, generated media, documents, service state, and the Caddy CA stay on E:. Host-only media backups use `E:/VIMG`; this path is initialized by `npm run media -- init` but is intentionally not mounted into any container. The non-redundant D: Storage Space holds only rebuildable Hugging Face/Torch caches and disposable tensors and Comfy temporary files. A D: failure must not remove the only copy of an artifact.
+The drive layout separates workloads by durability and SSD role. Models,
+plugins, tools, and shared tensor exchange use `C:\gaic`. Durable shared
+objects, generated media, documents, service state, and the Caddy CA stay on E:.
+Host-only media backups use `E:/VIMG`; this path is initialized by
+`npm run media -- init` but is intentionally not mounted into any container. The
+non-redundant D: Storage Space holds only rebuildable Hugging Face/Torch caches
+and Comfy temporary files. A D: failure must not remove the only copy of an
+artifact.
 
 Override fork contexts, storage roots, network names, gateway bind address or HTTPS ports, images, or the Comfy backend in a local `.env` copied from `.env.example`. The example file uses Windows paths from `config/storage.json` and fork names from `config/repos.json`; replace them for your layout or rely on the npm runner, which injects those config values. Overrides are needed only when the local layout differs from those config files.
 

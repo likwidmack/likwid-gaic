@@ -1,6 +1,7 @@
-# CPU compute overlay. Applied by scripts/docker.mjs when FORKEDAI_COMPUTE=cpu
-# (default on macOS). Resets NVIDIA device reservations and LocalAI CUDA pins.
+# CPU compute overlay. Applied by scripts/docker.mjs when FORKEDAI_COMPUTE=cpu.
+# Resets NVIDIA device reservations and LocalAI CUDA pins.
 # media/comfy remain NVIDIA-only and are refused by the npm runner in CPU mode.
+# ollama runs on CPU here (GPU reservations cleared); use nvidia compute for GPU inference.
 
 services:
   localai:
@@ -25,6 +26,15 @@ services:
           devices: !reset []
 
   comfy-backend:
+    environment:
+      NVIDIA_VISIBLE_DEVICES: !reset null
+      NVIDIA_DRIVER_CAPABILITIES: !reset null
+    deploy:
+      resources:
+        reservations:
+          devices: !reset []
+
+  ollama:
     environment:
       NVIDIA_VISIBLE_DEVICES: !reset null
       NVIDIA_DRIVER_CAPABILITIES: !reset null

@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -52,12 +53,35 @@ export function pathModule(flavor = pathFlavor()) {
   return flavor === "windows" ? path.win32 : path.posix;
 }
 
+/** @returns {boolean} */
+export function detectNvidiaSmi(spawn = spawnSync) {
+  try {
+    const result = spawn("nvidia-smi", ["--query-gpu=name", "--format=csv,noheader"], {
+      encoding: "utf8",
+      timeout: 5000,
+      windowsHide: true
+    });
+    if (result.error || result.status !== 0) return false;
+    return String(result.stdout ?? "").trim().length > 0;
+  } catch {
+    return false;
+  }
+}
+
+export function isAutoComputeEnv(env = process.env) {
+  const raw = (env.FORKEDAI_COMPUTE ?? "").trim().toLowerCase();
+  return raw === "" || raw === "auto";
+}
+
 /** @returns {"nvidia"|"cpu"} */
-export function resolveComputeMode(env = process.env, platform = process.platform) {
+export function resolveComputeMode(env = process.env, platform = process.platform, { probe = detectNvidiaSmi } = {}) {
+  void platform;
   const raw = (env.FORKEDAI_COMPUTE ?? "").trim().toLowerCase();
   if (raw === "nvidia" || raw === "cpu") return raw;
-  if (raw) throw new Error(`Invalid FORKEDAI_COMPUTE=${env.FORKEDAI_COMPUTE}; use nvidia or cpu`);
-  return platform === "darwin" ? "cpu" : "nvidia";
+  if (raw && raw !== "auto") {
+    throw new Error(`Invalid FORKEDAI_COMPUTE=${env.FORKEDAI_COMPUTE}; use nvidia, cpu, or auto`);
+  }
+  return probe() ? "nvidia" : "cpu";
 }
 
 export function assertPathExists(label, value) {

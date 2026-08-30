@@ -27,7 +27,8 @@
     "comfyui",
     "huggingface",
     "wsl2",
-    "openai-compatible"
+    "openai-compatible",
+    "ollama"
   ],
   "scripts": {
     "stack": "node scripts/docker.mjs",
@@ -41,15 +42,17 @@
     "stack:rag": "node scripts/docker.mjs switch rag",
     "stack:media": "node scripts/docker.mjs switch media",
     "stack:comfy": "node scripts/docker.mjs switch comfy",
+    "stack:ollama": "node scripts/docker.mjs switch ollama",
     "models": "node scripts/models.mjs",
     "models:bootstrap-optional": "bash scripts/bootstrap-optional-models.sh",
     "media": "node scripts/media.mjs",
+    "ollama": "node scripts/ollama.mjs",
     "repos:status": "node scripts/repos.mjs status",
     "repos:fetch": "node scripts/repos.mjs fetch",
     "repos:update": "node scripts/repos.mjs update",
     "inventory": "node scripts/inventory.mjs",
     "check": "node scripts/validate.mjs",
-    "test:unit": "node --test scripts/paths.test.mjs scripts/cli-policy.test.mjs scripts/gateway-policy.test.mjs",
+    "test:unit": "node --test scripts/paths.test.mjs scripts/cli-policy.test.mjs scripts/gateway-policy.test.mjs scripts/webui-share.test.mjs",
     "test": "npm run check && npm run test:unit"
   },
   "engines": {

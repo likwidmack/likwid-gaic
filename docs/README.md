@@ -26,6 +26,7 @@ pages when building or troubleshooting a profile.
 - [PrivateGPT Docker setup](privategpt-docker-setup.md)
 - [Stable Diffusion WebUI Docker setup](stable-diffusion-docker-setup.md)
 - [ComfyUI Docker setup](comfyui-docker-setup.md)
+- [Ollama Docker setup](ollama-docker-setup.md) — optional CPU/NVIDIA profile
 - [Use cases and models](use-cases-and-models.md) — workload → profile → pins → UI
 
 ## Data and security
