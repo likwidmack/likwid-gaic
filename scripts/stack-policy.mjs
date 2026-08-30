@@ -141,9 +141,45 @@ export const smokeMatrix = [
 
 export const gatewayProbeTargets = [
   { service: "localai", url: "https://localhost:8443/", profiles: ["inference", "rag"] },
+  { service: "ollama", url: "https://localhost:8443/v1/models", profiles: ["ollama"] },
   { service: "private-gpt", url: "https://localhost:8444/", profiles: ["rag"] },
   { service: "stable-diffusion", url: "https://localhost:8445/", profiles: ["media"] },
   { service: "comfy-frontend", url: "https://localhost:8446/", profiles: ["comfy"] },
   { service: "comfy-backend", url: "https://localhost:8447/", profiles: ["comfy"] },
   { service: "ollama", url: "https://localhost:8448/api/tags", profiles: ["ollama"] }
 ];
+
+export const modelsRefreshProfiles = new Set(["inference", "rag", "ollama"]);
+
+export function gatewayModelsUrl(env = {}) {
+  const hostname = (env.GATEWAY_HOSTNAME ?? "localhost").trim() || "localhost";
+  const port = (env.LOCALAI_HTTPS_PORT ?? "8443").trim() || "8443";
+  return `https://${hostname}:${port}/v1/models`;
+}
+
+/** @param {string} body */
+export function parseGatewayModelIds(body) {
+  let payload;
+  try {
+    payload = JSON.parse(body);
+  } catch {
+    throw new Error("Gateway /v1/models response is not valid JSON");
+  }
+  if (!Array.isArray(payload?.data)) {
+    throw new Error("Gateway /v1/models response is missing a data array");
+  }
+  const ids = payload.data.map((entry) => entry?.id).filter((id) => typeof id === "string" && id.length);
+  return ids;
+}
+
+/**
+ * @param {{ runningLocalai: boolean, runningOllama: boolean, httpOk: boolean }} input
+ * @returns {"localai" | "ollama" | "none"}
+ */
+export function inferActiveEngine({ runningLocalai, runningOllama, httpOk }) {
+  if (!httpOk) return "none";
+  if (runningLocalai && !runningOllama) return "localai";
+  if (runningOllama && !runningLocalai) return "ollama";
+  if (runningLocalai && runningOllama) return "localai";
+  return "none";
+}

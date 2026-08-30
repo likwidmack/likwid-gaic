@@ -20,6 +20,9 @@ import {
   gpuConflictsForProfile,
   gpuServicesForProfile,
   gpuSwitchPlan,
+  gatewayModelsUrl,
+  inferActiveEngine,
+  parseGatewayModelIds,
   parseProfileCommand,
   assertSmokeRunAllowed,
   readinessAction,
@@ -248,5 +251,27 @@ describe("stack GPU and CPU policy", () => {
   it("refuses smoke --run in CPU mode", () => {
     assert.throws(() => assertSmokeRunAllowed("cpu"), /nvidia/);
     assert.doesNotThrow(() => assertSmokeRunAllowed("nvidia"));
+  });
+
+  it("builds the unified gateway models URL from env", () => {
+    assert.equal(gatewayModelsUrl({}), "https://localhost:8443/v1/models");
+    assert.equal(
+      gatewayModelsUrl({ GATEWAY_HOSTNAME: "dev.local", LOCALAI_HTTPS_PORT: "9443" }),
+      "https://dev.local:9443/v1/models"
+    );
+  });
+
+  it("parses OpenAI model list payloads", () => {
+    const body = JSON.stringify({ data: [{ id: "chat-qwen2.5-3b" }, { id: "embed-nomic-v1.5" }] });
+    assert.deepEqual(parseGatewayModelIds(body), ["chat-qwen2.5-3b", "embed-nomic-v1.5"]);
+    assert.throws(() => parseGatewayModelIds("not-json"), /valid JSON/);
+    assert.throws(() => parseGatewayModelIds("{}"), /data array/);
+  });
+
+  it("infers the active inference engine from container state", () => {
+    assert.equal(inferActiveEngine({ runningLocalai: true, runningOllama: false, httpOk: true }), "localai");
+    assert.equal(inferActiveEngine({ runningLocalai: false, runningOllama: true, httpOk: true }), "ollama");
+    assert.equal(inferActiveEngine({ runningLocalai: true, runningOllama: true, httpOk: true }), "localai");
+    assert.equal(inferActiveEngine({ runningLocalai: false, runningOllama: false, httpOk: false }), "none");
   });
 });
