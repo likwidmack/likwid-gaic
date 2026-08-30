@@ -15,6 +15,11 @@ import path from "node:path";
 import process from "node:process";
 import { WEBUI_DIR_BRIDGES } from "./model-policy.mjs";
 
+/** Exit code for media/models bridge commands: non-zero when any bridge needs manual action. */
+export function bridgeInitExitCode(result) {
+  return (result?.errors?.length ?? 0) > 0 ? 1 : 0;
+}
+
 function pathsEquivalent(a, b) {
   if (process.platform === "win32") {
     return path.resolve(a).toLowerCase() === path.resolve(b).toLowerCase();
@@ -72,7 +77,7 @@ export function ensureWebuiDirBridges(modelRoot, { dryRun = false, force = false
     const webuiPath = path.join(modelRoot, webui);
     const label = `${webui} → ${canonical}`;
 
-    mkdirSync(canonicalPath, { recursive: true });
+    if (!dryRun) mkdirSync(canonicalPath, { recursive: true });
 
     // Case-insensitive hosts may treat Lora/ and loras/ as one directory entry.
     // Do not follow symlinks here — a correct bridge must take the "already linked"

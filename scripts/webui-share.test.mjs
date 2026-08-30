@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import process from "node:process";
 import { after, describe, it } from "node:test";
-import { ensureWebuiDirBridges } from "./webui-share.mjs";
+import { bridgeInitExitCode, ensureWebuiDirBridges } from "./webui-share.mjs";
 
 // "Lora" and "loras" differ on case-insensitive filesystems too, so this bridge
 // is the one exercised on every platform.
@@ -32,6 +32,14 @@ function assertLinkedTo(root) {
 
 after(() => {
   for (const dir of tempRoots) rmSync(dir, { recursive: true, force: true });
+});
+
+describe("bridgeInitExitCode", () => {
+  it("is non-zero when any bridge needs manual action", () => {
+    assert.equal(bridgeInitExitCode({ ok: [], skipped: [], errors: [] }), 0);
+    assert.equal(bridgeInitExitCode({ ok: ["Lora → loras"], skipped: [], errors: [] }), 0);
+    assert.equal(bridgeInitExitCode({ ok: [], skipped: [], errors: ["VAE → vae: merge manually"] }), 1);
+  });
 });
 
 describe("ensureWebuiDirBridges", () => {
@@ -122,5 +130,6 @@ describe("ensureWebuiDirBridges", () => {
 
     assert.ok(result.ok.includes(`${LABEL} (dry-run)`));
     assert.equal(existsSync(path.join(root, WEBUI)), false);
+    assert.equal(existsSync(path.join(root, CANONICAL)), false, "dry-run must not create canonical dirs");
   });
 });

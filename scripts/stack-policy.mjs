@@ -16,6 +16,27 @@ export function gpuConflictsForProfile(gpuExclusive, profile, runningGpuServices
   return runningGpuServices.filter((service) => !needed.has(service));
 }
 
+/**
+ * Plan which GPU-labeled services to stop/keep for `stack -- switch`.
+ * CPU mode preserves LocalAI+Ollama coexistence but still stops leftover
+ * NVIDIA-only services that may hold VRAM from a prior nvidia session.
+ * @returns {{ toStop: string[], toKeep: string[], warnStaleGpu: boolean }}
+ */
+export function gpuSwitchPlan(computeMode, gpuExclusive, profile, runningGpuServices) {
+  if (computeMode === "cpu") {
+    return {
+      toStop: runningGpuServices.filter((service) => nvidiaOnlyServices.has(service)),
+      toKeep: [],
+      warnStaleGpu: runningGpuServices.length > 0
+    };
+  }
+  return {
+    toStop: gpuConflictsForProfile(gpuExclusive, profile, runningGpuServices),
+    toKeep: [...gpuServicesForProfile(gpuExclusive, profile)],
+    warnStaleGpu: false
+  };
+}
+
 export function assertCpuAllowsProfile(computeMode, profile) {
   if (computeMode !== "cpu") return;
   if (nvidiaOnlyProfiles.has(profile)) {

@@ -13,8 +13,7 @@ import {
   assertGpuPreflight,
   assertSmokeRunAllowed,
   gatewayProbeTargets,
-  gpuConflictsForProfile,
-  gpuServicesForProfile,
+  gpuSwitchPlan,
   parseProfileCommand,
   readinessAction,
   smokeMatrix
@@ -201,8 +200,14 @@ function printSmokeChecklist() {
 function switchProfile(profile, { dryRun = false, allowShare = false, flags = new Set() } = {}) {
   if (!stack.profiles.includes(profile)) throw new Error(`Unknown profile: ${profile}`);
   assertCpuAllowsProfile(computeMode, profile);
-  const toStop = computeMode === "cpu" ? [] : gpuConflictsForProfile(gpuExclusive, profile, runningGpuServices());
-  const toKeep = computeMode === "cpu" ? [] : [...gpuServicesForProfile(gpuExclusive, profile)];
+  const runningGpu = runningGpuServices();
+  const { toStop, toKeep, warnStaleGpu } = gpuSwitchPlan(computeMode, gpuExclusive, profile, runningGpu);
+  if (warnStaleGpu) {
+    console.warn(
+      `WARN  GPU-labeled services still running under CPU mode (${runningGpu.join(", ")}). ` +
+        "They may retain VRAM from a prior nvidia session. Prefer `npm run stack -- down` or pin FORKEDAI_COMPUTE=nvidia before switching."
+    );
+  }
   console.log(`Switch plan for profile "${profile}" (compute=${computeMode}):`);
   console.log(`  stop GPU services: ${toStop.length ? toStop.join(", ") : "none"}`);
   console.log(`  keep/start GPU services: ${toKeep.length ? toKeep.join(", ") : "none"}`);
@@ -304,13 +309,16 @@ if (command === "doctor") {
   const cores = physicalCoreCount();
   const threads = suggestedLocalAiThreads();
   if (cores) console.log(`\nHost CPU: ${cores} physical cores${threads ? `; suggested LOCALAI_THREADS=${threads}` : ""}`);
-  if (computeMode !== "cpu") {
-    const activeGpu = runningGpuServices();
-    if (activeGpu.length > 1) {
-      console.warn(`\nWARN  Multiple GPU services running (${activeGpu.join(", ")}). On a single GPU, run one profile at a time.`);
-    } else if (activeGpu.length === 1) {
-      console.log(`\nGPU workload: ${activeGpu[0]}`);
-    }
+  const activeGpu = runningGpuServices();
+  if (activeGpu.length > 1) {
+    console.warn(
+      `\nWARN  Multiple GPU-labeled services running (${activeGpu.join(", ")}).` +
+        (computeMode === "cpu"
+          ? " Under CPU mode they may still hold VRAM from a prior nvidia session."
+          : " On a single GPU, run one profile at a time.")
+    );
+  } else if (activeGpu.length === 1) {
+    console.log(`\nGPU workload: ${activeGpu[0]}${computeMode === "cpu" ? " (CPU mode; may retain prior nvidia VRAM)" : ""}`);
   }
   console.log("\nConfigured paths:");
   for (const [name, entry] of Object.entries(storage.roots)) {
@@ -343,10 +351,14 @@ if (command === "doctor") {
   console.log(`Compute mode: ${computeModeLabel}`);
   const gpu = run("nvidia-smi", ["--query-gpu=index,name,memory.total,memory.used,memory.free,utilization.gpu,temperature.gpu", "--format=csv,noheader"], { capture: true, env: process.env });
   console.log(gpu.ok ? `GPU\n${gpu.output}` : `GPU\nunavailable: ${gpu.output}`);
-  if (computeMode !== "cpu") {
-    const activeGpu = runningGpuServices();
-    console.log(`\nRunning GPU services: ${activeGpu.length ? activeGpu.join(", ") : "none"}`);
-    if (activeGpu.length > 1) console.warn("WARN  More than one GPU service is running; expect VRAM contention on a single GPU.");
+  const activeGpu = runningGpuServices();
+  console.log(`\nRunning GPU-labeled services: ${activeGpu.length ? activeGpu.join(", ") : "none"}`);
+  if (activeGpu.length > 1) {
+    console.warn(
+      computeMode === "cpu"
+        ? "WARN  More than one GPU-labeled service is running under CPU mode; they may retain VRAM from a prior nvidia session."
+        : "WARN  More than one GPU service is running; expect VRAM contention on a single GPU."
+    );
   }
   const services = run("docker", [...base, ...allProfiles, "ps", "--format", "table {{.Service}}\t{{.Status}}\t{{.Image}}"], { capture: true });
   if (services.ok && services.output) console.log(`\nCompose services\n${services.output}`);

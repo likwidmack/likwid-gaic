@@ -162,19 +162,3 @@ export function webuiHardLinkFromPromote(relativeCatalogPath) {
     targetRel: path.posix.join("Stable-diffusion", file)
   };
 }
-
-/**
- * Map a promoted Comfy catalog path to a WebUI alias path when a dir bridge applies.
- * @returns {{ sourceRel: string, targetRel: string } | null}
- */
-export function webuiAliasFromPromote(relativeCatalogPath) {
-  const relative = normalizeRelativePath(relativeCatalogPath);
-  const parts = relative.split("/");
-  const top = parts[0];
-  const bridge = WEBUI_DIR_BRIDGES.find((entry) => entry.canonical === top);
-  if (!bridge || parts.length < 2) return null;
-  return {
-    sourceRel: relative,
-    targetRel: path.posix.join(bridge.webui, ...parts.slice(1))
-  };
-}
