@@ -74,7 +74,10 @@ export function ensureWebuiDirBridges(modelRoot, { dryRun = false, force = false
 
     mkdirSync(canonicalPath, { recursive: true });
 
-    if (existsSync(webuiPath) && pathsEquivalent(canonicalPath, webuiPath)) {
+    // Case-insensitive hosts may treat Lora/ and loras/ as one directory entry.
+    // Do not follow symlinks here — a correct bridge must take the "already linked"
+    // path below (Linux CI), not this skip.
+    if (existsSync(webuiPath) && !isLink(webuiPath) && pathsEquivalent(canonicalPath, webuiPath)) {
       skipped.push(`${label} (same path on this filesystem)`);
       continue;
     }
