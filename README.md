@@ -243,10 +243,15 @@ see [Network security](docs/network-security.md).
 | `npm run ollama -- pull MODEL` | Pull a library model into the running Ollama container |
 | `npm run ollama -- list`       | List pulled tags                                       |
 | `npm run ollama -- status`     | Container state and tag list                           |
-| `npm run repos:status`         | Read-only managed-fork status                          |
-| `npm run repos:fetch`          | Fetch remotes only                                     |
-| `npm run repos:update`         | Fetch + fast-forward-only upstream updates             |
-| `npm run inventory`            | Write `docs/inventory.generated.md` (Git-ignored)      |
+
+### Managed forks
+
+| Script                 | What it does                                      |
+| ---------------------- | ------------------------------------------------- |
+| `npm run repos:status` | Read-only managed-fork status                     |
+| `npm run repos:fetch`  | Fetch remotes only                                |
+| `npm run repos:update` | Fetch + fast-forward-only upstream updates        |
+| `npm run inventory`    | Write `docs/inventory.generated.md` (Git-ignored) |
 
 ### Validation
 

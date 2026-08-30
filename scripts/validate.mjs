@@ -208,11 +208,28 @@ if (modelsInboxBlock.includes("read_only: true")) throw new Error("models inbox 
 const mediaScript = readFileSync(new URL("./media.mjs", import.meta.url), "utf8");
 if (!mediaScript.includes("inbox")) throw new Error("media init must create models/inbox and plugins/inbox staging directories");
 if (!mediaScript.includes("ensureWebuiDirBridges")) throw new Error("media init must ensure WebUI dir bridges for VAE/Lora/ControlNet");
+if (!mediaScript.includes("bridgeInitExitCode")) {
+  throw new Error("media init must fail closed via bridgeInitExitCode when WebUI dir bridges need manual action");
+}
 const webuiShare = readFileSync(new URL("./webui-share.mjs", import.meta.url), "utf8");
 if (!webuiShare.includes("WEBUI_DIR_BRIDGES") || !webuiShare.includes("junction")) {
   throw new Error("webui-share.mjs must create WEBUI_DIR_BRIDGES junctions/symlinks");
 }
+if (!webuiShare.includes("export function bridgeInitExitCode")) {
+  throw new Error("webui-share.mjs must export bridgeInitExitCode for media/models bridge failure contracts");
+}
 if (webuiShare.includes("rmSync")) throw new Error("webui-share.mjs must not recursively delete directories; media init is non-destructive");
+if (!webuiShare.includes("if (!dryRun) mkdirSync(canonicalPath")) {
+  throw new Error("webui-share dry-run must not mkdirSync canonical dirs");
+}
+const stackPolicy = readFileSync(new URL("./stack-policy.mjs", import.meta.url), "utf8");
+if (!stackPolicy.includes("export function gpuSwitchPlan")) {
+  throw new Error("stack-policy.mjs must export gpuSwitchPlan for CPU/nvidia switch stop/keep planning");
+}
+const dockerScript = readFileSync(new URL("./docker.mjs", import.meta.url), "utf8");
+if (!dockerScript.includes("gpuSwitchPlan")) {
+  throw new Error("docker.mjs switch must use gpuSwitchPlan for GPU stop/keep planning");
+}
 for (const endpoint of ["127.0.0.1:8080/v1/models", "127.0.0.1:7860/", "127.0.0.1:8188/system_stats", "127.0.0.1/"]) if (!compose.includes(endpoint)) throw new Error("Compose health checks are missing " + endpoint);
 if (!compose.includes('"ollama", "list"')) throw new Error('Compose ollama healthcheck must use CMD ollama list (image has no curl)');
 const caddyfile = readFileSync(new URL("../docker/Caddyfile", import.meta.url), "utf8");

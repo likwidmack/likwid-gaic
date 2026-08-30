@@ -56,7 +56,7 @@ See [Container operations](container-operations.md) for lifecycle commands and
   `pathPosix` (`~/gaic`, `~/forkedAI`, `~/data/forkedAI`).
 - Published application ports bind to IPv4 loopback by default.
 
-Shared filesystem mounts exchange serialized artifacts only. They do not share live GPU allocations, Python objects, CUDA contexts, or process memory. On a single-GPU host, at most one of `localai`, `stable-diffusion`, or `comfy-backend` should run at a time; see [GPU and CPU resource utilization](resource-utilization.md).
+Shared filesystem mounts exchange serialized artifacts only. They do not share live GPU allocations, Python objects, CUDA contexts, or process memory. On a single-GPU host, at most one of `localai`, `stable-diffusion`, `comfy-backend`, or `ollama` should run at a time; see [GPU and CPU resource utilization](resource-utilization.md).
 
 ## Privacy boundary
 

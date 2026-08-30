@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSy
 import path from "node:path";
 import process from "node:process";
 import { hostPath } from "./paths.mjs";
-import { ensureWebuiDirBridges } from "./webui-share.mjs";
+import { bridgeInitExitCode, ensureWebuiDirBridges } from "./webui-share.mjs";
 
 const storage = JSON.parse(readFileSync(new URL("../config/storage.json", import.meta.url), "utf8"));
 const profileArtifacts = JSON.parse(readFileSync(new URL("../config/profile-artifacts.json", import.meta.url), "utf8"));
@@ -63,7 +63,15 @@ if (command === "init") {
   for (const line of bridges.ok) console.log(`WebUI dir bridge: ${line}`);
   for (const line of bridges.skipped) console.log(`WebUI dir bridge skipped: ${line}`);
   for (const line of bridges.errors) console.warn(`WebUI dir bridge needs manual action: ${line}`);
-  console.log("Initialized configured storage roots (including models/inbox and plugins/inbox staging).");
+  const exitCode = bridgeInitExitCode(bridges);
+  if (exitCode) {
+    console.warn(
+      "Storage roots were created, but WebUI dir bridges need manual merge before media/comfy share VAE/Lora/ControlNet."
+    );
+    process.exitCode = exitCode;
+  } else {
+    console.log("Initialized configured storage roots (including models/inbox and plugins/inbox staging).");
+  }
 } else if (command === "status") {
   const files = scan();
   const groups = new Map();

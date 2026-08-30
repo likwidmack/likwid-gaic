@@ -9,7 +9,6 @@ import {
   summarizeReady,
   validateModelAddArgs,
   WEBUI_DIR_BRIDGES,
-  webuiAliasFromPromote,
   webuiHardLinkFromPromote,
   webuiHardLinkPlans
 } from "./model-policy.mjs";
@@ -20,6 +19,7 @@ import {
   assertGpuPreflight,
   gpuConflictsForProfile,
   gpuServicesForProfile,
+  gpuSwitchPlan,
   parseProfileCommand,
   assertSmokeRunAllowed,
   readinessAction,
@@ -138,9 +138,6 @@ describe("webui hard link plans", () => {
       WEBUI_DIR_BRIDGES.map((entry) => `${entry.canonical}->${entry.webui}`),
       ["vae->VAE", "loras->Lora", "controlnet->ControlNet"]
     );
-    assert.equal(webuiAliasFromPromote("loras/style.safetensors").targetRel, "Lora/style.safetensors");
-    assert.equal(webuiAliasFromPromote("controlnet/canny.safetensors").targetRel, "ControlNet/canny.safetensors");
-    assert.equal(webuiAliasFromPromote("checkpoints/x.safetensors"), null);
   });
 });
 
@@ -187,6 +184,29 @@ describe("stack GPU and CPU policy", () => {
   it("maps ollama profile to the ollama GPU service", () => {
     assert.deepEqual([...gpuServicesForProfile(gpuExclusive, "ollama")], ["ollama"]);
     assert.deepEqual(gpuConflictsForProfile(gpuExclusive, "ollama", ["localai"]), ["localai"]);
+  });
+
+  it("CPU switch stops NVIDIA-only leftovers but keeps LocalAI+Ollama coexistence", () => {
+    const withMedia = gpuSwitchPlan("cpu", gpuExclusive, "ollama", ["localai", "stable-diffusion", "ollama"]);
+    assert.deepEqual(withMedia.toStop, ["stable-diffusion"]);
+    assert.deepEqual(withMedia.toKeep, []);
+    assert.equal(withMedia.warnStaleGpu, true);
+
+    const coexistence = gpuSwitchPlan("cpu", gpuExclusive, "ollama", ["localai"]);
+    assert.deepEqual(coexistence.toStop, []);
+    assert.deepEqual(coexistence.toKeep, []);
+    assert.equal(coexistence.warnStaleGpu, true);
+
+    const idle = gpuSwitchPlan("cpu", gpuExclusive, "inference", []);
+    assert.deepEqual(idle.toStop, []);
+    assert.equal(idle.warnStaleGpu, false);
+  });
+
+  it("nvidia switch uses exclusive conflict stops", () => {
+    const plan = gpuSwitchPlan("nvidia", gpuExclusive, "ollama", ["localai", "comfy-backend"]);
+    assert.deepEqual(plan.toStop, ["localai", "comfy-backend"]);
+    assert.deepEqual(plan.toKeep, ["ollama"]);
+    assert.equal(plan.warnStaleGpu, false);
   });
 
   it("blocks up when another GPU service is running", () => {
