@@ -3,6 +3,10 @@ name: forkedai
 x-security-defaults: &security-defaults
   security_opt:
     - no-new-privileges:true
+  # Upstream resolvers when Docker Desktop forwards SERVFAIL; 127.0.0.11 still resolves Compose names.
+  dns:
+    - ${FORKEDAI_CONTAINER_DNS_PRIMARY:-8.8.8.8}
+    - ${FORKEDAI_CONTAINER_DNS_SECONDARY:-8.8.4.4}
 
 x-shared-models: &shared-models
   type: bind

@@ -31,14 +31,14 @@ Ollama weights use Ollama's blob format. They do not appear in
 
 ## Profile summary
 
-| Item       | Value                                                                       |
-| ---------- | --------------------------------------------------------------------------- |
-| Profile    | `ollama`                                                                    |
-| Service    | `ollama` (registry image `ollama/ollama`)                                   |
-| HTTPS      | `https://localhost:8448`                                                    |
-| Native API | `/api/*` and OpenAI-compatible `/v1/*`                                      |
-| GPU        | Optional — exclusive with LocalAI, SD, Comfy when `FORKEDAI_COMPUTE=nvidia` |
-| PrivateGPT | Not wired to Ollama in this hub                                             |
+| Item       | Value                                                                              |
+| ---------- | ---------------------------------------------------------------------------------- |
+| Profile    | `ollama`                                                                           |
+| Service    | `ollama` (registry image `ollama/ollama`)                                          |
+| HTTPS      | `https://localhost:8443` (unified OpenAI `/v1`), `https://localhost:8448` (direct) |
+| Native API | `/api/*` and OpenAI-compatible `/v1/*`                                             |
+| GPU        | Optional — exclusive with LocalAI, SD, Comfy when `FORKEDAI_COMPUTE=nvidia`        |
+| PrivateGPT | Not wired to Ollama in this hub                                                    |
 
 ## Start Ollama
 
@@ -78,24 +78,24 @@ Blobs persist under the shared model root `MODEL_ROOT` (see `config/storage.json
 
 ## API access
 
+**Primary (unified inference URL):** point OpenAI clients at
+`https://localhost:8443/v1` after `npm run stack -- switch ollama`. The gateway
+forwards to Ollama when LocalAI is not running.
+
+**Secondary (direct Ollama):** engine-specific debugging on `:8448`.
+
 Through the gateway (recommended from the host):
 
 ```powershell
-curl -k https://localhost:8448/api/tags
-```
-
-bash (macOS/Linux or WSL):
-
-```bash
+curl -k https://localhost:8443/v1/models
+npm run stack -- models-refresh
 curl -k https://localhost:8448/api/tags
 ```
 
 Ollama serves both its native API and an OpenAI-compatible surface on the same
-port inside the container; Caddy forwards all paths to `ollama:11434`.
-
-While the `ollama` profile holds the GPU, `https://localhost:8443` (LocalAI) is
-not serving. Switch back with `npm run stack -- switch inference` or
-`npm run stack:rag` when you need LocalAI or PrivateGPT again.
+port inside the container. Switch back with `npm run stack -- switch inference`
+or `npm run stack:rag` when you need LocalAI or PrivateGPT again, then run
+`npm run stack -- models-refresh`.
 
 ## Image and storage
 

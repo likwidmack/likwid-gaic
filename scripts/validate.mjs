@@ -237,6 +237,23 @@ for (const route of ["{$GATEWAY_HOSTNAME:localhost}:8443", "{$GATEWAY_HOSTNAME:l
 if (!caddyfile.includes("import /etc/caddy/snippets/gateway-auth.caddy")) throw new Error("Caddy must import the gateway-auth snippet");
 if (!caddyfile.includes("import gateway_auth")) throw new Error("Caddy local_security must import gateway_auth");
 for (const upstream of ["localai:8080", "private-gpt:8080", "stable-diffusion:7860", "comfy-frontend:80", "comfy-backend:8188", "ollama:11434"]) if (!caddyfile.includes(upstream)) throw new Error("Caddy is missing upstream " + upstream);
+const caddy8443 = caddyfile.slice(caddyfile.indexOf(":8443 {"), caddyfile.indexOf(":8444 {"));
+const caddyInference = caddyfile.includes("(inference_upstream)")
+  ? caddyfile.slice(caddyfile.indexOf("(inference_upstream)"), caddyfile.indexOf(":8443 {"))
+  : caddy8443;
+const caddyUnified = caddyInference + caddy8443;
+if (!caddyUnified.includes("localai:8080") || !caddyUnified.includes("ollama:11434")) {
+  throw new Error("Caddy :8443 must health-check reverse_proxy to localai:8080 and ollama:11434");
+}
+if (!caddyUnified.includes("/readyz") || !caddyUnified.includes("/api/tags")) {
+  throw new Error("Caddy :8443 must use /readyz for LocalAI and /api/tags for Ollama health checks");
+}
+if (!caddy8443.includes('Cache-Control "no-store"') || !caddy8443.includes("/v1/models")) {
+  throw new Error("Caddy :8443 must set Cache-Control no-store on /v1/models");
+}
+if (!dockerScript.includes("models-refresh") || !dockerScript.includes("printModelsRefreshHint")) {
+  throw new Error("docker.mjs must implement models-refresh and print a switch hint for inference/rag/ollama");
+}
 if (!caddyfile.includes("tls internal") || !caddyfile.includes("admin off")) throw new Error("Caddy must use its internal CA with the admin API disabled");
 if (!compose.includes("gateway-auth.caddy")) throw new Error("Compose must mount the gateway-auth snippet");
 if (!envKeys.has("GATEWAY_HOSTNAME")) throw new Error(".env.example is missing GATEWAY_HOSTNAME");

@@ -125,19 +125,29 @@ Quick reference (services, HTTPS ports, compute modes, and start aliases):
 [Profiles](../README.md#profiles) in the root README. npm script catalog:
 [npm scripts](../README.md#npm-scripts).
 
-| Profile     | Services                              | HTTPS gateway endpoint                             | Compute      |
-| ----------- | ------------------------------------- | -------------------------------------------------- | ------------ |
-| `inference` | LocalAI (CUDA 13 or CPU image)        | `https://localhost:8443`                           | nvidia, cpu  |
-| `rag`       | LocalAI + PrivateGPT                  | `https://localhost:8443`, `https://localhost:8444` | nvidia, cpu  |
-| `media`     | Stable Diffusion WebUI                | `https://localhost:8445`                           | nvidia only  |
-| `comfy`     | ComfyUI CUDA backend + frontend proxy | `https://localhost:8447`, `https://localhost:8446` | nvidia only  |
-| `ollama`    | Ollama (optional library runtime)     | `https://localhost:8448`                           | cpu / nvidia |
+| Profile     | Services                              | HTTPS gateway endpoint                                                | Compute      |
+| ----------- | ------------------------------------- | --------------------------------------------------------------------- | ------------ |
+| `inference` | LocalAI (CUDA 13 or CPU image)        | `https://localhost:8443` (unified OpenAI `/v1`)                       | nvidia, cpu  |
+| `rag`       | LocalAI + PrivateGPT                  | `https://localhost:8443`, `https://localhost:8444`                    | nvidia, cpu  |
+| `media`     | Stable Diffusion WebUI                | `https://localhost:8445`                                              | nvidia only  |
+| `comfy`     | ComfyUI CUDA backend + frontend proxy | `https://localhost:8447`, `https://localhost:8446`                    | nvidia only  |
+| `ollama`    | Ollama (optional library runtime)     | `https://localhost:8443` (primary), `https://localhost:8448` (direct) | cpu / nvidia |
 
-The Caddy gateway is the only service with published host ports. It terminates HTTPS on loopback ports 8443 through 8448 and forwards plain HTTP over the appropriate private bridge. The Comfy frontend reaches its backend at `http://comfy-backend:8188`; direct backend ports are not published.
+The Caddy gateway is the only service with published host ports. It terminates HTTPS on loopback ports 8443 through 8448 and forwards plain HTTP over the appropriate private bridge. Port **8443** is the canonical OpenAI-compatible inference URL for **LocalAI and Ollama**; Caddy health-checks both backends and routes to whichever engine is running. Port **8448** remains a direct Ollama diagnostic path. The Comfy frontend reaches its backend at `http://comfy-backend:8188`; direct backend ports are not published.
 
 The gateway declares optional `depends_on` entries with `condition: service_healthy` and `required: false`, so profile-scoped starts still wait for backends that are in the active project without failing when a backend is omitted. LocalAI overrides the image's long `HEALTHCHECK` start period with a Compose healthcheck against `http://127.0.0.1:8080/v1/models` so `--wait` and dependents observe API readiness promptly.
 
 Caddy's `bridge_upstream` snippet probes each backend, sets a short dial timeout, and uses `fail_duration` so Docker DNS is re-resolved after a backend recreate. Without that, a recreated LocalAI (or other upstream) can leave `https://localhost:8443` stuck on 502 until the gateway is restarted manually.
+
+On `:8443`, the `(inference_upstream)` snippet tries LocalAI first (`/readyz` health) and falls back to Ollama on gateway errors (`/api/tags` health). Only the running engine receives traffic on a single-GPU host. Responses from `/v1/models` include `Cache-Control: no-store` so clients do not cache model lists across profile switches.
+
+After switching to `inference`, `rag`, or `ollama`, run:
+
+```powershell
+npm run stack -- models-refresh
+```
+
+The command fetches `https://localhost:8443/v1/models`, prints the active engine and model IDs, and exits non-zero when the gateway or inference upstream is unavailable. Trust the local Caddy CA first (see below) so TLS behaves like other stack probes.
 
 ## Segmented bridges
 

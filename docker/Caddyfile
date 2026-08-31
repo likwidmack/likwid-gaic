@@ -1,5 +1,6 @@
 {
 	admin off
+	order handle_errors before reverse_proxy
 }
 
 # Named snippet (gateway_auth) comes from the mounted runtime file. Default is the
@@ -30,13 +31,28 @@ import /etc/caddy/snippets/gateway-auth.caddy
 	}
 }
 
+# Unified OpenAI inference: health-checked LocalAI first, Ollama on 502/503/504.
+# Only one engine is healthy on a single-GPU host; both share :8443 for clients.
+(inference_upstream) {
+	handle_errors {
+		reverse_proxy ollama:11434 {
+			import bridge_upstream /api/tags
+		}
+	}
+	reverse_proxy localai:8080 {
+		import bridge_upstream /readyz
+	}
+}
+
 # GATEWAY_HOSTNAME defaults to localhost for loopback. Set a LAN/VPN DNS name
 # only together with FORKEDAI_BIND_ADDRESS, firewall rules, and basicauth.
 https://{$GATEWAY_HOSTNAME:localhost}:8443 {
 	import local_security
-	reverse_proxy localai:8080 {
-		import bridge_upstream /readyz
+	handle /v1/models* {
+		header Cache-Control "no-store"
+		import inference_upstream
 	}
+	import inference_upstream
 }
 
 https://{$GATEWAY_HOSTNAME:localhost}:8444 {

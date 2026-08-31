@@ -12,8 +12,12 @@ import {
   assertCpuAllowsService,
   assertGpuPreflight,
   assertSmokeRunAllowed,
+  gatewayModelsUrl,
   gatewayProbeTargets,
   gpuSwitchPlan,
+  inferActiveEngine,
+  modelsRefreshProfiles,
+  parseGatewayModelIds,
   parseProfileCommand,
   readinessAction,
   smokeMatrix
@@ -220,6 +224,7 @@ function switchProfile(profile, { dryRun = false, allowShare = false, flags = ne
     gpuExclusiveEnabled: gpuExclusiveEnabled()
   });
   compose([...["--profile", profile], "up", "--detach", "--wait", "--wait-timeout", "300"]);
+  printModelsRefreshHint(profile);
 }
 
 function runSmokeMatrix() {
@@ -257,6 +262,56 @@ function runSmokeMatrix() {
     console.error(`\nSmoke matrix finished with ${failures} failure(s).`);
   } else {
     console.log("\nSmoke matrix passed.");
+  }
+}
+
+const modelsRefreshHint =
+  "Tip: run `npm run stack -- models-refresh` before pointing clients at /v1/models.";
+
+function printModelsRefreshHint(profile) {
+  if (modelsRefreshProfiles.has(profile)) console.log(`\n${modelsRefreshHint}`);
+}
+
+function refreshModelsCatalog() {
+  const url = gatewayModelsUrl(process.env);
+  const running = new Set(runningServices());
+  const runningLocalai = running.has("localai");
+  const runningOllama = running.has("ollama");
+  const result = run(
+    "curl",
+    ["-kfsS", "-w", "\n__HTTP_STATUS__:%{http_code}", "--connect-timeout", "3", "--max-time", "15", url],
+    { capture: true, env: process.env }
+  );
+  const marker = "\n__HTTP_STATUS__:";
+  const markerIndex = result.output.lastIndexOf(marker);
+  const body = markerIndex >= 0 ? result.output.slice(0, markerIndex) : result.output;
+  const status = markerIndex >= 0 ? result.output.slice(markerIndex + marker.length).trim() : "";
+  const httpOk = result.ok && /^200$/.test(status);
+  const engine = inferActiveEngine({ runningLocalai, runningOllama, httpOk });
+  console.log(`Gateway: ${url}`);
+  console.log(`HTTP status: ${status || "unavailable"}`);
+  console.log(`Active engine: ${engine}`);
+  if (!httpOk) {
+    if (!result.ok) console.error(result.output || "Gateway request failed");
+    process.exitCode = 1;
+    return;
+  }
+  if (engine === "none") {
+    console.error("Gateway responded but no inference engine container is running.");
+    process.exitCode = 1;
+    return;
+  }
+  try {
+    const modelIds = parseGatewayModelIds(body);
+    if (modelIds.length) {
+      console.log("Models:");
+      for (const id of modelIds) console.log(`  ${id}`);
+    } else {
+      console.log("Models: (none listed)");
+    }
+  } catch (error) {
+    console.error(error.message);
+    process.exitCode = 1;
   }
 }
 
@@ -378,6 +433,8 @@ if (command === "doctor") {
     printSmokeChecklist();
     if (probe) probeGateways();
   }
+} else if (command === "models-refresh") {
+  refreshModelsCatalog();
 } else if (command === "switch") {
   const { profile, flags } = parseProfileCommand(process.argv);
   if (!profile) throw new Error(`Choose a profile: ${stack.profiles.join(", ")}`);
@@ -441,7 +498,7 @@ else if (command === "stop") compose([...allProfiles, "stop", ...process.argv.sl
 else if (command === "down") compose([...allProfiles, "down", "--remove-orphans"]);
 else {
   console.error(
-    "Usage: npm run stack -- <doctor|config|profiles|status|resources|smoke [--probe|--run]|switch PROFILE [--dry-run|--require-ready|--skip-ready]|up PROFILE [--allow-gpu-share|--require-ready|--skip-ready]|build [SERVICE]|backend [ID...]|pull|logs [SERVICE]|stop [SERVICE]|down>"
+    "Usage: npm run stack -- <doctor|config|profiles|status|resources|models-refresh|smoke [--probe|--run]|switch PROFILE [--dry-run|--require-ready|--skip-ready]|up PROFILE [--allow-gpu-share|--require-ready|--skip-ready]|build [SERVICE]|backend [ID...]|pull|logs [SERVICE]|stop [SERVICE]|down>"
   );
   process.exitCode = 2;
 }

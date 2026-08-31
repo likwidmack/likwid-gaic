@@ -115,13 +115,13 @@ Caddy is the only host-facing service; backends stay on private bridges and are
 reached through local HTTPS. Prefer `npm run stack:PROFILE` on a single-GPU host
 — those aliases call `switch`, which stops conflicting GPU services first.
 
-| Profile     | Services                         | HTTPS endpoints                                    | Compute      | Start                     |
-| ----------- | -------------------------------- | -------------------------------------------------- | ------------ | ------------------------- |
-| `inference` | LocalAI                          | `https://localhost:8443`                           | nvidia, cpu  | `npm run stack:inference` |
-| `rag`       | LocalAI + PrivateGPT             | `https://localhost:8443`, `https://localhost:8444` | nvidia, cpu  | `npm run stack:rag`       |
-| `media`     | Stable Diffusion WebUI           | `https://localhost:8445`                           | nvidia only  | `npm run stack:media`     |
-| `comfy`     | ComfyUI backend + frontend proxy | `https://localhost:8446`, `https://localhost:8447` | nvidia only  | `npm run stack:comfy`     |
-| `ollama`    | Ollama (optional)                | `https://localhost:8448`                           | cpu / nvidia | `npm run stack:ollama`    |
+| Profile     | Services                         | HTTPS endpoints                                                             | Compute      | Start                     |
+| ----------- | -------------------------------- | --------------------------------------------------------------------------- | ------------ | ------------------------- |
+| `inference` | LocalAI                          | `https://localhost:8443`                                                    | nvidia, cpu  | `npm run stack:inference` |
+| `rag`       | LocalAI + PrivateGPT             | `https://localhost:8443`, `https://localhost:8444`                          | nvidia, cpu  | `npm run stack:rag`       |
+| `media`     | Stable Diffusion WebUI           | `https://localhost:8445`                                                    | nvidia only  | `npm run stack:media`     |
+| `comfy`     | ComfyUI backend + frontend proxy | `https://localhost:8446`, `https://localhost:8447`                          | nvidia only  | `npm run stack:comfy`     |
+| `ollama`    | Ollama (optional)                | `https://localhost:8443` (unified `/v1`), `https://localhost:8448` (direct) | cpu / nvidia | `npm run stack:ollama`    |
 
 ### What each profile does
 
@@ -139,11 +139,14 @@ reached through local HTTPS. Prefer `npm run stack:PROFILE` on a single-GPU host
 - **`comfy`** — ComfyUI workflow API (`8447`) and editor UI (`8446`). Needs a
   starter checkpoint and the Comfy model directory layout under the shared model
   root. NVIDIA only; API nodes stay disabled by default.
-- **`ollama`** — Optional Ollama library runtime (`8448`). Pull models with
-  `npm run ollama -- pull MODEL` after `npm run stack:ollama`. All AI model
-  weights live under `MODEL_ROOT` (`C:\gaic\models`); Ollama writes its library
-  blobs there alongside LocalAI, WebUI, and Comfy subtrees. Runs on CPU or NVIDIA;
-  not used by PrivateGPT in this hub.
+- **`ollama`** — Optional Ollama library runtime. Use `https://localhost:8443/v1`
+  as the primary OpenAI client URL (same as LocalAI); `:8448` remains direct
+  Ollama access. Pull models with `npm run ollama -- pull MODEL` after
+  `npm run stack:ollama`. Run `npm run stack -- models-refresh` after switching
+  profiles so clients see the live catalog. All AI model weights live under
+  `MODEL_ROOT` (`C:\gaic\models`); Ollama writes its library blobs there
+  alongside LocalAI, WebUI, and Comfy subtrees. Runs on CPU or NVIDIA; not used
+  by PrivateGPT in this hub.
 
 Minimum artifacts per profile are listed in
 [`config/profile-artifacts.json`](config/profile-artifacts.json). Inspect local
@@ -176,26 +179,28 @@ Scripts are defined in [`package.json`](package.json). Keywords:
 
 ### Stack (Compose)
 
-| Script                        | What it does                                                                                      |
-| ----------------------------- | ------------------------------------------------------------------------------------------------- |
-| `npm run stack`               | Default status (`ps`) for all profiles                                                            |
-| `npm run stack:doctor`        | Read-only host checks (Node, Docker, GPU, paths, forks, soft profile readiness, gateway exposure) |
-| `npm run stack:config`        | Render Compose for all profiles without starting containers                                       |
-| `npm run stack:status`        | Show Compose service status                                                                       |
-| `npm run stack:up -- PROFILE` | Start a profile (`up`; refuses GPU conflicts unless `--allow-gpu-share`)                          |
-| `npm run stack:down`          | Stop and remove stack services (`down`, never `--volumes`)                                        |
-| `npm run stack:build`         | Build all buildable images (optional: `npm run stack:build -- SERVICE`)                           |
-| `npm run stack:inference`     | `switch inference` — stop conflicting GPU services, then start LocalAI                            |
-| `npm run stack:rag`           | `switch rag` — LocalAI + PrivateGPT                                                               |
-| `npm run stack:media`         | `switch media` — Stable Diffusion WebUI                                                           |
-| `npm run stack:comfy`         | `switch comfy` — ComfyUI backend + frontend                                                       |
-| `npm run stack:ollama`        | `switch ollama` — Ollama library runtime (optional)                                               |
+| Script                            | What it does                                                                                      |
+| --------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `npm run stack`                   | Default status (`ps`) for all profiles                                                            |
+| `npm run stack:doctor`            | Read-only host checks (Node, Docker, GPU, paths, forks, soft profile readiness, gateway exposure) |
+| `npm run stack:config`            | Render Compose for all profiles without starting containers                                       |
+| `npm run stack:status`            | Show Compose service status                                                                       |
+| `npm run stack:up -- PROFILE`     | Start a profile (`up`; refuses GPU conflicts unless `--allow-gpu-share`)                          |
+| `npm run stack:down`              | Stop and remove stack services (`down`, never `--volumes`)                                        |
+| `npm run stack:build`             | Build all buildable images (optional: `npm run stack:build -- SERVICE`)                           |
+| `npm run stack:inference`         | `switch inference` — stop conflicting GPU services, then start LocalAI                            |
+| `npm run stack:rag`               | `switch rag` — LocalAI + PrivateGPT                                                               |
+| `npm run stack:media`             | `switch media` — Stable Diffusion WebUI                                                           |
+| `npm run stack:comfy`             | `switch comfy` — ComfyUI backend + frontend                                                       |
+| `npm run stack:ollama`            | `switch ollama` — Ollama library runtime (optional)                                               |
+| `npm run stack -- models-refresh` | Fetch `:8443/v1/models`; print active engine and model IDs (read-only)                            |
 
 Additional stack subcommands (no dedicated alias):
 
 ```powershell
 npm run stack -- profiles
 npm run stack -- resources
+npm run stack -- models-refresh
 npm run stack -- smoke
 npm run stack -- smoke --probe
 npm run stack -- smoke --run

@@ -32,7 +32,9 @@ Canonical workstation roots remain in `config/storage.json` and
 3. `stable-diffusion-ui` supplies Stable Diffusion WebUI (NVIDIA only).
 4. `ComfyUI` supplies the GPU workflow API (NVIDIA only).
 5. `ComfyUI_frontend` supplies the workflow editor and proxies to the backend.
-6. Caddy is the only host-facing service and terminates local HTTPS.
+6. Caddy is the only host-facing service and terminates local HTTPS. Port
+   `:8443` is the unified OpenAI-compatible inference entry for LocalAI and
+   Ollama (health-checked reverse proxy); `:8448` remains direct Ollama access.
 7. This hub supplies Compose orchestration, model metadata, media indexing, fork tracking, and validation.
 
 See [Container operations](container-operations.md) for lifecycle commands and
