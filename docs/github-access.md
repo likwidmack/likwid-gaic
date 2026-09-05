@@ -8,7 +8,7 @@ and credential boundaries for the hub and its managed forks.
 | Account                                     | Responsibility                            |
 | ------------------------------------------- | ----------------------------------------- |
 | [likwidmack](https://github.com/likwidmack) | Owns this hub at `likwidmack/likwid-gaic` |
-| [tamaramack](https://github.com/tamaramack) | Owns the five managed forks               |
+| [tamaramack](https://github.com/tamaramack) | Owns the managed forks                    |
 
 The ownership boundary is stored in `config/accounts.json`; fork URLs and preferred SSH origins are stored in `config/repos.json`.
 
@@ -58,7 +58,7 @@ ssh -T git@github.com-lkpc
 
 ## Managed fork remotes
 
-The three original forks currently use SSH for `origin` and `upstream`. The two Comfy forks may use HTTPS. The management scripts support either transport and never rewrite remotes.
+The three original forks currently use SSH for `origin` and `upstream`. The two Comfy forks may use HTTPS. The four agent-skills forks (`agent-skills-pr`, `matt-skills-pr`, `superpowers-pr`, `ui-ux-pro-max-skill-pr`) use HTTPS for both remotes. The management scripts support either transport and never rewrite remotes.
 
 `config/repos.json` records a preferred `originSsh` for each fork, but that is metadata, not an instruction to mutate an existing local remote. Verify actual state with:
 
