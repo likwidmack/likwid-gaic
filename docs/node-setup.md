@@ -26,7 +26,7 @@ npm run stack:doctor
 
 `stack:doctor` verifies Node, Docker client/server, Docker Compose, NVIDIA GPU
 (soft-warn in CPU mode), the Hugging Face CLI, configured storage roots, and
-all five fork contexts. It prints the active `FORKEDAI_COMPUTE` mode.
+all five fork contexts. It prints the active `GAIC_COMPUTE` mode.
 
 If PowerShell resolves `npm.ps1` but cannot find `node.exe`, repair or reinstall the current Node.js LTS release, open a new terminal, and check `Get-Command node,npm`. Node must be available in the same environment that launches npm.
 

@@ -1,4 +1,4 @@
-﻿# Docker and Compose
+# Docker and Compose
 
 ## Preferred interface
 
@@ -7,9 +7,9 @@ appends `compose.cpu.yaml` when resolved mode is `cpu`.
 
 ## Compute modes
 
-- `FORKEDAI_COMPUTE=nvidia` uses the NVIDIA Compose path.
-- `FORKEDAI_COMPUTE=cpu` appends `compose.cpu.yaml`.
-- Unset or `FORKEDAI_COMPUTE=auto` probes `nvidia-smi`.
+- `GAIC_COMPUTE=nvidia` uses the NVIDIA Compose path.
+- `GAIC_COMPUTE=cpu` appends `compose.cpu.yaml`.
+- Unset or `GAIC_COMPUTE=auto` probes `nvidia-smi`.
 - CPU mode allows `inference`, `rag`, and `ollama`.
 - CPU mode refuses `media` and `comfy`.
 

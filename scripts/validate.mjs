@@ -7,7 +7,7 @@ const models = JSON.parse(readFileSync(new URL("../config/models.json", import.m
 const profileArtifacts = JSON.parse(readFileSync(new URL("../config/profile-artifacts.json", import.meta.url)));
 const stack = JSON.parse(readFileSync(new URL("../config/stack.json", import.meta.url)));
 if (pkg.private !== true) throw new Error("package.json must remain private");
-if (config.repositories?.length !== 5) throw new Error("Expected five managed forks");
+if ((config.repositories?.length ?? 0) < 5) throw new Error("Expected at least the five managed forks");
 for (const repo of config.repositories) {
   for (const key of ["name", "github", "upstream", "pathWindows", "pathWsl", "pathPosix", "originSsh"]) {
     if (!repo[key]) throw new Error(`${repo.name ?? "repository"} is missing ${key}`);
@@ -99,7 +99,7 @@ const repoNames = new Set(config.repositories.map((repo) => repo.name));
 if (stack.gateway?.defaultBindAddress !== "127.0.0.1") throw new Error("The HTTPS gateway must default to loopback");
 for (const [service, port] of Object.entries({localai: 8443, "private-gpt": 8444, "stable-diffusion": 8445, comfy: 8446, "comfy-api": 8447, ollama: 8448})) if (stack.gateway?.defaultPorts?.[service] !== port) throw new Error(`Invalid HTTPS gateway port for ${service}`);
 const networkKeys = new Set((stack.networks ?? []).map((network) => network.key));
-for (const key of ["forkedai-edge", "forkedai-inference", "forkedai-media"]) if (!networkKeys.has(key)) throw new Error("Missing stack network: " + key);
+for (const key of ["gaic-edge", "gaic-inference", "gaic-media"]) if (!networkKeys.has(key)) throw new Error("Missing stack network: " + key);
 for (const network of stack.networks ?? []) if (network.driver !== "bridge") throw new Error(`Stack network ${network.key} must use the bridge driver`);
 for (const shared of stack.sharedStorage ?? []) {
   if (!storage.roots?.[shared.root]) throw new Error("Unknown shared storage root: " + shared.root);
@@ -166,7 +166,7 @@ const compose = readFileSync(new URL("../compose.yaml", import.meta.url), "utf8"
 const composeCpu = readFileSync(new URL("../compose.cpu.yaml", import.meta.url), "utf8");
 const envExample = readFileSync(new URL("../.env.example", import.meta.url), "utf8");
 const envKeys = new Set([...envExample.matchAll(/^([A-Z][A-Z0-9_]*)=/gm)].map((match) => match[1]));
-if (!envKeys.has("FORKEDAI_COMPUTE")) throw new Error(".env.example is missing FORKEDAI_COMPUTE");
+if (!envKeys.has("GAIC_COMPUTE")) throw new Error(".env.example is missing GAIC_COMPUTE");
 for (const variable of new Set([...compose.matchAll(/\$\{([A-Z][A-Z0-9_]*)(?::-[^}]*)?\}/g)].map((match) => match[1]))) {
   if (!envKeys.has(variable)) throw new Error(`.env.example is missing Compose variable ${variable}`);
 }
@@ -195,7 +195,7 @@ for (const service of gpuExclusive.services) if (!compose.includes(`  ${service}
 if (!compose.includes("  " + stack.gateway.service + ":")) throw new Error("Compose is missing the HTTPS gateway");
 for (const network of stack.networks) if (!compose.includes("  " + network.key + ":")) throw new Error("Compose is missing network " + network.key);
 for (const binding of ["LOCALAI_HTTPS_PORT:-8443", "PRIVATE_GPT_HTTPS_PORT:-8444", "STABLE_DIFFUSION_HTTPS_PORT:-8445", "COMFY_HTTPS_PORT:-8446", "COMFY_API_HTTPS_PORT:-8447", "OLLAMA_HTTPS_PORT:-8448"]) if (!compose.includes(binding)) throw new Error("Compose is missing HTTPS gateway binding " + binding);
-if (!compose.includes("FORKEDAI_BIND_ADDRESS:-127.0.0.1")) throw new Error("The HTTPS gateway must publish on loopback by default");
+if (!compose.includes("GAIC_BIND_ADDRESS:-127.0.0.1")) throw new Error("The HTTPS gateway must publish on loopback by default");
 if ((compose.match(/^    ports:/gm) ?? []).length !== 1) throw new Error("Only the HTTPS gateway may publish host ports");
 if (!compose.includes("no-new-privileges:true")) throw new Error("Compose is missing the no-new-privileges baseline");
 for (const mount of ["shared-models", "shared-models-inbox", "shared-tensors", "shared-objects", "shared-plugins", "shared-plugins-inbox", "shared-tools"]) if (!compose.includes("&" + mount) || !compose.includes("*" + mount)) throw new Error("Compose is missing shared mount " + mount);

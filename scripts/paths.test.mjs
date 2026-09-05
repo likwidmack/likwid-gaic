@@ -61,22 +61,22 @@ describe("resolveComputeMode", () => {
       probed += 1;
       return true;
     };
-    assert.equal(resolveComputeMode({ FORKEDAI_COMPUTE: "nvidia" }, "darwin", { probe }), "nvidia");
-    assert.equal(resolveComputeMode({ FORKEDAI_COMPUTE: "CPU" }, "win32", { probe }), "cpu");
+    assert.equal(resolveComputeMode({ GAIC_COMPUTE: "nvidia" }, "darwin", { probe }), "nvidia");
+    assert.equal(resolveComputeMode({ GAIC_COMPUTE: "CPU" }, "win32", { probe }), "cpu");
     assert.equal(probed, 0);
   });
 
   it("treats unset and auto as probe-driven", () => {
     assert.equal(resolveComputeMode({}, "darwin", { probe: () => true }), "nvidia");
-    assert.equal(resolveComputeMode({ FORKEDAI_COMPUTE: "auto" }, "linux", { probe: () => true }), "nvidia");
+    assert.equal(resolveComputeMode({ GAIC_COMPUTE: "auto" }, "linux", { probe: () => true }), "nvidia");
     assert.equal(resolveComputeMode({}, "win32", { probe: () => false }), "cpu");
-    assert.equal(resolveComputeMode({ FORKEDAI_COMPUTE: "AUTO" }, "darwin", { probe: () => false }), "cpu");
+    assert.equal(resolveComputeMode({ GAIC_COMPUTE: "AUTO" }, "darwin", { probe: () => false }), "cpu");
   });
 
   it("rejects invalid values", () => {
     assert.throws(
-      () => resolveComputeMode({ FORKEDAI_COMPUTE: "metal" }, "darwin", { probe: () => true }),
-      /Invalid FORKEDAI_COMPUTE/
+      () => resolveComputeMode({ GAIC_COMPUTE: "metal" }, "darwin", { probe: () => true }),
+      /Invalid GAIC_COMPUTE/
     );
   });
 });
@@ -84,9 +84,9 @@ describe("resolveComputeMode", () => {
 describe("isAutoComputeEnv", () => {
   it("is true for unset and auto, false for pinned modes", () => {
     assert.equal(isAutoComputeEnv({}), true);
-    assert.equal(isAutoComputeEnv({ FORKEDAI_COMPUTE: "auto" }), true);
-    assert.equal(isAutoComputeEnv({ FORKEDAI_COMPUTE: " AUTO " }), true);
-    assert.equal(isAutoComputeEnv({ FORKEDAI_COMPUTE: "nvidia" }), false);
-    assert.equal(isAutoComputeEnv({ FORKEDAI_COMPUTE: "cpu" }), false);
+    assert.equal(isAutoComputeEnv({ GAIC_COMPUTE: "auto" }), true);
+    assert.equal(isAutoComputeEnv({ GAIC_COMPUTE: " AUTO " }), true);
+    assert.equal(isAutoComputeEnv({ GAIC_COMPUTE: "nvidia" }), false);
+    assert.equal(isAutoComputeEnv({ GAIC_COMPUTE: "cpu" }), false);
   });
 });

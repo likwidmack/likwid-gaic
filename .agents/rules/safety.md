@@ -1,4 +1,4 @@
-﻿# Safety rules
+# Safety rules
 
 ## General editing
 
@@ -40,7 +40,7 @@ Never commit, print, or expose:
 
 - Caddy is the only service allowed to publish host ports.
 - The default bind address is `127.0.0.1`.
-- Do not broaden `FORKEDAI_BIND_ADDRESS` without hostname, certificate,
+- Do not broaden `GAIC_BIND_ADDRESS` without hostname, certificate,
   authentication, firewall, and rollback planning.
 
 ## Definition of done

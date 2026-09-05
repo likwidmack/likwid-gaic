@@ -12,7 +12,7 @@ For lifecycle commands, GPU switching, and HTTPS trust, see
 ## Requirements
 
 - Docker Desktop or Docker Engine with Compose v2
-- Unset, `FORKEDAI_COMPUTE=auto`, or pinned `nvidia`/`cpu` (auto-detect probes host
+- Unset, `GAIC_COMPUTE=auto`, or pinned `nvidia`/`cpu` (auto-detect probes host
   `nvidia-smi`; failure resolves to `cpu`)
 - Shared model root at `MODEL_ROOT` (from `config/storage.json`: `C:\gaic\models` on
   the reference Windows workstation, `/mnt/c/gaic/models` in WSL,
@@ -37,7 +37,7 @@ Ollama weights use Ollama's blob format. They do not appear in
 | Service    | `ollama` (registry image `ollama/ollama`)                                          |
 | HTTPS      | `https://localhost:8443` (unified OpenAI `/v1`), `https://localhost:8448` (direct) |
 | Native API | `/api/*` and OpenAI-compatible `/v1/*`                                             |
-| GPU        | Optional — exclusive with LocalAI, SD, Comfy when `FORKEDAI_COMPUTE=nvidia`        |
+| GPU        | Optional — exclusive with LocalAI, SD, Comfy when `GAIC_COMPUTE=nvidia`        |
 | PrivateGPT | Not wired to Ollama in this hub                                                    |
 
 ## Start Ollama
@@ -114,7 +114,7 @@ The service uses the same NVIDIA Compose deploy reservation as LocalAI
 ## Troubleshooting
 
 - **Slow on CPU:** Prefer smaller models (for example `llama3.2`) or set
-  `FORKEDAI_COMPUTE=nvidia` on a CUDA workstation for GPU acceleration.
+  `GAIC_COMPUTE=nvidia` on a CUDA workstation for GPU acceleration.
 - **GPU conflict (NVIDIA hosts):** Run `npm run stack -- switch ollama` so
   conflicting GPU services stop first, or pass `--allow-gpu-share` only when you
   accept VRAM contention.

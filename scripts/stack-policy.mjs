@@ -41,7 +41,7 @@ export function assertCpuAllowsProfile(computeMode, profile) {
   if (computeMode !== "cpu") return;
   if (nvidiaOnlyProfiles.has(profile)) {
     throw new Error(
-      `Profile "${profile}" requires NVIDIA GPU images and is not supported when FORKEDAI_COMPUTE=cpu. Use inference, rag, or ollama, or set FORKEDAI_COMPUTE=nvidia on a CUDA host.`
+      `Profile "${profile}" requires NVIDIA GPU images and is not supported when GAIC_COMPUTE=cpu. Use inference, rag, or ollama, or set GAIC_COMPUTE=nvidia on a CUDA host.`
     );
   }
 }
@@ -50,7 +50,7 @@ export function assertCpuAllowsService(computeMode, service) {
   if (computeMode !== "cpu") return;
   if (nvidiaOnlyServices.has(service)) {
     throw new Error(
-      `Service "${service}" requires NVIDIA GPU images and is not supported when FORKEDAI_COMPUTE=cpu. Build/start it only with FORKEDAI_COMPUTE=nvidia on a CUDA host.`
+      `Service "${service}" requires NVIDIA GPU images and is not supported when GAIC_COMPUTE=cpu. Build/start it only with GAIC_COMPUTE=nvidia on a CUDA host.`
     );
   }
 }
@@ -97,7 +97,7 @@ export function assertBackendAllowed(computeMode, backend) {
   const needsCuda = /cuda/i.test(backend);
   if (needsCuda && computeMode === "cpu") {
     throw new Error(
-      "CUDA backend install is NVIDIA-only. With FORKEDAI_COMPUTE=cpu, LocalAI uses the CPU image backends; set FORKEDAI_COMPUTE=nvidia to install CUDA backends, or install whisper/piper without a cuda id."
+      "CUDA backend install is NVIDIA-only. With GAIC_COMPUTE=cpu, LocalAI uses the CPU image backends; set GAIC_COMPUTE=nvidia to install CUDA backends, or install whisper/piper without a cuda id."
     );
   }
 }
@@ -105,7 +105,7 @@ export function assertBackendAllowed(computeMode, backend) {
 export function assertSmokeRunAllowed(computeMode) {
   if (computeMode === "cpu") {
     throw new Error(
-      "smoke --run requires FORKEDAI_COMPUTE=nvidia on a GPU workstation. Use `npm run stack -- smoke` for the checklist only."
+      "smoke --run requires GAIC_COMPUTE=nvidia on a GPU workstation. Use `npm run stack -- smoke` for the checklist only."
     );
   }
 }

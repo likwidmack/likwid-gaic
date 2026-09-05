@@ -69,17 +69,17 @@ export function detectNvidiaSmi(spawn = spawnSync) {
 }
 
 export function isAutoComputeEnv(env = process.env) {
-  const raw = (env.FORKEDAI_COMPUTE ?? "").trim().toLowerCase();
+  const raw = (env.GAIC_COMPUTE ?? "").trim().toLowerCase();
   return raw === "" || raw === "auto";
 }
 
 /** @returns {"nvidia"|"cpu"} */
 export function resolveComputeMode(env = process.env, platform = process.platform, { probe = detectNvidiaSmi } = {}) {
   void platform;
-  const raw = (env.FORKEDAI_COMPUTE ?? "").trim().toLowerCase();
+  const raw = (env.GAIC_COMPUTE ?? "").trim().toLowerCase();
   if (raw === "nvidia" || raw === "cpu") return raw;
   if (raw && raw !== "auto") {
-    throw new Error(`Invalid FORKEDAI_COMPUTE=${env.FORKEDAI_COMPUTE}; use nvidia, cpu, or auto`);
+    throw new Error(`Invalid GAIC_COMPUTE=${env.GAIC_COMPUTE}; use nvidia, cpu, or auto`);
   }
   return probe() ? "nvidia" : "cpu";
 }

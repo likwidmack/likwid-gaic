@@ -212,7 +212,7 @@ LocalAI documents a known SYCL issue with memory mapping. If an Intel model hang
   Allocate sufficient RAM, CPU, swap, and Docker disk capacity to Docker
   Desktop/WSL2. Confirm GPU access with the NVIDIA Docker test before starting
   LocalAI in nvidia mode.
-- **macOS:** Use Docker Desktop. Unset or `FORKEDAI_COMPUTE=auto` probes host
+- **macOS:** Use Docker Desktop. Unset or `GAIC_COMPUTE=auto` probes host
   `nvidia-smi` and falls back to `cpu` when CUDA is unavailable. NVIDIA LocalAI and
   media/comfy profiles require a GPU after resolution.
 - **Native Linux:** Use Docker Engine or Desktop. For GPU profiles install the
@@ -263,6 +263,6 @@ Then open `http://localhost:8080`, install a small model from the gallery, and t
 2. Check that port `8080` is not already in use (standalone) or that only the Caddy gateway publishes host ports (managed profile).
 3. Read `docker compose logs localai` for the backend's actual error.
 4. For NVIDIA, verify the standalone CUDA `nvidia-smi` container test and that the managed container reports the GPU via `nvidia-smi` or LocalAI `/api/resources`.
-5. If `https://localhost:8443` returns 502 while LocalAI answers inside its container, confirm both services share `forkedai-inference`, wait for Caddy's upstream probes, or recreate the gateway after a LocalAI recreate.
+5. If `https://localhost:8443` returns 502 while LocalAI answers inside its container, confirm both services share `gaic-inference`, wait for Caddy's upstream probes, or recreate the gateway after a LocalAI recreate.
 6. For an out-of-memory error, choose a smaller quantization, reduce context size, reduce concurrent models, or add RAM/VRAM.
 7. If model loading is slow, ensure the model is stored on SSD-backed Linux storage rather than an HDD or Windows-mounted filesystem.

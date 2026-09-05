@@ -29,8 +29,8 @@ Diffusion WebUI (Extensions **Load From** URL), failed `git pull` inside a
 service container, or `wget: bad address` from `gateway` while the Windows or
 macOS host resolves the same name.
 
-Compose sets upstream DNS on every service (`FORKEDAI_CONTAINER_DNS_PRIMARY` /
-`FORKEDAI_CONTAINER_DNS_SECONDARY`, defaulting to Google Public DNS). Docker
+Compose sets upstream DNS on every service (`GAIC_CONTAINER_DNS_PRIMARY` /
+`GAIC_CONTAINER_DNS_SECONDARY`, defaulting to Google Public DNS). Docker
 keeps the embedded resolver at `127.0.0.11` for Compose service names; the
 upstream list bypasses a broken Docker Desktop forward to the host resolver
 (`192.168.65.7` on Docker Desktop).
@@ -40,7 +40,7 @@ there is no `npm run stack -- exec`, so call `docker compose` directly with the
 same project name and file the scripts use:
 
 ```powershell
-docker compose --project-name forkedai --file compose.yaml --profile media exec stable-diffusion python -c "import socket; print(socket.getaddrinfo('raw.githubusercontent.com', 443)[0][4])"
+docker compose --project-name gaic --file compose.yaml --profile media exec stable-diffusion python -c "import socket; print(socket.getaddrinfo('raw.githubusercontent.com', 443)[0][4])"
 ```
 
 If that fails after recreating the stack, set corporate or LAN resolvers in
@@ -74,7 +74,7 @@ conflicting service, or pass `--allow-gpu-share` deliberately. Confirm with
 
 Do not map `LOCALAI_THREADS=""` in Compose. Leave the variable unset, set a
 real integer in a local override, or inject threads through
-`npm run models -- sync-localai` with `FORKEDAI_CPU_THREADS` /
+`npm run models -- sync-localai` with `GAIC_CPU_THREADS` /
 `LOCALAI_THREADS` in the shell.
 
 ## Windows Node vs WSL Docker / Hugging Face
@@ -120,7 +120,7 @@ npm run stack -- backend whisper
 npm run stack -- backend piper
 ```
 
-On CPU hosts (`FORKEDAI_COMPUTE=cpu`), skip the CUDA llama-cpp default and
+On CPU hosts (`GAIC_COMPUTE=cpu`), skip the CUDA llama-cpp default and
 install `whisper` / `piper` only. Details:
 [Use cases and models](use-cases-and-models.md) and
 [LocalAI Docker setup](localai-docker-setup.md).

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "projectName": "forkedai",
+  "projectName": "gaic",
   "gateway": {
     "service": "gateway",
     "defaultBindAddress": "127.0.0.1",
@@ -8,9 +8,9 @@
     "certificateAuthority": "caddy-internal"
   },
   "networks": [
-    {"key": "forkedai-edge", "name": "forkedai-edge", "driver": "bridge", "purpose": "HTTPS ingress"},
-    {"key": "forkedai-inference", "name": "forkedai-inference", "driver": "bridge", "purpose": "inference services"},
-    {"key": "forkedai-media", "name": "forkedai-media", "driver": "bridge", "purpose": "media services"}
+    {"key": "gaic-edge", "name": "gaic-edge", "driver": "bridge", "purpose": "HTTPS ingress"},
+    {"key": "gaic-inference", "name": "gaic-inference", "driver": "bridge", "purpose": "inference services"},
+    {"key": "gaic-media", "name": "gaic-media", "driver": "bridge", "purpose": "media services"}
   ],
   "sharedStorage": [
     {"name": "models", "root": "models", "containerPath": "/shared/models", "mode": "ro"},

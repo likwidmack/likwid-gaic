@@ -6,7 +6,7 @@ This is a local AI development stack, not an internet-facing deployment. Its def
 
 | Control               | Default                                                                   | Why                                                                    |
 | --------------------- | ------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| Networks              | Named bridges `forkedai-edge`, `forkedai-inference`, and `forkedai-media` | Service-name DNS with inference/media trust-zone separation            |
+| Networks              | Named bridges `gaic-edge`, `gaic-inference`, and `gaic-media` | Service-name DNS with inference/media trust-zone separation            |
 | Host publishing       | Caddy HTTPS gateway on IPv4 loopback ports 8443-8448                      | One reviewed ingress service without intentional LAN exposure          |
 | Standalone attachment | Not enabled by Compose                                                    | Reduces accidental attachment of unrelated containers                  |
 | Privilege escalation  | `no-new-privileges:true`                                                  | Blocks gaining additional privileges through setuid/setgid executables |
@@ -53,7 +53,7 @@ The host placement is also a recovery boundary: C: contains read-mostly assets, 
 
 ## Comfy service routing
 
-`comfy-frontend` reaches `comfy-backend` through service DNS on `forkedai-media`. Neither service receives a host-gateway mapping or publishes a host port. Trusted local clients use `https://localhost:8446` for the UI and `https://localhost:8447` for direct API access through the gateway.
+`comfy-frontend` reaches `comfy-backend` through service DNS on `gaic-media`. Neither service receives a host-gateway mapping or publishes a host port. Trusted local clients use `https://localhost:8446` for the UI and `https://localhost:8447` for direct API access through the gateway.
 
 ComfyUI model files are mounted read-only. Input, output, user state, temporary files, and caches use narrowly scoped writable mounts; the container does not receive the Docker socket, source repository, home directory, or host credentials.
 
@@ -93,12 +93,12 @@ docker run --rm caddy:2.11.4-alpine caddy hash-password
    and rejected clients.
 
 `npm run stack -- up` / `switch` / `config` refuse a non-loopback
-`FORKEDAI_BIND_ADDRESS` unless the auth snippet contains `basicauth`.
+`GAIC_BIND_ADDRESS` unless the auth snippet contains `basicauth`.
 `stack:doctor` reports the same gate as a WARN/failing check.
 
 Do not place plaintext passwords or CA private keys in Compose, the Caddyfile,
 `.env`, or Git. Until the follow-up is complete, keep
-`FORKEDAI_BIND_ADDRESS=127.0.0.1`.
+`GAIC_BIND_ADDRESS=127.0.0.1`.
 
 ## Preparing an exposure change
 
@@ -108,7 +108,7 @@ Keep the localhost default until the controls required by the selected option ar
 2. Capture the current resolved Compose configuration, published ports, and network membership using the commands under [Operational checks](#operational-checks).
 3. Prepare authentication, TLS, firewall rules, VPN enrollment, proxy routing, or cached dependencies before widening or restricting connectivity.
 4. Define a success test from every intended client and a rejection test from at least one client that should not have access.
-5. Keep a rollback ready: restore `FORKEDAI_BIND_ADDRESS=127.0.0.1`, remove the option-specific override and firewall rules, then recreate the gateway and affected services.
+5. Keep a rollback ready: restore `GAIC_BIND_ADDRESS=127.0.0.1`, remove the option-specific override and firewall rules, then recreate the gateway and affected services.
 
 Do not commit `.env`, credentials, private keys, firewall exports, or VPN enrollment material. Record only non-secret architecture decisions and sanitized test results in Git.
 
@@ -127,7 +127,7 @@ Do not commit `.env`, credentials, private keys, firewall exports, or VPN enroll
 Keep:
 
 ```dotenv
-FORKEDAI_BIND_ADDRESS=127.0.0.1
+GAIC_BIND_ADDRESS=127.0.0.1
 ```
 
 This is the implemented default. Host applications use `https://localhost` on the service-specific gateway ports 8443-8448, while containers use service DNS such as `http://localai:8080`.
@@ -139,7 +139,7 @@ This is the implemented default. Host applications use `https://localhost` on th
 Bind to the computer's specific LAN address, not `0.0.0.0`:
 
 ```dotenv
-FORKEDAI_BIND_ADDRESS=192.168.1.25
+GAIC_BIND_ADDRESS=192.168.1.25
 ```
 
 Changing the bind address alone is insufficient. The checked-in Caddy routes and internal certificates are for `localhost`; an IP-address request will not have the intended site name or trusted certificate.
@@ -160,9 +160,9 @@ Prefer a WireGuard or Tailscale-style private VPN over router port forwarding. B
 
 The implemented topology uses multiple networks:
 
-- `forkedai-edge`: HTTPS gateway ingress.
-- `forkedai-inference`: gateway, PrivateGPT, LocalAI, and Ollama.
-- `forkedai-media`: gateway and media services.
+- `gaic-edge`: HTTPS gateway ingress.
+- `gaic-inference`: gateway, PrivateGPT, LocalAI, and Ollama.
+- `gaic-media`: gateway and media services.
 
 Only the gateway joins more than one network. This reduces lateral movement but adds routing and troubleshooting overhead. Further split a zone if services within it are not mutually trusted; a bridge cannot provide per-service firewall isolation.
 
@@ -187,7 +187,7 @@ If independently managed Compose projects must communicate, create a network exp
 ```powershell
 npm run stack:config
 npm run stack -- up all
-docker network inspect forkedai-edge forkedai-inference forkedai-media
+docker network inspect gaic-edge gaic-inference gaic-media
 docker ps --format "table {{.Names}}\t{{.Ports}}\t{{.Networks}}"
 ```
 

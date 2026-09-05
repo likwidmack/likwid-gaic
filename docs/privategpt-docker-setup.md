@@ -17,13 +17,13 @@ Only the gateway publishes host ports. Defaults bind to `127.0.0.1`.
 
 - Node.js 20+, Docker Desktop (Linux containers), Compose v2.
 - On Windows: WSL2 integration and NVIDIA GPU support when
-  `FORKEDAI_COMPUTE=nvidia`.
+  `GAIC_COMPUTE=nvidia`.
 - Required models: `chat-qwen2.5-3b`, `embed-nomic-v1.5`, plus LocalAI YAML from
   `npm run models -- sync-localai`.
 - Documents under the configured documents root (`DOCUMENT_ROOT` /
   `config/storage.json`).
 
-CPU mode (`FORKEDAI_COMPUTE=cpu`) supports `rag`. Media/comfy stay NVIDIA-only.
+CPU mode (`GAIC_COMPUTE=cpu`) supports `rag`. Media/comfy stay NVIDIA-only.
 
 ## First run
 

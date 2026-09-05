@@ -108,8 +108,8 @@ docker run --rm --gpus all nvidia/cuda:13.0.0-base-ubuntu24.04 nvidia-smi
 Inspect the running profile:
 
 ```powershell
-docker compose --project-name forkedai --file compose.yaml --profile comfy ps
-docker compose --project-name forkedai --file compose.yaml --profile comfy logs --tail 200 comfy-backend
+docker compose --project-name gaic --file compose.yaml --profile comfy ps
+docker compose --project-name gaic --file compose.yaml --profile comfy logs --tail 200 comfy-backend
 ```
 
 The API gateway should return system, PyTorch, CUDA, and GPU details. With
@@ -219,7 +219,7 @@ npm run stack -- up comfy
 For a maintenance rebuild that refreshes the tagged PyTorch base image:
 
 ```powershell
-docker compose --project-name forkedai --file compose.yaml --profile comfy build --pull comfy-backend comfy-frontend
+docker compose --project-name gaic --file compose.yaml --profile comfy build --pull comfy-backend comfy-frontend
 npm run stack -- up comfy
 ```
 
@@ -233,7 +233,7 @@ npm run stack:config
 Stop only the ComfyUI services with:
 
 ```powershell
-docker compose --project-name forkedai --file compose.yaml --profile comfy stop comfy-frontend comfy-backend
+docker compose --project-name gaic --file compose.yaml --profile comfy stop comfy-frontend comfy-backend
 ```
 
 ## Troubleshooting

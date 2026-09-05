@@ -1,8 +1,8 @@
-﻿# First run
+# First run
 
 Use this sequence on a new workstation before starting profiles.
 
-Do not broaden `FORKEDAI_BIND_ADDRESS`, add gateway authentication, or configure
+Do not broaden `GAIC_BIND_ADDRESS`, add gateway authentication, or configure
 managed-stack `LOCALAI_API_KEY` unless explicitly requested.
 
 ## Windows / PowerShell

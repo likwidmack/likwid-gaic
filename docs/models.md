@@ -80,7 +80,7 @@ The command writes registered YAML under the shared `localai` model directory fo
 entries with `localAI` metadata. Chat and embedding use `llama-cpp`;
 transcription uses `whisper` (or the configured backend); TTS uses `piper` (or
 the configured backend). It does not download or delete weights. Optional
-`threads` in `config/models.json` or `FORKEDAI_CPU_THREADS` /
+`threads` in `config/models.json` or `GAIC_CPU_THREADS` /
 `LOCALAI_THREADS` in the environment flow into chat/embedding YAML. For VRAM
 tuning on single-GPU hosts, see [GPU and CPU resource utilization](resource-utilization.md).
 

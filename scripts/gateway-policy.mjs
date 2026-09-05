@@ -23,7 +23,7 @@ export function assertGatewayAuthForBind({ bindAddress, authSnippetText }) {
   if (isLoopbackBind(bindAddress)) return;
   if (!gatewayAuthSnippetHasBasicAuth(authSnippetText)) {
     throw new Error(
-      `FORKEDAI_BIND_ADDRESS=${bindAddress} is not loopback. Install hashed gateway basicauth in RUNTIME_ROOT/caddy/gateway-auth.caddy (see docker/gateway-auth.basicauth.example.caddy and docs/network-security.md) before exposing the gateway.`
+      `GAIC_BIND_ADDRESS=${bindAddress} is not loopback. Install hashed gateway basicauth in RUNTIME_ROOT/caddy/gateway-auth.caddy (see docker/gateway-auth.basicauth.example.caddy and docs/network-security.md) before exposing the gateway.`
     );
   }
 }

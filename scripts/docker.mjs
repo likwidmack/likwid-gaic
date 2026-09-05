@@ -41,7 +41,7 @@ const repoPath = (name) => {
 };
 const composeEnv = {
   ...process.env,
-  FORKEDAI_COMPUTE: computeMode,
+  GAIC_COMPUTE: computeMode,
   HUB_CONTEXT: root,
   LOCALAI_CONTEXT: repoPath("LocalAI-Prt"),
   PRIVATE_GPT_CONTEXT: repoPath("private-gpt-tm"),
@@ -74,7 +74,7 @@ if (computeMode === "cpu") base.push("--file", "compose.cpu.yaml");
 const compose = (args) => run("docker", [...base, ...args]);
 const allProfiles = stack.profiles.flatMap((profile) => ["--profile", profile]);
 const gpuServices = gpuExclusive.services;
-const gpuExclusiveEnabled = () => process.env.FORKEDAI_GPU_EXCLUSIVE !== "false";
+const gpuExclusiveEnabled = () => process.env.GAIC_GPU_EXCLUSIVE !== "false";
 
 function runningServices() {
   const result = run("docker", [...base, ...allProfiles, "ps", "--status", "running", "--format", "{{.Service}}"], { capture: true });
@@ -122,7 +122,7 @@ function softDoctorReadyChecks() {
   console.log("\nProfile artifact readiness (soft):");
   for (const profile of stack.profiles) {
     if (computeMode === "cpu" && (profile === "media" || profile === "comfy")) {
-      console.log(`SKIP  ${profile}: NVIDIA-only under FORKEDAI_COMPUTE=cpu`);
+      console.log(`SKIP  ${profile}: NVIDIA-only under GAIC_COMPUTE=cpu`);
       continue;
     }
     const report = checkProfileReady(profile);
@@ -178,7 +178,7 @@ function gatewayAuthPath() {
 }
 
 function enforceGatewayAuthPolicy() {
-  const bindAddress = process.env.FORKEDAI_BIND_ADDRESS ?? "127.0.0.1";
+  const bindAddress = process.env.GAIC_BIND_ADDRESS ?? "127.0.0.1";
   const authPath = gatewayAuthPath();
   const authSnippetText = existsSync(authPath) ? readFileSync(authPath, "utf8") : "";
   assertGatewayAuthForBind({ bindAddress, authSnippetText });
@@ -209,7 +209,7 @@ function switchProfile(profile, { dryRun = false, allowShare = false, flags = ne
   if (warnStaleGpu) {
     console.warn(
       `WARN  GPU-labeled services still running under CPU mode (${runningGpu.join(", ")}). ` +
-        "They may retain VRAM from a prior nvidia session. Prefer `npm run stack -- down` or pin FORKEDAI_COMPUTE=nvidia before switching."
+        "They may retain VRAM from a prior nvidia session. Prefer `npm run stack -- down` or pin GAIC_COMPUTE=nvidia before switching."
     );
   }
   console.log(`Switch plan for profile "${profile}" (compute=${computeMode}):`);
@@ -385,7 +385,7 @@ if (command === "doctor") {
     const value = hostPath(item);
     console.log(`${existsSync(value) ? "OK" : "MISSING"}  ${item.name}: ${value}`);
   }
-  const bindAddress = process.env.FORKEDAI_BIND_ADDRESS ?? "127.0.0.1";
+  const bindAddress = process.env.GAIC_BIND_ADDRESS ?? "127.0.0.1";
   const authPath = gatewayAuthPath();
   console.log("\nGateway exposure:");
   console.log(`Bind: ${bindAddress}${isLoopbackBind(bindAddress) ? " (loopback)" : " (non-loopback)"}`);
@@ -476,7 +476,7 @@ else if (command === "up") {
     compose(["--profile", metadata.profile, "build", service]);
   } else {
     if (computeMode === "cpu") {
-      throw new Error("Building all services includes NVIDIA-only media/comfy images. Build a single service, or set FORKEDAI_COMPUTE=nvidia on a CUDA host.");
+      throw new Error("Building all services includes NVIDIA-only media/comfy images. Build a single service, or set GAIC_COMPUTE=nvidia on a CUDA host.");
     }
     compose([...allProfiles, "build"]);
   }

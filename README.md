@@ -43,7 +43,7 @@ for optional profile fields (bio, links, pinned repositories).
 
 - Operators running a Windows / WSL2 / NVIDIA workstation with Docker Desktop
 - macOS or Linux hosts without NVIDIA (resolved `cpu` after auto-detect, or pin
-  `FORKEDAI_COMPUTE=cpu`)
+  `GAIC_COMPUTE=cpu`)
 - Teams that want pinned Hugging Face models, storage policy, and Compose
   profiles instead of ad hoc container setup
 - Maintainers tracking managed upstream forks without editing their worktrees
@@ -71,7 +71,7 @@ for optional profile fields (bio, links, pinned repositories).
 - Git, Node.js 20+ (`engines.node` in [`package.json`](package.json)), and npm
 - Docker Desktop or Docker Engine with Compose
 - **NVIDIA path (Windows/WSL or Linux):** current NVIDIA driver / Container Toolkit for GPU profiles
-- **Compute mode:** unset or `FORKEDAI_COMPUTE=auto` probes host `nvidia-smi`
+- **Compute mode:** unset or `GAIC_COMPUTE=auto` probes host `nvidia-smi`
   (`nvidia` if a GPU is reported, else `cpu`). Pin `nvidia` or `cpu` to skip the
   probe. `media` and `comfy` require `nvidia` after resolution; `inference`, `rag`,
   and `ollama` work on CPU.
@@ -157,13 +157,13 @@ requirements with `npm run models -- recommendations PROFILE`. Before `up` or
 ### Single-GPU rule
 
 At most one of `localai`, `stable-diffusion`, `comfy-backend`, or `ollama` may hold
-the GPU at a time when `FORKEDAI_COMPUTE=nvidia`. `rag` shares LocalAI with
+the GPU at a time when `GAIC_COMPUTE=nvidia`. `rag` shares LocalAI with
 `inference` and is safe together; do not combine `media`, `comfy`, or `ollama`
 with an active LocalAI without deliberately sharing the GPU. On CPU hosts,
 `ollama` does not stop LocalAI during `switch`.
 Details and monitoring: [GPU and CPU resource utilization](docs/resource-utilization.md).
 
-Pin `FORKEDAI_COMPUTE=cpu` or leave unset/`auto` on hosts without NVIDIA;
+Pin `GAIC_COMPUTE=cpu` or leave unset/`auto` on hosts without NVIDIA;
 `media` and `comfy` still require `nvidia` after resolution. On macOS and other
 CPU hosts, `inference`, `rag`, and `ollama` are supported. Lifecycle commands and
 HTTPS CA trust live in
@@ -215,7 +215,7 @@ npm run stack -- stop stable-diffusion
 
 `smoke --run` is for NVIDIA workstations only (starts/stops profiles; not for CI).
 `switch` and `up` accept `--require-ready` and `--skip-ready` for profile artifact
-readiness. Non-loopback `FORKEDAI_BIND_ADDRESS` requires a Caddy basicauth snippet;
+readiness. Non-loopback `GAIC_BIND_ADDRESS` requires a Caddy basicauth snippet;
 see [Network security](docs/network-security.md).
 
 ### Models, media, and forks
