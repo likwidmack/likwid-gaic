@@ -135,7 +135,6 @@ services:
       - *shared-plugins-inbox
       - *shared-tools
       - {type: bind, source: "${MODEL_ROOT:-/mnt/c/gaic/models}/localai", target: /models, read_only: true}
-      - {type: bind, source: "${MODEL_ROOT:-/mnt/c/gaic/models}/inbox/localai", target: /models/inbox}
       - {type: bind, source: "${MEDIA_ROOT:-/mnt/e/data/forkedAI/media}/images", target: /tmp/generated/images}
       - {type: bind, source: "${RUNTIME_ROOT:-/mnt/e/data/forkedAI/runtime}/localai/data", target: /data}
       - {type: bind, source: "${RUNTIME_ROOT:-/mnt/e/data/forkedAI/runtime}/localai/backends", target: /backends}

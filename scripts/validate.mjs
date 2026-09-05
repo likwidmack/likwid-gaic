@@ -200,7 +200,7 @@ if ((compose.match(/^    ports:/gm) ?? []).length !== 1) throw new Error("Only t
 if (!compose.includes("no-new-privileges:true")) throw new Error("Compose is missing the no-new-privileges baseline");
 for (const mount of ["shared-models", "shared-models-inbox", "shared-tensors", "shared-objects", "shared-plugins", "shared-plugins-inbox", "shared-tools"]) if (!compose.includes("&" + mount) || !compose.includes("*" + mount)) throw new Error("Compose is missing shared mount " + mount);
 for (const sharedPath of ["/shared/models", "/shared/models/inbox", "/shared/tensors", "/shared/objects", "/shared/plugins", "/shared/plugins/inbox", "/shared/tools"]) if (!compose.includes(sharedPath)) throw new Error("Compose is missing shared path " + sharedPath);
-if (!compose.includes("target: /models/inbox")) throw new Error("LocalAI must mount a writable models inbox overlay at /models/inbox");
+if (compose.includes("target: /models/inbox")) {`n  throw new Error("LocalAI must not define a nested /models/inbox bind under read-only /models; use /shared/models/inbox");`n}
 const sharedModelsBlock = compose.slice(compose.indexOf("x-shared-models:"), compose.indexOf("x-shared-models-inbox:"));
 if (!sharedModelsBlock.includes("read_only: true")) throw new Error("Canonical shared models mount must remain read_only");
 const modelsInboxBlock = compose.slice(compose.indexOf("x-shared-models-inbox:"), compose.indexOf("x-shared-tensors:"));
@@ -265,3 +265,4 @@ const emptyAuthBody = emptyAuth
   .join("\n");
 if (/\bbasicauth\b/i.test(emptyAuthBody)) throw new Error("gateway-auth.empty.caddy must not enable basicauth");
 console.log("Storage, model, media, and Compose configuration is valid.");
+
