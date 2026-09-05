@@ -2,14 +2,14 @@ import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import process from "node:process";
-import { assertCpuAllowsProfile } from "./stack-policy.mjs";
+import { assertCpuAllowsProfile, gatewayBaseUrl } from "./stack-policy.mjs";
 import { resolveComputeMode } from "./paths.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const stack = JSON.parse(readFileSync(new URL("../config/stack.json", import.meta.url), "utf8"));
 const computeMode = resolveComputeMode();
 const command = process.argv[2] ?? "status";
-const gatewayUrl = stack.services.find((item) => item.name === "ollama")?.url ?? "https://localhost:8448";
+const gatewayUrl = gatewayBaseUrl(process.env, "OLLAMA_HTTPS_PORT", 8448);
 
 function run(program, args, { capture = false } = {}) {
   const result = spawnSync(program, args, {

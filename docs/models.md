@@ -228,7 +228,7 @@ writable overlay exists only under `inbox`:
 
 | Host path             | Container path                                       | Access     |
 | --------------------- | ---------------------------------------------------- | ---------- |
-| `MODEL_ROOT/inbox/…`  | `/shared/models/inbox` (and LocalAI `/models/inbox`) | Read-write |
+| `MODEL_ROOT/inbox/…`  | `/shared/models/inbox`                               | Read-write |
 | `PLUGIN_ROOT/inbox/…` | `/shared/plugins/inbox`                              | Read-write |
 
 Preferred flow when a UI offers auto-download, or you stage a one-off file:

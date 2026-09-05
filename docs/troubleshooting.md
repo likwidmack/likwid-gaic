@@ -35,17 +35,21 @@ keeps the embedded resolver at `127.0.0.11` for Compose service names; the
 upstream list bypasses a broken Docker Desktop forward to the host resolver
 (`192.168.65.7` on Docker Desktop).
 
-Diagnose from a running service (Git Bash: prefix with `MSYS_NO_PATHCONV=1`):
+Diagnose from a running service (Git Bash: prefix with `MSYS_NO_PATHCONV=1`);
+there is no `npm run stack -- exec`, so call `docker compose` directly with the
+same project name and file the scripts use:
 
 ```powershell
-npm run stack -- exec stable-diffusion python -c "import socket; print(socket.getaddrinfo('raw.githubusercontent.com', 443)[0][4])"
+docker compose --project-name forkedai --file compose.yaml --profile media exec stable-diffusion python -c "import socket; print(socket.getaddrinfo('raw.githubusercontent.com', 443)[0][4])"
 ```
 
 If that fails after recreating the stack, set corporate or LAN resolvers in
-`.env`, then recreate affected services:
+`.env`, then recreate the affected service (`up` does not forward extra
+Compose flags, so stop it first to force a fresh container):
 
 ```powershell
-npm run stack -- up media -d --force-recreate
+npm run stack -- stop gateway
+npm run stack -- up media
 ```
 
 Also review Docker Desktop **Settings → Resources → Network** and WSL
@@ -61,8 +65,8 @@ Docker DNS dial. The shared `bridge_upstream` probe should recover; if
 
 ## GPU conflict / `up` refused
 
-On a single-GPU host only one of `localai`, `stable-diffusion`, or
-`comfy-backend` may run. Use `npm run stack -- switch PROFILE`, stop the
+On a single-GPU host only one of `localai`, `stable-diffusion`,
+`comfy-backend`, or `ollama` may run. Use `npm run stack -- switch PROFILE`, stop the
 conflicting service, or pass `--allow-gpu-share` deliberately. Confirm with
 `npm run stack -- resources`.
 

@@ -22,7 +22,7 @@ README. Those fields are not stored in Git; keep them aligned with
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | About          | Local-first Docker Compose hub for LocalAI, PrivateGPT, Stable Diffusion WebUI, and ComfyUI on a GPU workstation.                                                                    |
 | Website        | `https://github.com/likwidmack/likwid-gaic#readme`                                                                                                                                   |
-| Topics         | `local-ai`, `local-llm`, `rag`, `gpu`, `nvidia`, `workstation`, `docker-compose`, `localai`, `privategpt`, `stable-diffusion`, `comfyui`, `huggingface`, `wsl2`, `openai-compatible` |
+| Topics         | `local-ai`, `local-llm`, `rag`, `gpu`, `nvidia`, `workstation`, `docker-compose`, `localai`, `privategpt`, `stable-diffusion`, `comfyui`, `huggingface`, `wsl2`, `openai-compatible`, `ollama` |
 | Social preview | Upload [`.github/social-preview.png`](../.github/social-preview.png) (1280×640) in repository Settings → General → Social preview                                                    |
 
 Apply or verify with the GitHub CLI as `likwidmack`:
@@ -30,7 +30,7 @@ Apply or verify with the GitHub CLI as `likwidmack`:
 ```powershell
 gh auth status --hostname github.com
 gh repo edit likwidmack/likwid-gaic --description "Local-first Docker Compose hub for LocalAI, PrivateGPT, Stable Diffusion WebUI, and ComfyUI on a GPU workstation." --homepage "https://github.com/likwidmack/likwid-gaic#readme"
-gh repo edit likwidmack/likwid-gaic --add-topic local-ai --add-topic local-llm --add-topic rag --add-topic gpu --add-topic nvidia --add-topic workstation --add-topic docker-compose --add-topic localai --add-topic privategpt --add-topic stable-diffusion --add-topic comfyui --add-topic huggingface --add-topic wsl2 --add-topic openai-compatible
+gh repo edit likwidmack/likwid-gaic --add-topic local-ai --add-topic local-llm --add-topic rag --add-topic gpu --add-topic nvidia --add-topic workstation --add-topic docker-compose --add-topic localai --add-topic privategpt --add-topic stable-diffusion --add-topic comfyui --add-topic huggingface --add-topic wsl2 --add-topic openai-compatible --add-topic ollama
 gh repo view likwidmack/likwid-gaic --json description,homepage,repositoryTopics
 ```
 

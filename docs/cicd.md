@@ -13,7 +13,8 @@ PR → development (default/integration) | main (release)
 ```
 
 `npm test` runs configuration validation (`npm run check`) and Node unit tests
-(`npm run test:unit`: `scripts/paths.test.mjs` and `scripts/cli-policy.test.mjs`).
+(`npm run test:unit`: `scripts/paths.test.mjs`, `scripts/cli-policy.test.mjs`,
+`scripts/gateway-policy.test.mjs`, and `scripts/webui-share.test.mjs`).
 
 Workstation Docker, GPU, and storage checks stay local (`npm run stack:doctor`,
 `npm run stack:config`). They are not GitHub Actions jobs.

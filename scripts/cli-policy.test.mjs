@@ -21,6 +21,7 @@ import {
   gpuServicesForProfile,
   gpuSwitchPlan,
   gatewayModelsUrl,
+  gatewayProbeTargets,
   inferActiveEngine,
   parseGatewayModelIds,
   parseProfileCommand,
@@ -242,10 +243,18 @@ describe("stack GPU and CPU policy", () => {
   });
 
   it("exposes the three-step smoke matrix", () => {
-    assert.equal(smokeMatrix.length, 3);
-    assert.equal(smokeMatrix[0].profile, "inference");
-    assert.equal(smokeMatrix[1].profile, "media");
-    assert.equal(smokeMatrix[2].profile, "rag");
+    const matrix = smokeMatrix({});
+    assert.equal(matrix.length, 3);
+    assert.equal(matrix[0].profile, "inference");
+    assert.equal(matrix[1].profile, "media");
+    assert.equal(matrix[2].profile, "rag");
+  });
+
+  it("honors GATEWAY_HOSTNAME/port overrides in the smoke matrix and gateway probes", () => {
+    const env = { GATEWAY_HOSTNAME: "dev.local", LOCALAI_HTTPS_PORT: "9443" };
+    assert.equal(smokeMatrix(env)[0].gateway, "https://dev.local:9443");
+    const probes = gatewayProbeTargets(env);
+    assert.equal(probes[0].url, "https://dev.local:9443/");
   });
 
   it("refuses smoke --run in CPU mode", () => {

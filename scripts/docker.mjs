@@ -190,7 +190,7 @@ function enforceGatewayAuthPolicy() {
 function printSmokeChecklist() {
   console.log(`Compute mode: ${computeModeLabel}`);
   console.log("Local smoke matrix (does not start or stop services):\n");
-  for (const item of smokeMatrix) {
+  for (const item of smokeMatrix(process.env)) {
     console.log(`${item.step}. npm run stack -- switch ${item.profile}`);
     console.log(`   expect GPU: ${item.expectGpu.join(", ")}`);
     console.log(`   probe: ${item.gateway} — ${item.note}`);
@@ -233,7 +233,7 @@ function runSmokeMatrix() {
   if (!docker.ok) throw new Error(`Docker is required for smoke --run: ${docker.output}`);
   console.log("Running workstation smoke matrix (starts/stops profiles; not for CI).\n");
   let failures = 0;
-  for (const item of smokeMatrix) {
+  for (const item of smokeMatrix(process.env)) {
     console.log(`\n=== Smoke step ${item.step}: ${item.profile} ===`);
     switchProfile(item.profile);
     const activeGpu = runningGpuServices();
@@ -319,7 +319,7 @@ function probeGateways() {
   const running = new Set(runningServices());
   let failures = 0;
   console.log("\nGateway probes (already-running services only):\n");
-  for (const target of gatewayProbeTargets) {
+  for (const target of gatewayProbeTargets(process.env)) {
     const active = running.has(target.service);
     if (!active) {
       console.log(`SKIP  ${target.url} (${target.service} not running)`);
