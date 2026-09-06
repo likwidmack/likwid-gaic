@@ -111,6 +111,27 @@ The service uses the same NVIDIA Compose deploy reservation as LocalAI
 (`driver: nvidia`, `count: all`, `capabilities: [gpu]`). Health checks use
 `ollama list` because the official image does not ship `curl`.
 
+## GPU and memory tuning
+
+Compose sets these Ollama environment variables with single-GPU-workstation
+defaults, overridable in `.env` (see [GPU and CPU resource
+utilization](resource-utilization.md#compose-environment-variables) for the
+full tuning table):
+
+| Variable                  | Default | Effect                                                                 |
+| -------------------------- | ------- | ----------------------------------------------------------------------- |
+| `OLLAMA_MAX_LOADED_MODELS` | `1`     | Keeps only one model resident in VRAM, avoiding contention with a second large model |
+| `OLLAMA_NUM_PARALLEL`      | `1`     | Limits concurrent request slots; each slot adds its own KV-cache allocation |
+| `OLLAMA_FLASH_ATTENTION`   | `1`     | Enables flash attention on supported NVIDIA GPUs, reducing attention memory |
+| `OLLAMA_KV_CACHE_TYPE`     | `q8_0`  | Quantizes the KV cache to roughly halve context memory versus `f16`, with minor quality impact |
+| `OLLAMA_KEEP_ALIVE`        | `5m`    | How long an idle model stays loaded; lower it (e.g. `0`) to free VRAM immediately before switching profiles |
+
+These defaults assume the same single-GPU, one-model-at-a-time posture as the
+rest of this hub's GPU-exclusive switching. Raise `OLLAMA_NUM_PARALLEL` or
+`OLLAMA_MAX_LOADED_MODELS` only when `npm run stack -- resources` shows spare
+VRAM after loading your usual model; set `OLLAMA_KV_CACHE_TYPE=f16` if you hit
+quality regressions on long-context workloads and have the VRAM to spare.
+
 ## Troubleshooting
 
 - **Slow on CPU:** Prefer smaller models (for example `llama3.2`) or set

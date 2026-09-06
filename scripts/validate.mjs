@@ -196,6 +196,11 @@ if (!compose.includes("  " + stack.gateway.service + ":")) throw new Error("Comp
 for (const network of stack.networks) if (!compose.includes("  " + network.key + ":")) throw new Error("Compose is missing network " + network.key);
 for (const binding of ["LOCALAI_HTTPS_PORT:-8443", "PRIVATE_GPT_HTTPS_PORT:-8444", "STABLE_DIFFUSION_HTTPS_PORT:-8445", "COMFY_HTTPS_PORT:-8446", "COMFY_API_HTTPS_PORT:-8447", "OLLAMA_HTTPS_PORT:-8448"]) if (!compose.includes(binding)) throw new Error("Compose is missing HTTPS gateway binding " + binding);
 if (!compose.includes("GAIC_BIND_ADDRESS:-127.0.0.1")) throw new Error("The HTTPS gateway must publish on loopback by default");
+for (const ollamaTuning of ["OLLAMA_MAX_LOADED_MODELS:-1", "OLLAMA_NUM_PARALLEL:-1", "OLLAMA_FLASH_ATTENTION:-1", "OLLAMA_KV_CACHE_TYPE:-q8_0", "OLLAMA_KEEP_ALIVE:-5m"]) {
+  if (!compose.includes(ollamaTuning)) throw new Error("Compose is missing Ollama GPU/memory tuning default " + ollamaTuning);
+}
+const ollamaBlock = compose.slice(compose.indexOf("\n  ollama:"), compose.indexOf("\nnetworks:"));
+if (!ollamaBlock.includes("driver: nvidia")) throw new Error("Ollama must keep the NVIDIA GPU device reservation");
 if ((compose.match(/^    ports:/gm) ?? []).length !== 1) throw new Error("Only the HTTPS gateway may publish host ports");
 if (!compose.includes("no-new-privileges:true")) throw new Error("Compose is missing the no-new-privileges baseline");
 for (const mount of ["shared-models", "shared-models-inbox", "shared-tensors", "shared-objects", "shared-plugins", "shared-plugins-inbox", "shared-tools"]) if (!compose.includes("&" + mount) || !compose.includes("*" + mount)) throw new Error("Compose is missing shared mount " + mount);

@@ -338,6 +338,13 @@ services:
     environment:
       NVIDIA_VISIBLE_DEVICES: ${NVIDIA_VISIBLE_DEVICES:-0}
       NVIDIA_DRIVER_CAPABILITIES: compute,utility
+      # Single-GPU memory tuning: one model, one request slot in VRAM at a
+      # time, flash attention and an 8-bit KV cache to shrink context memory.
+      OLLAMA_MAX_LOADED_MODELS: ${OLLAMA_MAX_LOADED_MODELS:-1}
+      OLLAMA_NUM_PARALLEL: ${OLLAMA_NUM_PARALLEL:-1}
+      OLLAMA_FLASH_ATTENTION: ${OLLAMA_FLASH_ATTENTION:-1}
+      OLLAMA_KV_CACHE_TYPE: ${OLLAMA_KV_CACHE_TYPE:-q8_0}
+      OLLAMA_KEEP_ALIVE: ${OLLAMA_KEEP_ALIVE:-5m}
     volumes:
       - {type: bind, source: "${MODEL_ROOT:-/mnt/c/gaic/models}", target: /root/.ollama}
     deploy:

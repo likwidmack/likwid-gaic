@@ -113,10 +113,17 @@ Copy `.env.example` to `.env` and tune these values for your workstation:
 | `LOCALAI_MAX_ACTIVE_BACKENDS` | `1`     | Keep one model hot in VRAM                                                                                                    |
 | `GAIC_CPU_THREADS`        | unset   | Cap OpenMP/MKL for CPU-heavy services (local compose override)                                                                |
 | `GAIC_GPU_EXCLUSIVE`      | `true`  | Enable preflight and switch behavior                                                                                          |
+| `OLLAMA_MAX_LOADED_MODELS`    | `1`     | Keep one Ollama model resident in VRAM at a time                                                                              |
+| `OLLAMA_NUM_PARALLEL`         | `1`     | Cap concurrent request slots per loaded model (each slot adds KV-cache VRAM)                                                  |
+| `OLLAMA_FLASH_ATTENTION`      | `1`     | Memory-efficient attention on supported GPUs                                                                                  |
+| `OLLAMA_KV_CACHE_TYPE`        | `q8_0`  | Quantized KV cache; set `f16` for full precision at higher VRAM cost                                                          |
+| `OLLAMA_KEEP_ALIVE`           | `5m`    | How long an idle Ollama model stays loaded before eviction                                                                    |
 
 `LOCALAI_VRAM_WARM_LIMIT=0` remains set in Compose to disable gallery warm-up
 probes at container start. See [LocalAI Docker setup](localai-docker-setup.md)
-for GPU image selection and OOM troubleshooting.
+for GPU image selection and OOM troubleshooting. See
+[Ollama Docker setup](ollama-docker-setup.md#gpu-and-memory-tuning) for the
+Ollama-specific tuning rationale.
 
 ## Model VRAM and threads
 
