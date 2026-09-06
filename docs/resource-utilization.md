@@ -56,7 +56,7 @@ npm run stack -- up inference --allow-gpu-share
 ```
 
 Starting `up all` is blocked on single-GPU hosts because it causes VRAM
-contention. Set `FORKEDAI_GPU_EXCLUSIVE=false` in `.env` only when you
+contention. Set `GAIC_GPU_EXCLUSIVE=false` in `.env` only when you
 deliberately want to disable preflight and switching behavior.
 
 ## Host sizing
@@ -96,8 +96,8 @@ After editing, run `wsl --shutdown`, then restart Docker Desktop.
 | Layer                      | Setting                | Guidance                                               |
 | -------------------------- | ---------------------- | ------------------------------------------------------ |
 | LocalAI                    | `LOCALAI_THREADS`      | Physical cores minus 2–4                               |
-| PrivateGPT ingestion       | `FORKEDAI_CPU_THREADS` | Same cap; sets `OMP_NUM_THREADS` and `MKL_NUM_THREADS` |
-| Stable Diffusion / ComfyUI | PyTorch defaults       | GPU-bound; optional `FORKEDAI_CPU_THREADS` caps OpenMP |
+| PrivateGPT ingestion       | `GAIC_CPU_THREADS` | Same cap; sets `OMP_NUM_THREADS` and `MKL_NUM_THREADS` |
+| Stable Diffusion / ComfyUI | PyTorch defaults       | GPU-bound; optional `GAIC_CPU_THREADS` caps OpenMP |
 
 `npm run stack:doctor` reports physical core count and a suggested
 `LOCALAI_THREADS` value when the host tools are available.
@@ -111,12 +111,19 @@ Copy `.env.example` to `.env` and tune these values for your workstation:
 | `NVIDIA_VISIBLE_DEVICES`      | `0`     | Pin the primary GPU                                                                                                           |
 | `LOCALAI_THREADS`             | unset   | Cap LocalAI CPU threads (set only via local compose override or shell when syncing model YAML; never as an empty Compose env) |
 | `LOCALAI_MAX_ACTIVE_BACKENDS` | `1`     | Keep one model hot in VRAM                                                                                                    |
-| `FORKEDAI_CPU_THREADS`        | unset   | Cap OpenMP/MKL for CPU-heavy services (local compose override)                                                                |
-| `FORKEDAI_GPU_EXCLUSIVE`      | `true`  | Enable preflight and switch behavior                                                                                          |
+| `GAIC_CPU_THREADS`        | unset   | Cap OpenMP/MKL for CPU-heavy services (local compose override)                                                                |
+| `GAIC_GPU_EXCLUSIVE`      | `true`  | Enable preflight and switch behavior                                                                                          |
+| `OLLAMA_MAX_LOADED_MODELS`    | `1`     | Keep one Ollama model resident in VRAM at a time                                                                              |
+| `OLLAMA_NUM_PARALLEL`         | `1`     | Cap concurrent request slots per loaded model (each slot adds KV-cache VRAM)                                                  |
+| `OLLAMA_FLASH_ATTENTION`      | `1`     | Memory-efficient attention on supported GPUs                                                                                  |
+| `OLLAMA_KV_CACHE_TYPE`        | `q8_0`  | Quantized KV cache; set `f16` for full precision at higher VRAM cost                                                          |
+| `OLLAMA_KEEP_ALIVE`           | `5m`    | How long an idle Ollama model stays loaded before eviction                                                                    |
 
 `LOCALAI_VRAM_WARM_LIMIT=0` remains set in Compose to disable gallery warm-up
 probes at container start. See [LocalAI Docker setup](localai-docker-setup.md)
-for GPU image selection and OOM troubleshooting.
+for GPU image selection and OOM troubleshooting. See
+[Ollama Docker setup](ollama-docker-setup.md#gpu-and-memory-tuning) for the
+Ollama-specific tuning rationale.
 
 ## Model VRAM and threads
 
@@ -129,7 +136,7 @@ The checked-in Qwen 2.5 3B and Nomic embed models use full GPU offload
   VRAM together.
 
 Optional per-model `threads` in `config/models.json` flows into generated YAML.
-When omitted, `npm run models -- sync-localai` uses `FORKEDAI_CPU_THREADS` or
+When omitted, `npm run models -- sync-localai` uses `GAIC_CPU_THREADS` or
 `LOCALAI_THREADS` from the environment if set.
 
 ```powershell
@@ -188,7 +195,7 @@ STT/TTS), see [Troubleshooting](troubleshooting.md).
   (for example `qwen2.5-3b-instruct:latest`).
 - **Preflight blocked `up`:** Another GPU profile is running. Use `switch` or
   stop the conflicting service manually.
-- **Slow document ingestion:** Raise `FORKEDAI_CPU_THREADS` modestly or add
+- **Slow document ingestion:** Raise `GAIC_CPU_THREADS` modestly or add
   WSL memory; avoid exceeding physical cores.
 - **GPU not visible in containers:** Run `npm run stack:doctor` and the
   standalone `nvidia-smi` container test in

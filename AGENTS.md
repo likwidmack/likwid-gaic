@@ -46,14 +46,14 @@ or derived from these files.
 - Use Docker Desktop in Linux-container mode with current WSL2 integration on
   Windows. Do not recommend a second Docker Engine or Linux NVIDIA display
   driver inside the integrated WSL distribution.
-- Unset or `FORKEDAI_COMPUTE=auto` probes host `nvidia-smi` and resolves `nvidia`
+- Unset or `GAIC_COMPUTE=auto` probes host `nvidia-smi` and resolves `nvidia`
   or `cpu`. Pin `nvidia` or `cpu` to skip the probe. `media` and `comfy` require
   `nvidia` after resolution.
 
 ## Skill: first run
 
 Use this sequence on a new workstation before starting profiles. Do not broaden
-`FORKEDAI_BIND_ADDRESS`, add gateway authentication, or configure managed-stack
+`GAIC_BIND_ADDRESS`, add gateway authentication, or configure managed-stack
 `LOCALAI_API_KEY` unless explicitly requested.
 
 ```powershell

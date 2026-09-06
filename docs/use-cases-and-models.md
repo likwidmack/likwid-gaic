@@ -6,8 +6,8 @@ model pins, and Web UIs. Download workflow and provenance rules live in
 live in [Container operations](container-operations.md) and
 [GPU and CPU resource utilization](resource-utilization.md).
 
-On a single-GPU host, run at most one of LocalAI, Stable Diffusion WebUI, or
-ComfyUI at a time. Prefer `npm run stack -- switch PROFILE` (or
+On a single-GPU host, run at most one of LocalAI, Stable Diffusion WebUI,
+ComfyUI, or Ollama at a time. Prefer `npm run stack -- switch PROFILE` (or
 `npm run stack:PROFILE`) before opening a different UI.
 
 ## Profile quick map

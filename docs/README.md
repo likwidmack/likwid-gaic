@@ -56,7 +56,7 @@ models, GPU details, and Docker state; review it before sharing.
   copy it to ignored `.env` and adjust for your layout. Never commit credentials.
 - Canonical fork and storage paths live in `config/repos.json` and
   `config/storage.json`; the npm stack runner injects those values.
-- `FORKEDAI_COMPUTE` selects nvidia vs cpu Compose rendering.
+- `GAIC_COMPUTE` selects nvidia vs cpu Compose rendering.
 - Run `npm test` after changing documentation links or configuration examples.
 
 ## Design history

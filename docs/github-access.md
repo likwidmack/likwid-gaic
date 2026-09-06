@@ -8,7 +8,7 @@ and credential boundaries for the hub and its managed forks.
 | Account                                     | Responsibility                            |
 | ------------------------------------------- | ----------------------------------------- |
 | [likwidmack](https://github.com/likwidmack) | Owns this hub at `likwidmack/likwid-gaic` |
-| [tamaramack](https://github.com/tamaramack) | Owns the five managed forks               |
+| [tamaramack](https://github.com/tamaramack) | Owns the managed forks                    |
 
 The ownership boundary is stored in `config/accounts.json`; fork URLs and preferred SSH origins are stored in `config/repos.json`.
 
@@ -22,7 +22,7 @@ README. Those fields are not stored in Git; keep them aligned with
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | About          | Local-first Docker Compose hub for LocalAI, PrivateGPT, Stable Diffusion WebUI, and ComfyUI on a GPU workstation.                                                                    |
 | Website        | `https://github.com/likwidmack/likwid-gaic#readme`                                                                                                                                   |
-| Topics         | `local-ai`, `local-llm`, `rag`, `gpu`, `nvidia`, `workstation`, `docker-compose`, `localai`, `privategpt`, `stable-diffusion`, `comfyui`, `huggingface`, `wsl2`, `openai-compatible` |
+| Topics         | `local-ai`, `local-llm`, `rag`, `gpu`, `nvidia`, `workstation`, `docker-compose`, `localai`, `privategpt`, `stable-diffusion`, `comfyui`, `huggingface`, `wsl2`, `openai-compatible`, `ollama` |
 | Social preview | Upload [`.github/social-preview.png`](../.github/social-preview.png) (1280×640) in repository Settings → General → Social preview                                                    |
 
 Apply or verify with the GitHub CLI as `likwidmack`:
@@ -30,7 +30,7 @@ Apply or verify with the GitHub CLI as `likwidmack`:
 ```powershell
 gh auth status --hostname github.com
 gh repo edit likwidmack/likwid-gaic --description "Local-first Docker Compose hub for LocalAI, PrivateGPT, Stable Diffusion WebUI, and ComfyUI on a GPU workstation." --homepage "https://github.com/likwidmack/likwid-gaic#readme"
-gh repo edit likwidmack/likwid-gaic --add-topic local-ai --add-topic local-llm --add-topic rag --add-topic gpu --add-topic nvidia --add-topic workstation --add-topic docker-compose --add-topic localai --add-topic privategpt --add-topic stable-diffusion --add-topic comfyui --add-topic huggingface --add-topic wsl2 --add-topic openai-compatible
+gh repo edit likwidmack/likwid-gaic --add-topic local-ai --add-topic local-llm --add-topic rag --add-topic gpu --add-topic nvidia --add-topic workstation --add-topic docker-compose --add-topic localai --add-topic privategpt --add-topic stable-diffusion --add-topic comfyui --add-topic huggingface --add-topic wsl2 --add-topic openai-compatible --add-topic ollama
 gh repo view likwidmack/likwid-gaic --json description,homepage,repositoryTopics
 ```
 
@@ -58,7 +58,7 @@ ssh -T git@github.com-lkpc
 
 ## Managed fork remotes
 
-The three original forks currently use SSH for `origin` and `upstream`. The two Comfy forks may use HTTPS. The management scripts support either transport and never rewrite remotes.
+The three original forks currently use SSH for `origin` and `upstream`. The two Comfy forks may use HTTPS. The four agent-skills forks (`agent-skills-pr`, `matt-skills-pr`, `superpowers-pr`, `ui-ux-pro-max-skill-pr`) use HTTPS for both remotes. The management scripts support either transport and never rewrite remotes.
 
 `config/repos.json` records a preferred `originSsh` for each fork, but that is metadata, not an instruction to mutate an existing local remote. Verify actual state with:
 

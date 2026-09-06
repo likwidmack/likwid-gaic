@@ -41,7 +41,7 @@ const repoPath = (name) => {
 };
 const composeEnv = {
   ...process.env,
-  FORKEDAI_COMPUTE: computeMode,
+  GAIC_COMPUTE: computeMode,
   HUB_CONTEXT: root,
   LOCALAI_CONTEXT: repoPath("LocalAI-Prt"),
   PRIVATE_GPT_CONTEXT: repoPath("private-gpt-tm"),
@@ -74,7 +74,7 @@ if (computeMode === "cpu") base.push("--file", "compose.cpu.yaml");
 const compose = (args) => run("docker", [...base, ...args]);
 const allProfiles = stack.profiles.flatMap((profile) => ["--profile", profile]);
 const gpuServices = gpuExclusive.services;
-const gpuExclusiveEnabled = () => process.env.FORKEDAI_GPU_EXCLUSIVE !== "false";
+const gpuExclusiveEnabled = () => process.env.GAIC_GPU_EXCLUSIVE !== "false";
 
 function runningServices() {
   const result = run("docker", [...base, ...allProfiles, "ps", "--status", "running", "--format", "{{.Service}}"], { capture: true });
@@ -122,7 +122,7 @@ function softDoctorReadyChecks() {
   console.log("\nProfile artifact readiness (soft):");
   for (const profile of stack.profiles) {
     if (computeMode === "cpu" && (profile === "media" || profile === "comfy")) {
-      console.log(`SKIP  ${profile}: NVIDIA-only under FORKEDAI_COMPUTE=cpu`);
+      console.log(`SKIP  ${profile}: NVIDIA-only under GAIC_COMPUTE=cpu`);
       continue;
     }
     const report = checkProfileReady(profile);
@@ -178,7 +178,7 @@ function gatewayAuthPath() {
 }
 
 function enforceGatewayAuthPolicy() {
-  const bindAddress = process.env.FORKEDAI_BIND_ADDRESS ?? "127.0.0.1";
+  const bindAddress = process.env.GAIC_BIND_ADDRESS ?? "127.0.0.1";
   const authPath = gatewayAuthPath();
   const authSnippetText = existsSync(authPath) ? readFileSync(authPath, "utf8") : "";
   assertGatewayAuthForBind({ bindAddress, authSnippetText });
@@ -190,7 +190,7 @@ function enforceGatewayAuthPolicy() {
 function printSmokeChecklist() {
   console.log(`Compute mode: ${computeModeLabel}`);
   console.log("Local smoke matrix (does not start or stop services):\n");
-  for (const item of smokeMatrix) {
+  for (const item of smokeMatrix(process.env)) {
     console.log(`${item.step}. npm run stack -- switch ${item.profile}`);
     console.log(`   expect GPU: ${item.expectGpu.join(", ")}`);
     console.log(`   probe: ${item.gateway} — ${item.note}`);
@@ -209,7 +209,7 @@ function switchProfile(profile, { dryRun = false, allowShare = false, flags = ne
   if (warnStaleGpu) {
     console.warn(
       `WARN  GPU-labeled services still running under CPU mode (${runningGpu.join(", ")}). ` +
-        "They may retain VRAM from a prior nvidia session. Prefer `npm run stack -- down` or pin FORKEDAI_COMPUTE=nvidia before switching."
+        "They may retain VRAM from a prior nvidia session. Prefer `npm run stack -- down` or pin GAIC_COMPUTE=nvidia before switching."
     );
   }
   console.log(`Switch plan for profile "${profile}" (compute=${computeMode}):`);
@@ -233,7 +233,7 @@ function runSmokeMatrix() {
   if (!docker.ok) throw new Error(`Docker is required for smoke --run: ${docker.output}`);
   console.log("Running workstation smoke matrix (starts/stops profiles; not for CI).\n");
   let failures = 0;
-  for (const item of smokeMatrix) {
+  for (const item of smokeMatrix(process.env)) {
     console.log(`\n=== Smoke step ${item.step}: ${item.profile} ===`);
     switchProfile(item.profile);
     const activeGpu = runningGpuServices();
@@ -319,7 +319,7 @@ function probeGateways() {
   const running = new Set(runningServices());
   let failures = 0;
   console.log("\nGateway probes (already-running services only):\n");
-  for (const target of gatewayProbeTargets) {
+  for (const target of gatewayProbeTargets(process.env)) {
     const active = running.has(target.service);
     if (!active) {
       console.log(`SKIP  ${target.url} (${target.service} not running)`);
@@ -385,7 +385,7 @@ if (command === "doctor") {
     const value = hostPath(item);
     console.log(`${existsSync(value) ? "OK" : "MISSING"}  ${item.name}: ${value}`);
   }
-  const bindAddress = process.env.FORKEDAI_BIND_ADDRESS ?? "127.0.0.1";
+  const bindAddress = process.env.GAIC_BIND_ADDRESS ?? "127.0.0.1";
   const authPath = gatewayAuthPath();
   console.log("\nGateway exposure:");
   console.log(`Bind: ${bindAddress}${isLoopbackBind(bindAddress) ? " (loopback)" : " (non-loopback)"}`);
@@ -476,7 +476,7 @@ else if (command === "up") {
     compose(["--profile", metadata.profile, "build", service]);
   } else {
     if (computeMode === "cpu") {
-      throw new Error("Building all services includes NVIDIA-only media/comfy images. Build a single service, or set FORKEDAI_COMPUTE=nvidia on a CUDA host.");
+      throw new Error("Building all services includes NVIDIA-only media/comfy images. Build a single service, or set GAIC_COMPUTE=nvidia on a CUDA host.");
     }
     compose([...allProfiles, "build"]);
   }

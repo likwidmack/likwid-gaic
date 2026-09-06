@@ -1,12 +1,12 @@
-name: forkedai
+name: gaic
 
 x-security-defaults: &security-defaults
   security_opt:
     - no-new-privileges:true
   # Upstream resolvers when Docker Desktop forwards SERVFAIL; 127.0.0.11 still resolves Compose names.
   dns:
-    - ${FORKEDAI_CONTAINER_DNS_PRIMARY:-8.8.8.8}
-    - ${FORKEDAI_CONTAINER_DNS_SECONDARY:-8.8.4.4}
+    - ${GAIC_CONTAINER_DNS_PRIMARY:-8.8.8.8}
+    - ${GAIC_CONTAINER_DNS_SECONDARY:-8.8.4.4}
 
 x-shared-models: &shared-models
   type: bind
@@ -55,12 +55,12 @@ services:
       retries: 3
       start_period: 5s
     ports:
-      - "${FORKEDAI_BIND_ADDRESS:-127.0.0.1}:${LOCALAI_HTTPS_PORT:-8443}:8443"
-      - "${FORKEDAI_BIND_ADDRESS:-127.0.0.1}:${PRIVATE_GPT_HTTPS_PORT:-8444}:8444"
-      - "${FORKEDAI_BIND_ADDRESS:-127.0.0.1}:${STABLE_DIFFUSION_HTTPS_PORT:-8445}:8445"
-      - "${FORKEDAI_BIND_ADDRESS:-127.0.0.1}:${COMFY_HTTPS_PORT:-8446}:8446"
-      - "${FORKEDAI_BIND_ADDRESS:-127.0.0.1}:${COMFY_API_HTTPS_PORT:-8447}:8447"
-      - "${FORKEDAI_BIND_ADDRESS:-127.0.0.1}:${OLLAMA_HTTPS_PORT:-8448}:8448"
+      - "${GAIC_BIND_ADDRESS:-127.0.0.1}:${LOCALAI_HTTPS_PORT:-8443}:8443"
+      - "${GAIC_BIND_ADDRESS:-127.0.0.1}:${PRIVATE_GPT_HTTPS_PORT:-8444}:8444"
+      - "${GAIC_BIND_ADDRESS:-127.0.0.1}:${STABLE_DIFFUSION_HTTPS_PORT:-8445}:8445"
+      - "${GAIC_BIND_ADDRESS:-127.0.0.1}:${COMFY_HTTPS_PORT:-8446}:8446"
+      - "${GAIC_BIND_ADDRESS:-127.0.0.1}:${COMFY_API_HTTPS_PORT:-8447}:8447"
+      - "${GAIC_BIND_ADDRESS:-127.0.0.1}:${OLLAMA_HTTPS_PORT:-8448}:8448"
     volumes:
       - {type: bind, source: "${HUB_CONTEXT:-.}/docker/Caddyfile", target: /etc/caddy/Caddyfile, read_only: true}
       - {type: bind, source: "${RUNTIME_ROOT:-/mnt/e/data/forkedAI/runtime}/caddy/gateway-auth.caddy", target: /etc/caddy/snippets/gateway-auth.caddy, read_only: true}
@@ -70,9 +70,9 @@ services:
     tmpfs:
       - /config
     networks:
-      - forkedai-edge
-      - forkedai-inference
-      - forkedai-media
+      - gaic-edge
+      - gaic-inference
+      - gaic-media
     # required:false keeps media/comfy-only profiles working when inference is off.
     depends_on:
       localai:
@@ -115,7 +115,7 @@ services:
     expose:
       - "8080"
     networks:
-      - forkedai-inference
+      - gaic-inference
     environment:
       LOCALAI_ADDRESS: ":8080"
       LOCALAI_MODELS_PATH: /shared/models/localai
@@ -135,7 +135,6 @@ services:
       - *shared-plugins-inbox
       - *shared-tools
       - {type: bind, source: "${MODEL_ROOT:-/mnt/c/gaic/models}/localai", target: /models, read_only: true}
-      - {type: bind, source: "${MODEL_ROOT:-/mnt/c/gaic/models}/inbox/localai", target: /models/inbox}
       - {type: bind, source: "${MEDIA_ROOT:-/mnt/e/data/forkedAI/media}/images", target: /tmp/generated/images}
       - {type: bind, source: "${RUNTIME_ROOT:-/mnt/e/data/forkedAI/runtime}/localai/data", target: /data}
       - {type: bind, source: "${RUNTIME_ROOT:-/mnt/e/data/forkedAI/runtime}/localai/backends", target: /backends}
@@ -149,7 +148,7 @@ services:
   private-gpt:
     <<: *security-defaults
     profiles: ["rag"]
-    image: forkedai/private-gpt:local
+    image: gaic/private-gpt:local
     build:
       context: ${PRIVATE_GPT_CONTEXT:-/mnt/e/git/private-gpt-tm}
       dockerfile: Dockerfile
@@ -169,7 +168,7 @@ services:
     expose:
       - "8080"
     networks:
-      - forkedai-inference
+      - gaic-inference
     environment:
       OPENAI_API_BASE: http://localai:8080/v1
       OPENAI_EMBEDDING_API_BASE: http://localai:8080/v1
@@ -200,7 +199,7 @@ services:
   stable-diffusion:
     <<: *security-defaults
     profiles: ["media"]
-    image: forkedai/stable-diffusion-ui:local
+    image: gaic/stable-diffusion-ui:local
     build:
       context: ${HUB_CONTEXT:-.}
       dockerfile: docker/stable-diffusion.Dockerfile
@@ -217,7 +216,7 @@ services:
     expose:
       - "7860"
     networks:
-      - forkedai-media
+      - gaic-media
     environment:
       NVIDIA_VISIBLE_DEVICES: ${NVIDIA_VISIBLE_DEVICES:-0}
       NVIDIA_DRIVER_CAPABILITIES: compute,utility
@@ -243,7 +242,7 @@ services:
   comfy-backend:
     <<: *security-defaults
     profiles: ["comfy"]
-    image: forkedai/comfyui:local
+    image: gaic/comfyui:local
     build:
       context: ${HUB_CONTEXT:-.}
       dockerfile: docker/comfyui.Dockerfile
@@ -261,7 +260,7 @@ services:
     expose:
       - "8188"
     networks:
-      - forkedai-media
+      - gaic-media
     environment:
       HF_HOME: /cache/huggingface
       NVIDIA_VISIBLE_DEVICES: ${NVIDIA_VISIBLE_DEVICES:-0}
@@ -291,7 +290,7 @@ services:
   comfy-frontend:
     <<: *security-defaults
     profiles: ["comfy"]
-    image: forkedai/comfy-frontend:local
+    image: gaic/comfy-frontend:local
     build:
       context: ${HUB_CONTEXT:-.}
       dockerfile: docker/comfy-frontend.Dockerfile
@@ -310,7 +309,7 @@ services:
     expose:
       - "80"
     networks:
-      - forkedai-media
+      - gaic-media
     environment:
       COMFY_BACKEND: ${COMFY_BACKEND:-http://comfy-backend:8188}
       NGINX_ENVSUBST_FILTER: COMFY_BACKEND
@@ -335,10 +334,17 @@ services:
     expose:
       - "11434"
     networks:
-      - forkedai-inference
+      - gaic-inference
     environment:
       NVIDIA_VISIBLE_DEVICES: ${NVIDIA_VISIBLE_DEVICES:-0}
       NVIDIA_DRIVER_CAPABILITIES: compute,utility
+      # Single-GPU memory tuning: one model, one request slot in VRAM at a
+      # time, flash attention and an 8-bit KV cache to shrink context memory.
+      OLLAMA_MAX_LOADED_MODELS: ${OLLAMA_MAX_LOADED_MODELS:-1}
+      OLLAMA_NUM_PARALLEL: ${OLLAMA_NUM_PARALLEL:-1}
+      OLLAMA_FLASH_ATTENTION: ${OLLAMA_FLASH_ATTENTION:-1}
+      OLLAMA_KV_CACHE_TYPE: ${OLLAMA_KV_CACHE_TYPE:-q8_0}
+      OLLAMA_KEEP_ALIVE: ${OLLAMA_KEEP_ALIVE:-5m}
     volumes:
       - {type: bind, source: "${MODEL_ROOT:-/mnt/c/gaic/models}", target: /root/.ollama}
     deploy:
@@ -348,26 +354,26 @@ services:
             - {driver: nvidia, count: all, capabilities: [gpu]}
 
 networks:
-  forkedai-edge:
-    name: ${FORKEDAI_EDGE_NETWORK_NAME:-forkedai-edge}
+  gaic-edge:
+    name: ${GAIC_EDGE_NETWORK_NAME:-gaic-edge}
     driver: bridge
     attachable: false
     internal: false
     driver_opts:
       com.docker.network.bridge.host_binding_ipv4: "127.0.0.1"
     labels:
-      io.forkedai.purpose: HTTPS ingress
-  forkedai-inference:
-    name: ${FORKEDAI_INFERENCE_NETWORK_NAME:-forkedai-inference}
+      io.gaic.purpose: HTTPS ingress
+  gaic-inference:
+    name: ${GAIC_INFERENCE_NETWORK_NAME:-gaic-inference}
     driver: bridge
     attachable: false
     internal: false
     labels:
-      io.forkedai.purpose: inference services
-  forkedai-media:
-    name: ${FORKEDAI_MEDIA_NETWORK_NAME:-forkedai-media}
+      io.gaic.purpose: inference services
+  gaic-media:
+    name: ${GAIC_MEDIA_NETWORK_NAME:-gaic-media}
     driver: bridge
     attachable: false
     internal: false
     labels:
-      io.forkedai.purpose: media services
+      io.gaic.purpose: media services

@@ -6,14 +6,14 @@ The root `compose.yaml` is the control plane for the managed forks. It does not 
 
 ## Platforms and compute modes
 
-| Host                      | Path keys used        | Default `FORKEDAI_COMPUTE`                          | Supported profiles                         |
+| Host                      | Path keys used        | Default `GAIC_COMPUTE`                          | Supported profiles                         |
 | ------------------------- | --------------------- | --------------------------------------------------- | ------------------------------------------ |
 | Windows (Node on Windows) | `pathWindows`         | `auto` (`nvidia` if `nvidia-smi` ok, else `cpu`)    | All with NVIDIA; else inference/rag/ollama |
 | WSL (Node inside WSL)     | `pathWsl`             | `auto` (`nvidia` if `nvidia-smi` ok, else `cpu`)    | All with NVIDIA; else inference/rag/ollama |
 | macOS                     | `pathPosix` (`~/...`) | `auto` (falls back to `cpu`; no NVIDIA passthrough) | inference, rag, ollama                     |
 | Native Linux              | `pathPosix` (`~/...`) | `auto` (`nvidia` if `nvidia-smi` ok, else `cpu`)    | All with NVIDIA; else inference/rag/ollama |
 
-Set `FORKEDAI_COMPUTE=cpu` or `nvidia` explicitly to pin the mode. Unset or `auto`
+Set `GAIC_COMPUTE=cpu` or `nvidia` explicitly to pin the mode. Unset or `auto`
 probes host `nvidia-smi` and resolves `cpu` when the probe fails. CPU mode appends
 [`compose.cpu.yaml`](../compose.cpu.yaml) (CPU LocalAI image, no NVIDIA devices).
 `media` and `comfy` require NVIDIA images and are refused in CPU mode. `ollama`
@@ -57,13 +57,13 @@ performance. The reference workstation keeps shared assets and durable data on
 C:, D:, and E: for Windows interoperability and backup policy.
 
 **macOS:** Docker Desktop (Linux containers). There is no NVIDIA GPU passthrough;
-unset or `FORKEDAI_COMPUTE=auto` probes host `nvidia-smi` and falls back to `cpu`
-when no GPU is reported. Pin `FORKEDAI_COMPUTE=cpu` if needed. Use host-native paths under
+unset or `GAIC_COMPUTE=auto` probes host `nvidia-smi` and falls back to `cpu`
+when no GPU is reported. Pin `GAIC_COMPUTE=cpu` if needed. Use host-native paths under
 `$HOME` from `config/storage.json` `pathPosix` entries.
 
 **Native Linux:** Docker Engine or Desktop plus the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
 for GPU profiles. Without NVIDIA, unset/`auto` resolves to `cpu`; pin
-`FORKEDAI_COMPUTE=cpu` explicitly if needed.
+`GAIC_COMPUTE=cpu` explicitly if needed.
 
 ### Compose trust and credentials
 
@@ -152,12 +152,12 @@ The command fetches `https://localhost:8443/v1/models`, prints the active engine
 ## Segmented bridges
 
 Services explicitly join one trust-zone bridge. `localai`, `private-gpt`, and
-`ollama` use `forkedai-inference`; Stable Diffusion and both Comfy services use
-`forkedai-media`; the gateway joins those networks plus `forkedai-edge`. Docker provides service-name DNS within each network, so fixed container IP addresses are unnecessary. The gateway is the only multi-homed service. A 502 from the gateway while `docker exec` into the backend succeeds usually means a stale upstream dial after recreate, not a missing bridge attachment—recreate or restart the gateway if probes have not recovered yet.
+`ollama` use `gaic-inference`; Stable Diffusion and both Comfy services use
+`gaic-media`; the gateway joins those networks plus `gaic-edge`. Docker provides service-name DNS within each network, so fixed container IP addresses are unnecessary. The gateway is the only multi-homed service. A 502 from the gateway while `docker exec` into the backend succeeds usually means a stale upstream dial after recreate, not a missing bridge attachment—recreate or restart the gateway if probes have not recovered yet.
 
 The gateway binds to `127.0.0.1` by default. It is available to applications and browsers on this computer but not intentionally exposed to the LAN. Compose does not opt into standalone attachment, each service runs with `no-new-privileges`, and Docker-daemon access remains a privileged administrative boundary.
 
-The six `*_HTTPS_PORT` variables change host-side published ports only; Caddy continues to listen on container ports 8443 through 8448. Changing `FORKEDAI_BIND_ADDRESS` does not by itself configure a usable LAN hostname, certificate, authentication policy, or firewall rule.
+The six `*_HTTPS_PORT` variables change host-side published ports only; Caddy continues to listen on container ports 8443 through 8448. Changing `GAIC_BIND_ADDRESS` does not by itself configure a usable LAN hostname, certificate, authentication policy, or firewall rule.
 
 See the dedicated [LocalAI setup guide](localai-docker-setup.md),
 [PrivateGPT setup guide](privategpt-docker-setup.md),
@@ -168,13 +168,13 @@ and troubleshooting. Workload-to-model mapping:
 [Use cases and models](use-cases-and-models.md).
 
 ```powershell
-docker network inspect forkedai-edge forkedai-inference forkedai-media
+docker network inspect gaic-edge gaic-inference gaic-media
 docker ps --format "table {{.Names}}\t{{.Ports}}\t{{.Networks}}"
 ```
 
-Set the three `FORKEDAI_*_NETWORK_NAME` variables only when a name collision
+Set the three `GAIC_*_NETWORK_NAME` variables only when a name collision
 exists. See [Network security](network-security.md) before changing
-`FORKEDAI_BIND_ADDRESS` or exposing the gateway beyond localhost.
+`GAIC_BIND_ADDRESS` or exposing the gateway beyond localhost.
 
 ## Trusting the local HTTPS certificate
 
@@ -240,7 +240,7 @@ npm run stack -- up rag
 ```bash
 cp -n .env.example .env || true
 # macOS or Linux without NVIDIA:
-# export FORKEDAI_COMPUTE=cpu
+# export GAIC_COMPUTE=cpu
 npm run stack:doctor
 npm run media -- init
 npm run stack:config
@@ -274,7 +274,7 @@ npm run stack -- up comfy
 ```
 
 `doctor` is read-only. `media init` creates configured directories. `stack:config`
-renders and validates the complete Compose model (`FORKEDAI_COMPUTE=cpu npm run
+renders and validates the complete Compose model (`GAIC_COMPUTE=cpu npm run
 stack:config` to preview the CPU overlay). `up` starts containers and waits up
 to five minutes for health. The backend command installs
 `localai@cuda13-llama-cpp` only when missing, persists it under the runtime
@@ -338,7 +338,7 @@ For a maintenance rebuild that refreshes a Dockerfile's base image, use direct
 Compose with the ignored `.env` in place, then return to the npm runner:
 
 ```powershell
-docker compose --project-name forkedai --file compose.yaml --profile comfy build --pull comfy-backend comfy-frontend
+docker compose --project-name gaic --file compose.yaml --profile comfy build --pull comfy-backend comfy-frontend
 npm run stack -- up comfy
 ```
 

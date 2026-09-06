@@ -13,10 +13,11 @@ function command(program, args) {
   try { return execFileSync(program, args, { encoding: "utf8", timeout: 20000 }).trim(); }
   catch (error) { return `Unavailable: ${error.stderr?.toString().trim() || error.message}`; }
 }
-function walk(root, files = []) {
+function walk(root, files = [], top = root) {
   for (const entry of readdirSync(root, { withFileTypes: true })) {
+    if (root === top && entry.name === "inbox") continue;
     const path = join(root, entry.name);
-    if (entry.isDirectory()) walk(path, files);
+    if (entry.isDirectory()) walk(path, files, top);
     else if (extensions.has(extname(entry.name).toLowerCase())) files.push({ path, bytes: statSync(path).size });
   }
   return files;

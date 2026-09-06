@@ -1,4 +1,4 @@
-# CPU compute overlay. Applied by scripts/docker.mjs when FORKEDAI_COMPUTE=cpu.
+# CPU compute overlay. Applied by scripts/docker.mjs when GAIC_COMPUTE=cpu.
 # Resets NVIDIA device reservations and LocalAI CUDA pins.
 # media/comfy remain NVIDIA-only and are refused by the npm runner in CPU mode.
 # ollama runs on CPU here (GPU reservations cleared); use nvidia compute for GPU inference.

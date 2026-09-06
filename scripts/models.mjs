@@ -237,7 +237,7 @@ function downloadArgs(item, dryRun = false) {
   return args;
 }
 function localAIYamlLines(spec) {
-  const threads = spec.threads ?? process.env.FORKEDAI_CPU_THREADS ?? process.env.LOCALAI_THREADS;
+  const threads = spec.threads ?? process.env.GAIC_CPU_THREADS ?? process.env.LOCALAI_THREADS;
   switch (spec.type) {
     case "embedding": {
       const lines = [

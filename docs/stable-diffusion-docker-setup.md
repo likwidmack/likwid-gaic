@@ -2,7 +2,7 @@
 
 This guide covers the managed `media` profile: Automatic1111 Stable Diffusion
 WebUI behind the Caddy HTTPS gateway. NVIDIA compute is required
-(`FORKEDAI_COMPUTE=nvidia`).
+(`GAIC_COMPUTE=nvidia`).
 
 ## Service and endpoint
 
@@ -119,7 +119,7 @@ Aliases: `npm run stack:media`, `npm run stack:status`, `npm run stack:down`.
   WebUI recreate.
 - **CUDA / OOM:** close other GPU profiles; lower resolution or use SD 1.5
   before SDXL; see [resource utilization](resource-utilization.md).
-- **CPU mode:** `media` is refused when `FORKEDAI_COMPUTE=cpu`.
+- **CPU mode:** `media` is refused when `GAIC_COMPUTE=cpu`.
 
 ## Related guides
 

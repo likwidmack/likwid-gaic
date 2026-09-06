@@ -41,7 +41,7 @@ export function assertCpuAllowsProfile(computeMode, profile) {
   if (computeMode !== "cpu") return;
   if (nvidiaOnlyProfiles.has(profile)) {
     throw new Error(
-      `Profile "${profile}" requires NVIDIA GPU images and is not supported when FORKEDAI_COMPUTE=cpu. Use inference, rag, or ollama, or set FORKEDAI_COMPUTE=nvidia on a CUDA host.`
+      `Profile "${profile}" requires NVIDIA GPU images and is not supported when GAIC_COMPUTE=cpu. Use inference, rag, or ollama, or set GAIC_COMPUTE=nvidia on a CUDA host.`
     );
   }
 }
@@ -50,7 +50,7 @@ export function assertCpuAllowsService(computeMode, service) {
   if (computeMode !== "cpu") return;
   if (nvidiaOnlyServices.has(service)) {
     throw new Error(
-      `Service "${service}" requires NVIDIA GPU images and is not supported when FORKEDAI_COMPUTE=cpu. Build/start it only with FORKEDAI_COMPUTE=nvidia on a CUDA host.`
+      `Service "${service}" requires NVIDIA GPU images and is not supported when GAIC_COMPUTE=cpu. Build/start it only with GAIC_COMPUTE=nvidia on a CUDA host.`
     );
   }
 }
@@ -59,11 +59,6 @@ export function assertGpuPreflight(gpuExclusive, computeMode, profile, runningGp
   assertCpuAllowsProfile(computeMode, profile);
   if (computeMode === "cpu") return;
   if (!gpuExclusiveEnabled) return;
-  if (profile === "all") {
-    throw new Error(
-      "Starting all profiles on a single GPU host causes VRAM contention. Start one profile at a time or use `npm run stack -- switch PROFILE`."
-    );
-  }
   const conflicts = gpuConflictsForProfile(gpuExclusive, profile, runningGpuServices);
   if (conflicts.length && !allowShare) {
     throw new Error(
@@ -102,7 +97,7 @@ export function assertBackendAllowed(computeMode, backend) {
   const needsCuda = /cuda/i.test(backend);
   if (needsCuda && computeMode === "cpu") {
     throw new Error(
-      "CUDA backend install is NVIDIA-only. With FORKEDAI_COMPUTE=cpu, LocalAI uses the CPU image backends; set FORKEDAI_COMPUTE=nvidia to install CUDA backends, or install whisper/piper without a cuda id."
+      "CUDA backend install is NVIDIA-only. With GAIC_COMPUTE=cpu, LocalAI uses the CPU image backends; set GAIC_COMPUTE=nvidia to install CUDA backends, or install whisper/piper without a cuda id."
     );
   }
 }
@@ -110,51 +105,60 @@ export function assertBackendAllowed(computeMode, backend) {
 export function assertSmokeRunAllowed(computeMode) {
   if (computeMode === "cpu") {
     throw new Error(
-      "smoke --run requires FORKEDAI_COMPUTE=nvidia on a GPU workstation. Use `npm run stack -- smoke` for the checklist only."
+      "smoke --run requires GAIC_COMPUTE=nvidia on a GPU workstation. Use `npm run stack -- smoke` for the checklist only."
     );
   }
 }
 
-export const smokeMatrix = [
-  {
-    step: 1,
-    profile: "inference",
-    expectGpu: ["localai"],
-    gateway: "https://localhost:8443",
-    note: "only localai holds the GPU; chat API responds"
-  },
-  {
-    step: 2,
-    profile: "media",
-    expectGpu: ["stable-diffusion"],
-    gateway: "https://localhost:8445",
-    note: "LocalAI stops; Stable Diffusion loads"
-  },
-  {
-    step: 3,
-    profile: "rag",
-    expectGpu: ["localai"],
-    gateway: "https://localhost:8444",
-    note: "LocalAI and PrivateGPT run; ingestion uses CPU while chat/embed hit GPU via LocalAI"
-  }
-];
+/** Build a gateway URL honoring GATEWAY_HOSTNAME and a per-port env override. */
+export function gatewayBaseUrl(env, portVar, defaultPort) {
+  const hostname = (env.GATEWAY_HOSTNAME ?? "localhost").trim() || "localhost";
+  const port = (env[portVar] ?? String(defaultPort)).trim() || String(defaultPort);
+  return `https://${hostname}:${port}`;
+}
 
-export const gatewayProbeTargets = [
-  { service: "localai", url: "https://localhost:8443/", profiles: ["inference", "rag"] },
-  { service: "ollama", url: "https://localhost:8443/v1/models", profiles: ["ollama"] },
-  { service: "private-gpt", url: "https://localhost:8444/", profiles: ["rag"] },
-  { service: "stable-diffusion", url: "https://localhost:8445/", profiles: ["media"] },
-  { service: "comfy-frontend", url: "https://localhost:8446/", profiles: ["comfy"] },
-  { service: "comfy-backend", url: "https://localhost:8447/", profiles: ["comfy"] },
-  { service: "ollama", url: "https://localhost:8448/api/tags", profiles: ["ollama"] }
-];
+export function smokeMatrix(env = {}) {
+  return [
+    {
+      step: 1,
+      profile: "inference",
+      expectGpu: ["localai"],
+      gateway: gatewayBaseUrl(env, "LOCALAI_HTTPS_PORT", 8443),
+      note: "only localai holds the GPU; chat API responds"
+    },
+    {
+      step: 2,
+      profile: "media",
+      expectGpu: ["stable-diffusion"],
+      gateway: gatewayBaseUrl(env, "STABLE_DIFFUSION_HTTPS_PORT", 8445),
+      note: "LocalAI stops; Stable Diffusion loads"
+    },
+    {
+      step: 3,
+      profile: "rag",
+      expectGpu: ["localai"],
+      gateway: gatewayBaseUrl(env, "PRIVATE_GPT_HTTPS_PORT", 8444),
+      note: "LocalAI and PrivateGPT run; ingestion uses CPU while chat/embed hit GPU via LocalAI"
+    }
+  ];
+}
+
+export function gatewayProbeTargets(env = {}) {
+  return [
+    { service: "localai", url: `${gatewayBaseUrl(env, "LOCALAI_HTTPS_PORT", 8443)}/`, profiles: ["inference", "rag"] },
+    { service: "ollama", url: `${gatewayBaseUrl(env, "LOCALAI_HTTPS_PORT", 8443)}/v1/models`, profiles: ["ollama"] },
+    { service: "private-gpt", url: `${gatewayBaseUrl(env, "PRIVATE_GPT_HTTPS_PORT", 8444)}/`, profiles: ["rag"] },
+    { service: "stable-diffusion", url: `${gatewayBaseUrl(env, "STABLE_DIFFUSION_HTTPS_PORT", 8445)}/`, profiles: ["media"] },
+    { service: "comfy-frontend", url: `${gatewayBaseUrl(env, "COMFY_HTTPS_PORT", 8446)}/`, profiles: ["comfy"] },
+    { service: "comfy-backend", url: `${gatewayBaseUrl(env, "COMFY_API_HTTPS_PORT", 8447)}/`, profiles: ["comfy"] },
+    { service: "ollama", url: `${gatewayBaseUrl(env, "OLLAMA_HTTPS_PORT", 8448)}/api/tags`, profiles: ["ollama"] }
+  ];
+}
 
 export const modelsRefreshProfiles = new Set(["inference", "rag", "ollama"]);
 
 export function gatewayModelsUrl(env = {}) {
-  const hostname = (env.GATEWAY_HOSTNAME ?? "localhost").trim() || "localhost";
-  const port = (env.LOCALAI_HTTPS_PORT ?? "8443").trim() || "8443";
-  return `https://${hostname}:${port}/v1/models`;
+  return `${gatewayBaseUrl(env, "LOCALAI_HTTPS_PORT", 8443)}/v1/models`;
 }
 
 /** @param {string} body */

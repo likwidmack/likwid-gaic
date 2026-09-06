@@ -45,7 +45,7 @@ import /etc/caddy/snippets/gateway-auth.caddy
 }
 
 # GATEWAY_HOSTNAME defaults to localhost for loopback. Set a LAN/VPN DNS name
-# only together with FORKEDAI_BIND_ADDRESS, firewall rules, and basicauth.
+# only together with GAIC_BIND_ADDRESS, firewall rules, and basicauth.
 https://{$GATEWAY_HOSTNAME:localhost}:8443 {
 	import local_security
 	handle /v1/models* {
