@@ -16,6 +16,18 @@ skill and rule documents. Apply them to the repository root and all descendants.
 - [Storage, models, and media](skills/storage-models-media.md)
 - [Managed forks and GitHub](skills/managed-forks-github.md)
 
+## External skill sources
+
+Beyond this repo's own guidance above, [skills-catalog.json](skills-catalog.json)
+indexes the Claude Code skill topics available from four forked skill
+repositories (`superpowers-pr`, `matt-skills-pr`, `agent-skills-pr`,
+`ui-ux-pro-max-skill-pr`, all tracked in `config/repos.json`). They are
+installed as **user-scope Claude Code plugins** (`claude plugin list`), not
+copied into this repo, so they apply in every project on this workstation —
+this hub and the privateGPT, ComfyUI, and stable-diffusion-ui forks alike —
+not just here. Use `npm run repos:fetch` / `repos:update` to keep the fork
+clones current with upstream; the plugin installs point at those clones.
+
 ## Repository purpose
 
 `likwid-gaic` is a local-first operations hub for managed AI forks. It owns
