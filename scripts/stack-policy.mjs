@@ -191,3 +191,10 @@ export function inferActiveEngine({ runningLocalai, runningOllama, httpOk }) {
   if (runningLocalai && runningOllama) return "localai";
   return "none";
 }
+
+export function computePowerLimitWatts(maxWatts, percent) {
+  if (!Number.isFinite(percent) || percent < 1 || percent > 100) {
+    throw new Error(`Invalid power limit percent: ${percent} (must be 1-100)`);
+  }
+  return Math.floor(maxWatts * percent / 100);
+}

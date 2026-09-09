@@ -17,6 +17,7 @@ import {
   assertCpuAllowsProfile,
   assertCpuAllowsService,
   assertGpuPreflight,
+  computePowerLimitWatts,
   gpuConflictsForProfile,
   gpuServicesForProfile,
   gpuSwitchPlan,
@@ -290,5 +291,18 @@ describe("stack GPU and CPU policy", () => {
     assert.equal(isBuildableService({ buildable: true, repository: "LocalAI-Prt" }), true);
     assert.equal(isBuildableService({ repository: "LocalAI-Prt" }), false);
     assert.equal(isBuildableService({}), false);
+  });
+
+  it("computes a whole-watt power limit from a percentage of max", () => {
+    assert.equal(computePowerLimitWatts(320, 85), 272);
+    assert.equal(computePowerLimitWatts(450, 85), 382);
+    assert.equal(computePowerLimitWatts(320, 100), 320);
+    assert.equal(computePowerLimitWatts(320, 1), 3);
+  });
+
+  it("rejects an out-of-range percentage", () => {
+    assert.throws(() => computePowerLimitWatts(320, 0), /percent/i);
+    assert.throws(() => computePowerLimitWatts(320, 101), /percent/i);
+    assert.throws(() => computePowerLimitWatts(320, -5), /percent/i);
   });
 });
