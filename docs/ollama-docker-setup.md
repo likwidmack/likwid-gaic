@@ -34,7 +34,7 @@ Ollama weights use Ollama's blob format. They do not appear in
 | Item       | Value                                                                              |
 | ---------- | ---------------------------------------------------------------------------------- |
 | Profile    | `ollama`                                                                           |
-| Service    | `ollama` (registry image `ollama/ollama`)                                          |
+| Service    | `ollama` (built image `gaic/ollama:local`, base `ollama/ollama`)                   |
 | HTTPS      | `https://localhost:8443` (unified OpenAI `/v1`), `https://localhost:8448` (direct) |
 | Native API | `/api/*` and OpenAI-compatible `/v1/*`                                             |
 | GPU        | Optional — exclusive with LocalAI, SD, Comfy when `GAIC_COMPUTE=nvidia`        |
