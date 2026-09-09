@@ -201,6 +201,7 @@ for (const ollamaTuning of ["OLLAMA_MAX_LOADED_MODELS:-1", "OLLAMA_NUM_PARALLEL:
 }
 const ollamaBlock = compose.slice(compose.indexOf("\n  ollama:"), compose.indexOf("\nnetworks:"));
 if (!ollamaBlock.includes("driver: nvidia")) throw new Error("Ollama must keep the NVIDIA GPU device reservation");
+if (!ollamaBlock.includes("dockerfile: docker/ollama.Dockerfile")) throw new Error("Ollama must build from docker/ollama.Dockerfile");
 if ((compose.match(/^    ports:/gm) ?? []).length !== 1) throw new Error("Only the HTTPS gateway may publish host ports");
 if (!compose.includes("no-new-privileges:true")) throw new Error("Compose is missing the no-new-privileges baseline");
 for (const mount of ["shared-models", "shared-models-inbox", "shared-tensors", "shared-objects", "shared-plugins", "shared-plugins-inbox", "shared-tools"]) if (!compose.includes("&" + mount) || !compose.includes("*" + mount)) throw new Error("Compose is missing shared mount " + mount);
