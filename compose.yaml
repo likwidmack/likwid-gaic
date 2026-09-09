@@ -330,7 +330,7 @@ services:
     init: true
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "ollama", "list"]
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:11434/api/tags"]
       interval: 10s
       timeout: 5s
       retries: 30

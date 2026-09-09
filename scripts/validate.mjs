@@ -238,7 +238,7 @@ if (!dockerScript.includes("gpuSwitchPlan")) {
   throw new Error("docker.mjs switch must use gpuSwitchPlan for GPU stop/keep planning");
 }
 for (const endpoint of ["127.0.0.1:8080/v1/models", "127.0.0.1:7860/", "127.0.0.1:8188/system_stats", "127.0.0.1/"]) if (!compose.includes(endpoint)) throw new Error("Compose health checks are missing " + endpoint);
-if (!compose.includes('"ollama", "list"')) throw new Error('Compose ollama healthcheck must use CMD ollama list (image has no curl)');
+if (!compose.includes('"curl", "-fsS", "http://127.0.0.1:11434/api/tags"')) throw new Error('Compose ollama healthcheck must curl http://127.0.0.1:11434/api/tags (image now includes curl via docker/ollama.Dockerfile)');
 const caddyfile = readFileSync(new URL("../docker/Caddyfile", import.meta.url), "utf8");
 for (const route of ["{$GATEWAY_HOSTNAME:localhost}:8443", "{$GATEWAY_HOSTNAME:localhost}:8444", "{$GATEWAY_HOSTNAME:localhost}:8445", "{$GATEWAY_HOSTNAME:localhost}:8446", "{$GATEWAY_HOSTNAME:localhost}:8447", "{$GATEWAY_HOSTNAME:localhost}:8448"]) if (!caddyfile.includes(route)) throw new Error("Caddy is missing hostname route " + route);
 if (!caddyfile.includes("import /etc/caddy/snippets/gateway-auth.caddy")) throw new Error("Caddy must import the gateway-auth snippet");
