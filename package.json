@@ -50,6 +50,7 @@
     "repos:status": "node scripts/repos.mjs status",
     "repos:fetch": "node scripts/repos.mjs fetch",
     "repos:update": "node scripts/repos.mjs update",
+    "gpu:cap-power": "node scripts/gpu-power-cap.mjs",
     "inventory": "node scripts/inventory.mjs",
     "check": "node scripts/validate.mjs",
     "test:unit": "node --test scripts/paths.test.mjs scripts/cli-policy.test.mjs scripts/gateway-policy.test.mjs scripts/webui-share.test.mjs",
