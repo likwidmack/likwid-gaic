@@ -23,6 +23,7 @@ import {
   gatewayModelsUrl,
   gatewayProbeTargets,
   inferActiveEngine,
+  isBuildableService,
   parseGatewayModelIds,
   parseProfileCommand,
   assertSmokeRunAllowed,
@@ -282,5 +283,12 @@ describe("stack GPU and CPU policy", () => {
     assert.equal(inferActiveEngine({ runningLocalai: false, runningOllama: true, httpOk: true }), "ollama");
     assert.equal(inferActiveEngine({ runningLocalai: true, runningOllama: true, httpOk: true }), "localai");
     assert.equal(inferActiveEngine({ runningLocalai: false, runningOllama: false, httpOk: false }), "none");
+  });
+
+  it("treats buildable as an explicit flag, not repository presence", () => {
+    assert.equal(isBuildableService({ buildable: true }), true);
+    assert.equal(isBuildableService({ buildable: true, repository: "LocalAI-Prt" }), true);
+    assert.equal(isBuildableService({ repository: "LocalAI-Prt" }), false);
+    assert.equal(isBuildableService({}), false);
   });
 });

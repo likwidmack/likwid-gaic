@@ -3,6 +3,10 @@
 export const nvidiaOnlyProfiles = new Set(["media", "comfy"]);
 export const nvidiaOnlyServices = new Set(["stable-diffusion", "comfy-backend", "comfy-frontend"]);
 
+export function isBuildableService(metadata) {
+  return metadata?.buildable === true;
+}
+
 export function gpuServicesForProfile(gpuExclusive, profile) {
   const needed = new Set();
   for (const [service, profiles] of Object.entries(gpuExclusive.profilesByService ?? {})) {
