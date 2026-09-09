@@ -16,6 +16,7 @@ import {
   gatewayProbeTargets,
   gpuSwitchPlan,
   inferActiveEngine,
+  isBuildableService,
   modelsRefreshProfiles,
   parseGatewayModelIds,
   parseProfileCommand,
@@ -468,7 +469,7 @@ else if (command === "up") {
   if (service) {
     const metadata = stack.services.find((item) => item.name === service);
     if (!metadata) throw new Error(`Unknown service: ${service}`);
-    if (!metadata.repository) {
+    if (!isBuildableService(metadata)) {
       throw new Error(`Service "${service}" uses a registry image; use \`npm run stack -- pull\` instead of build.`);
     }
     assertCpuAllowsService(computeMode, service);
