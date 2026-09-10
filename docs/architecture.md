@@ -1,9 +1,9 @@
 # Local AI system architecture
 
-This repository is the portable control plane for managed AI forks on Windows,
-macOS, and Linux using Docker Compose. The reference validation host is a
-Windows 11 / WSL2 / Docker Desktop / NVIDIA workstation. Machine-specific
-inventory is generated locally and excluded from Git.
+The hub is the portable control plane for managed AI forks on Windows, macOS,
+and Linux using Docker Compose. The reference validation host is a Windows 11
+/ WSL2 (Windows Subsystem for Linux) / Docker Desktop / NVIDIA workstation.
+Machine-specific inventory is generated locally and excluded from Git.
 
 ## Configuration model
 
@@ -51,20 +51,29 @@ See [Container operations](container-operations.md) for lifecycle commands and
 - **Native Linux:** Docker Engine or Desktop; NVIDIA Container Toolkit for GPU
   profiles. Without NVIDIA, unset/`auto` resolves to `cpu`.
 - LocalAI uses the configured CUDA 13 image in nvidia mode, or the CPU tag in
-  cpu mode. Stable Diffusion and ComfyUI images remain CUDA-based and
+  cpu mode. Stable Diffusion WebUI and ComfyUI images remain CUDA-based and
   NVIDIA-only.
 - Windows reference layout: read-mostly assets on C:, rebuildable cache/scratch
   on D:, durable state on E:. POSIX defaults use `$HOME` trees from
   `pathPosix` (`~/gaic`, `~/forkedAI`, `~/data/forkedAI`).
 - Published application ports bind to IPv4 loopback by default.
 
-Shared filesystem mounts exchange serialized artifacts only. They do not share live GPU allocations, Python objects, CUDA contexts, or process memory. On a single-GPU host, at most one of `localai`, `stable-diffusion`, `comfy-backend`, or `ollama` should run at a time; see [GPU and CPU resource utilization](resource-utilization.md).
+Shared filesystem mounts exchange serialized artifacts only. They do not share
+live GPU allocations, Python objects, CUDA contexts, or process memory.
+
+On a single-GPU host, at most one of `localai`, `stable-diffusion`,
+`comfy-backend`, or `ollama` should run at a time; see
+[GPU and CPU resource utilization](resource-utilization.md).
 
 ## Privacy boundary
 
-The repository stores source, non-secret configuration, validation, and documentation. It excludes model weights, generated media, private documents, credentials, vector databases, runtime state, and local inventory.
+The hub stores source, non-secret configuration, validation, and
+documentation. It excludes model weights, generated media, private documents,
+credentials, vector databases, runtime state, and local inventory.
 
-The root `.dockerignore` is default-deny. Named fork contexts use explicit Dockerfile exclusions for Git metadata, dotenv files, environments, dependency caches, models, output, and other generated state.
+The root `.dockerignore` is default-deny. Named fork contexts use explicit
+Dockerfile exclusions for Git metadata, dotenv files, environments, dependency
+caches, models, output, and other generated state.
 
 ## Verification
 
@@ -79,6 +88,18 @@ npm run media -- status
 npm run inventory
 ```
 
-`npm test` checks configuration shape, immutable model pins, storage defaults, Compose variable coverage, privacy rules, service/network topology, Dockerfile safeguards, gateway routes, and local Markdown links. `stack:config` asks Docker Compose to render all profiles without starting them.
+`npm test` checks:
+
+- Configuration shape
+- Immutable model pins
+- Storage defaults
+- Compose variable coverage
+- Privacy rules
+- Service/network topology
+- Dockerfile safeguards
+- Gateway routes
+- Local Markdown links
+
+`stack:config` asks Docker Compose to render all profiles without starting them.
 
 Review `docs/inventory.generated.md` before sharing it. Benchmark results and prompt data stay outside Git unless deliberately anonymized.

@@ -1,8 +1,8 @@
 # Documentation
 
-This directory contains the maintained operating documentation for likwid-gaic.
-Start with the architecture and container guides, then use the service-specific
-pages when building or troubleshooting a profile.
+This directory holds the maintained operating documentation for likwid-gaic,
+the hub. Start with the architecture and container guides, then reach for the
+service-specific pages when you're building or troubleshooting a profile.
 
 ## Start here
 
@@ -46,7 +46,7 @@ models, GPU details, and Docker state; review it before sharing.
 
 ## Documentation conventions
 
-- PowerShell examples run from the repository root unless stated otherwise.
+- PowerShell examples run from the hub root unless stated otherwise.
 - Bash examples run on macOS, native Linux, or WSL (labeled when WSL-specific).
 - `config/*.json` files are the source of truth for repositories, storage,
   models, profile artifacts, and stack topology (`pathWindows` / `pathWsl` /
