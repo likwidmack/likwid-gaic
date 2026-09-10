@@ -127,7 +127,7 @@ The hub's managed profile does not use the standalone configuration above. Inste
 - Overrides LocalAI's image healthcheck with a prompt `/v1/models` probe, and the gateway waits on that health when the `inference` profile is active.
 - Pins CUDA 13 meta-backends with `LOCALAI_FORCE_META_BACKEND_CAPABILITY=nvidia-cuda-13`, plus `NVIDIA_VISIBLE_DEVICES=0` on single-GPU hosts.
 
-The `LOCALAI_API_KEY` examples above apply to the standalone deployment only — the managed loopback stack does not set that variable until a deliberate authentication follow-up is requested.
+The `LOCALAI_API_KEY` examples in this guide apply to the standalone deployment only — the managed loopback stack does not set that variable until a deliberate authentication follow-up is requested.
 
 ## NVIDIA configuration
 
@@ -278,7 +278,7 @@ Then open `http://localhost:8080`, install a small model from the gallery, and t
 2. Check that port `8080` is not already in use (standalone deployment).
 3. On the managed profile, confirm that only the gateway publishes host ports.
 4. Read `docker compose logs localai` for the backend's actual error.
-5. For NVIDIA on a standalone deployment, verify the CUDA `nvidia-smi` container test.
+5. For NVIDIA, verify the standalone CUDA `nvidia-smi` container test (applies to either deployment).
 6. For NVIDIA on the managed profile, confirm the container reports the GPU via `nvidia-smi` or LocalAI `/api/resources`.
 7. If `https://localhost:8443` returns 502 while LocalAI answers inside its container (managed profile), confirm both services share `gaic-inference`, wait for Caddy's upstream probes, or recreate the gateway after a LocalAI recreate.
 8. For an out-of-memory error, choose a smaller quantization, reduce context size, reduce concurrent models, or add RAM/VRAM.
