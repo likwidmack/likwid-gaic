@@ -34,11 +34,11 @@ Never commit, print, or expose:
 - Do not restart, recreate, pull, build, or start services unless requested.
 - Do not add automatic volume deletion.
 - Do not add `docker system prune`.
-- Do not add destructive cleanup to repository scripts.
+- Do not add destructive cleanup to the hub's scripts.
 
 ## Network safety
 
-- Caddy is the only service allowed to publish host ports.
+- The gateway is the only service allowed to publish host ports.
 - The default bind address is `127.0.0.1`.
 - Do not broaden `GAIC_BIND_ADDRESS` without hostname, certificate,
   authentication, firewall, and rollback planning.
