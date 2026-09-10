@@ -1,7 +1,7 @@
 # PrivateGPT Docker setup
 
 This guide covers the managed `rag` profile: PrivateGPT plus LocalAI behind the
-Caddy HTTPS gateway. For standalone PrivateGPT upstream docs, use the fork
+HTTPS gateway. For standalone PrivateGPT upstream docs, use the fork
 README; do not layer a second Compose stack on top of this hub.
 
 ## Services and endpoints

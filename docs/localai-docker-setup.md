@@ -2,11 +2,11 @@
 
 LocalAI has no fixed hardware minimum. The main constraint is having enough system RAM, GPU VRAM, and storage for the models you intend to run. A GPU is optional, although it is strongly recommended for larger models or interactive response times.
 
-This repository already manages LocalAI through the `inference` and `rag`
-profiles in `compose.yaml`. For this workstation, use the npm commands in
-[Container operations](container-operations.md). The standalone Compose examples
-below are reference material for a separate deployment and should not be layered
-on top of the managed stack.
+> **On this hub:** the hub already manages LocalAI through the `inference` and
+> `rag` profiles in `compose.yaml`. Use the npm commands in
+> [Container operations](container-operations.md) for this workstation. The
+> standalone Compose examples below are reference material for a separate
+> deployment — do not layer them on top of the managed stack.
 
 Official references:
 
@@ -106,8 +106,6 @@ docker compose logs -f localai
 
 The WebUI and API will be available at `http://localhost:8080`.
 
-The managed likwid-gaic profile instead uses the pinned CUDA 13 image declared by `LOCALAI_IMAGE`, publishes only the Caddy HTTPS endpoint at `https://localhost:8443`, and stores models under the shared model root from `config/storage.json` (`C:\gaic\models` on this workstation). Compose overrides LocalAI's image healthcheck with a prompt `/v1/models` probe, waits on that health from the gateway when the inference profile is active, and pins CUDA 13 meta-backends with `LOCALAI_FORCE_META_BACKEND_CAPABILITY=nvidia-cuda-13` plus `NVIDIA_VISIBLE_DEVICES=0` on single-GPU hosts. The `LOCALAI_API_KEY` examples below apply to the standalone deployment only; the managed loopback stack does not set that variable until a deliberate authentication follow-up is requested.
-
 Mounting all four persistent locations is recommended:
 
 | Container path   | Contents                                                     |
@@ -119,9 +117,21 @@ Mounting all four persistent locations is recommended:
 
 Container files outside persistent volumes can be lost when the container is recreated or upgraded.
 
+### On this hub
+
+The hub's managed profile does not use the standalone configuration above. Instead, it:
+
+- Uses the pinned CUDA 13 image declared by `LOCALAI_IMAGE`.
+- Publishes only the gateway's HTTPS endpoint at `https://localhost:8443`.
+- Stores models under the shared model root from `config/storage.json` (`C:\gaic\models` on this workstation).
+- Overrides LocalAI's image healthcheck with a prompt `/v1/models` probe, and the gateway waits on that health when the `inference` profile is active.
+- Pins CUDA 13 meta-backends with `LOCALAI_FORCE_META_BACKEND_CAPABILITY=nvidia-cuda-13`, plus `NVIDIA_VISIBLE_DEVICES=0` on single-GPU hosts.
+
+The `LOCALAI_API_KEY` examples above apply to the standalone deployment only — the managed loopback stack does not set that variable until a deliberate authentication follow-up is requested.
+
 ## NVIDIA configuration
 
-Change the image in the standalone Compose file and add GPU access. The managed profile already requests the GPU and defaults to the versioned CUDA 13 image:
+Change the image in the standalone Compose file and add GPU access.
 
 ```yaml
 services:
@@ -141,23 +151,7 @@ services:
               capabilities: [gpu, utility]
 ```
 
-LocalAI recommends the CDI configuration above for NVIDIA Container Toolkit 1.14 and later. Older installations may require the legacy `nvidia` driver configuration.
-
-The managed likwid-gaic profile uses Docker's standard `driver: nvidia` device
-reservation because that configuration is validated on this Docker Desktop
-workstation. For a standalone native-Linux deployment, use LocalAI's CDI example
-when the installed NVIDIA Container Toolkit supports it. Compose 2.30 and newer
-also accepts `gpus: all`; choose one GPU declaration style rather than combining
-them.
-
-Managed LocalAI environment pins (in addition to the Deploy reservation):
-
-| Variable                                | Purpose                                              |
-| --------------------------------------- | ---------------------------------------------------- |
-| `LOCALAI_FORCE_META_BACKEND_CAPABILITY` | Force `nvidia-cuda-13` backends under Docker Desktop |
-| `LOCALAI_F16`                           | Prefer half-precision where backends support it      |
-| `NVIDIA_VISIBLE_DEVICES`                | Expose all GPUs to the container                     |
-| `NVIDIA_DRIVER_CAPABILITIES`            | `compute,utility` for CUDA and `nvidia-smi`          |
+LocalAI recommends the CDI configuration above for NVIDIA Container Toolkit 1.14 and later — use it for a standalone native-Linux deployment when the installed toolkit supports it. Older installations may require the legacy `nvidia` driver configuration. Compose 2.30 and newer also accepts `gpus: all`; choose one GPU declaration style rather than combining them.
 
 Before starting LocalAI, verify that Docker can access the NVIDIA GPU:
 
@@ -167,6 +161,19 @@ docker run --rm --gpus all \
 ```
 
 If that test fails, fix Docker/NVIDIA GPU passthrough before troubleshooting LocalAI.
+
+### On this hub
+
+The hub's managed profile already requests the GPU and defaults to the versioned CUDA 13 image. It uses Docker's standard `driver: nvidia` device reservation instead of the CDI example above, because that configuration is validated on this Docker Desktop workstation.
+
+Compose also pins these environment variables, in addition to the Deploy reservation:
+
+| Variable                                | Purpose                                              |
+| --------------------------------------- | ---------------------------------------------------- |
+| `LOCALAI_FORCE_META_BACKEND_CAPABILITY` | Force `nvidia-cuda-13` backends under Docker Desktop |
+| `LOCALAI_F16`                           | Prefer half-precision where backends support it      |
+| `NVIDIA_VISIBLE_DEVICES`                | Expose all GPUs to the container                     |
+| `NVIDIA_DRIVER_CAPABILITIES`            | `compute,utility` for CUDA and `nvidia-smi`          |
 
 ## AMD configuration
 
@@ -206,26 +213,30 @@ LocalAI documents a known SYCL issue with memory mapping. If an Intel model hang
   containers. Enable Docker Desktop integration only for the WSL distributions
   that need it. Do not install a second Docker Engine or Docker CLI inside an
   integrated WSL distribution. Install a current Windows NVIDIA driver that
-  supports WSL2. Do not install a Linux NVIDIA display driver inside WSL. This
-  repository deliberately uses `C:\gaic\models` as the canonical Windows model
-  collection; expect the first scan to be slower on Windows-mounted storage.
+  supports WSL2. Do not install a Linux NVIDIA display driver inside WSL.
   Allocate sufficient RAM, CPU, swap, and Docker disk capacity to Docker
   Desktop/WSL2. Confirm GPU access with the NVIDIA Docker test before starting
   LocalAI in nvidia mode.
-- **macOS:** Use Docker Desktop. Unset or `GAIC_COMPUTE=auto` probes host
-  `nvidia-smi` and falls back to `cpu` when CUDA is unavailable. NVIDIA LocalAI and
-  media/comfy profiles require a GPU after resolution.
+- **macOS:** Use Docker Desktop.
 - **Native Linux:** Use Docker Engine or Desktop. For GPU profiles install the
-  NVIDIA Container Toolkit; without NVIDIA, unset/`auto` resolves to `cpu`.
+  NVIDIA Container Toolkit.
 
 See [Container operations](container-operations.md) for the platform matrix and
 first-run commands.
 
+### On this hub
+
+- **Windows:** the hub deliberately uses `C:\gaic\models` as the canonical
+  Windows model collection; expect the first scan to be slower on
+  Windows-mounted storage.
+- **macOS:** unset or `GAIC_COMPUTE=auto` probes host `nvidia-smi` and falls
+  back to `cpu` when CUDA is unavailable. NVIDIA LocalAI and media/comfy
+  profiles require a GPU after resolution.
+- **Native Linux:** without NVIDIA, unset/`auto` resolves to `cpu`.
+
 ## Security recommendations
 
 - Keep the port bound to `127.0.0.1` for local-only use.
-- For the managed likwid-gaic stack on loopback, gateway authentication and
-  `LOCALAI_API_KEY` remain deferred; see [Network security](network-security.md).
 - For a standalone LocalAI deployment, set `LOCALAI_API_KEY` even on a
   workstation if other local applications or users are not fully trusted.
 - Simple API keys grant full administrative access. For multi-user deployments, use LocalAI's user authentication with `LOCALAI_AUTH=true`.
@@ -237,6 +248,10 @@ first-run commands.
 - Pin a tested version tag instead of using `latest` in a production deployment, then upgrade intentionally.
 - Pin an image digest when an audited deployment requires immutable image bytes;
   review digest updates as dependency changes.
+
+> **On this hub:** for the managed stack on loopback, gateway authentication
+> and `LOCALAI_API_KEY` remain deferred; see
+> [Network security](network-security.md).
 
 ## Validation checklist
 
@@ -260,9 +275,11 @@ Then open `http://localhost:8080`, install a small model from the gallery, and t
 ## Troubleshooting priorities
 
 1. Verify the container runtime is running with `docker ps`.
-2. Check that port `8080` is not already in use (standalone) or that only the Caddy gateway publishes host ports (managed profile).
-3. Read `docker compose logs localai` for the backend's actual error.
-4. For NVIDIA, verify the standalone CUDA `nvidia-smi` container test and that the managed container reports the GPU via `nvidia-smi` or LocalAI `/api/resources`.
-5. If `https://localhost:8443` returns 502 while LocalAI answers inside its container, confirm both services share `gaic-inference`, wait for Caddy's upstream probes, or recreate the gateway after a LocalAI recreate.
-6. For an out-of-memory error, choose a smaller quantization, reduce context size, reduce concurrent models, or add RAM/VRAM.
-7. If model loading is slow, ensure the model is stored on SSD-backed Linux storage rather than an HDD or Windows-mounted filesystem.
+2. Check that port `8080` is not already in use (standalone deployment).
+3. On the managed profile, confirm that only the gateway publishes host ports.
+4. Read `docker compose logs localai` for the backend's actual error.
+5. For NVIDIA on a standalone deployment, verify the CUDA `nvidia-smi` container test.
+6. For NVIDIA on the managed profile, confirm the container reports the GPU via `nvidia-smi` or LocalAI `/api/resources`.
+7. If `https://localhost:8443` returns 502 while LocalAI answers inside its container (managed profile), confirm both services share `gaic-inference`, wait for Caddy's upstream probes, or recreate the gateway after a LocalAI recreate.
+8. For an out-of-memory error, choose a smaller quantization, reduce context size, reduce concurrent models, or add RAM/VRAM.
+9. If model loading is slow, ensure the model is stored on SSD-backed Linux storage rather than an HDD or Windows-mounted filesystem.

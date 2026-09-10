@@ -1,6 +1,6 @@
 # Ollama Docker setup
 
-This repository optionally runs [Ollama](https://ollama.com/) as a fifth Compose
+The hub optionally runs [Ollama](https://ollama.com/) as a fifth Compose
 profile. Ollama is **not** part of first-run setup. LocalAI remains the default
 OpenAI-compatible engine for `inference` and `rag`. Use Ollama when you want the
 Ollama library and `ollama pull` workflow alongside the hub's Hugging Face pins.
