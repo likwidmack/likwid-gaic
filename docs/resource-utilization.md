@@ -91,6 +91,29 @@ After editing, run `wsl --shutdown`, then restart Docker Desktop.
 - Keep the Docker disk image on a drive with adequate free space; D: scratch and
   E: durable data policies remain unchanged.
 
+## GPU power headroom
+
+Docker/NVIDIA have no per-container "utilization percentage" limit —
+`utilization.gpu` (shown by `npm run stack -- resources`) is a measured
+outcome, not a settable dial. The supported way to keep the GPU from
+running flat-out at 100% under sustained load is to cap its power limit,
+which indirectly caps how far it boosts clocks.
+
+```powershell
+npm run gpu:cap-power
+```
+
+This is a **host-level, one-time (or per-boot) command** — it is not part of
+`stack up`/`switch` and does not run inside WSL2 or a container, because
+setting the power limit needs the native Windows NVIDIA driver and
+Administrator elevation. Re-run the terminal as Administrator if it reports
+a permission error.
+
+Default target is 85% of the GPU's max power limit; override with
+`GAIC_GPU_POWER_LIMIT_PERCENT` in `.env` (1-100). `npm run stack --
+resources` reports the current `power.draw`/`power.limit`/`power.max_limit`
+and warns if the limit is still uncapped.
+
 ### Thread budget
 
 | Layer                      | Setting                | Guidance                                               |
@@ -200,3 +223,6 @@ STT/TTS), see [Troubleshooting](troubleshooting.md).
 - **GPU not visible in containers:** Run `npm run stack:doctor` and the
   standalone `nvidia-smi` container test in
   [Container operations](container-operations.md).
+- **`gpu:cap-power` reports a permission error:** Re-run the terminal as
+  Administrator (Windows) or with `sudo` (Linux); GPU power-limit changes
+  require elevated privileges.
