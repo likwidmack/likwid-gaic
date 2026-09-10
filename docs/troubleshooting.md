@@ -53,7 +53,8 @@ npm run stack -- up media
 ```
 
 Also review Docker Desktop **Settings → Resources → Network** and WSL
-`/etc/resolv.conf` when the host itself cannot resolve public names.
+(Windows Subsystem for Linux) `/etc/resolv.conf` when the host itself cannot
+resolve public names.
 
 ## Gateway returns 502 while the backend is healthy
 
@@ -81,7 +82,7 @@ real integer in a local override, or inject threads through
 
 On Windows, npm uses Windows Node and the Windows Docker toolchain. Interactive
 WSL may resolve a different `docker` or `hf` first. Run `npm run stack:doctor`
-from the repository root and compare client/server versions before changing
+from the hub root and compare client/server versions before changing
 installs. Model downloads from Windows Node shell out to WSL `hf` with
 `HF_HOME` on the WSL cache path.
 
@@ -106,7 +107,7 @@ npm run models -- promote-plugin comfyui your-node-pack
 Do not make `/shared/models` writable and do not use ComfyUI-Manager or A1111
 gallery installers against the RO mounts. Details: [Models](models.md).
 
-## STT / TTS after Whisper and Piper downloads
+## STT/TTS (speech-to-text / text-to-speech) after Whisper and Piper downloads
 
 1. Download and verify `stt-whisper-base` / `tts-piper-en-us`.
 2. `npm run models -- sync-localai`.

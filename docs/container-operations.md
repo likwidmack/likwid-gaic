@@ -26,7 +26,7 @@ runs on CPU or NVIDIA.
 **All platforms:** Git, Node.js 20+, Docker Engine or Docker Desktop with Compose,
 and the Hugging Face `hf` CLI for model downloads.
 
-**Windows / WSL2 (validated NVIDIA workstation):**
+**Windows / WSL2 (Windows Subsystem for Linux; validated NVIDIA workstation):**
 
 - Keep Docker Desktop and WSL current. Docker requires WSL 2.1.5 or newer and
   recommends the latest WSL release.
@@ -87,13 +87,17 @@ Compose Deploy syntax: `driver: nvidia`, `count: all`, and
 `gpus: all` service attribute. Keep the existing explicit reservation for this
 validated stack; do not declare both forms on one service.
 
-LocalAI in nvidia mode sets `NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES:-0}`,
-`NVIDIA_DRIVER_CAPABILITIES=compute,utility`, `LOCALAI_F16=true`,
-`LOCALAI_MAX_ACTIVE_BACKENDS=1`, and
-`LOCALAI_FORCE_META_BACKEND_CAPABILITY=nvidia-cuda-13` so CUDA 13 backends stay
-selected when NVML probing is flaky under Docker Desktop. Confirm GPU access
-with `npm run stack:doctor` or an `nvidia-smi` container test before treating
-inference failures as application bugs.
+LocalAI in nvidia mode sets these environment variables so CUDA 13 backends
+stay selected when NVML probing is flaky under Docker Desktop:
+
+- `NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES:-0}`
+- `NVIDIA_DRIVER_CAPABILITIES=compute,utility`
+- `LOCALAI_F16=true`
+- `LOCALAI_MAX_ACTIVE_BACKENDS=1`
+- `LOCALAI_FORCE_META_BACKEND_CAPABILITY=nvidia-cuda-13`
+
+Confirm GPU access with `npm run stack:doctor` or an `nvidia-smi` container
+test before treating inference failures as application bugs.
 
 In **cpu** mode, `compose.cpu.yaml` defaults LocalAI to
 `localai/localai:v4.8.0`, resets NVIDIA device reservations, and clears
@@ -279,6 +283,8 @@ stack:config` to preview the CPU overlay). `up` starts containers and waits up
 to five minutes for health. The backend command installs
 `localai@cuda13-llama-cpp` only when missing, persists it under the runtime
 root, and recreates LocalAI once so the backend registry refreshes.
+
+### Build and first-start details
 
 Build fork-backed images explicitly:
 

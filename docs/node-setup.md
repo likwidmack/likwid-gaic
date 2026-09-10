@@ -35,7 +35,7 @@ If PowerShell resolves `npm.ps1` but cannot find `node.exe`, repair or reinstall
 `scripts/paths.mjs` selects host paths from `config/`:
 
 - Windows Node → `pathWindows`
-- WSL Node → `pathWsl`
+- WSL (Windows Subsystem for Linux) Node → `pathWsl`
 - macOS / native Linux → `pathPosix` (`~/...` expanded)
 
 Model commands launched from Windows call the WSL `hf` CLI automatically. On
@@ -43,5 +43,5 @@ macOS and native Linux, install `hf` on the host PATH. Prefer running the
 Windows Docker Desktop stack from PowerShell rather than an arbitrary WSL
 working directory when using the Windows Docker CLI.
 
-No global npm package is required by this repository. Custom script catalog:
+No global npm package is required by the hub. Custom script catalog:
 [npm scripts](../README.md#npm-scripts) in the root README.

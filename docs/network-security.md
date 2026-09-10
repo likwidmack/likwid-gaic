@@ -18,9 +18,20 @@ Each bridge is a trust boundary, not a per-service firewall. Containers sharing 
 
 ## Threat model
 
-The most likely risks are accidentally publishing an unauthenticated AI API to the LAN, running untrusted extensions or model-loading code, giving a tool-using model host credentials, and allowing one compromised container to move laterally to another. Generated media and prompts can also contain private data.
+The most likely risks:
 
-Use GGUF or safetensors artifacts when possible, pin Hub revisions, verify checksums, and review extensions before enabling them. Do not give model containers the Docker socket, SSH agent, browser profile, home directory, cloud credentials, or broad writable host mounts. Keep Docker Desktop, the NVIDIA driver, base images, and application forks patched.
+- Accidentally publishing an unauthenticated AI API to the LAN
+- Running untrusted extensions or model-loading code
+- Giving a tool-using model host credentials
+- Allowing one compromised container to move laterally to another
+
+Generated media and prompts can also contain private data.
+
+Mitigate these risks:
+
+- Use GGUF or safetensors artifacts when possible, pin Hub revisions, verify checksums, and review extensions before enabling them.
+- Do not give model containers the Docker socket, SSH agent, browser profile, home directory, cloud credentials, or broad writable host mounts.
+- Keep Docker Desktop, the NVIDIA driver, base images, and application forks patched.
 
 Treat Compose files, overrides, Dockerfiles, build contexts, and referenced bind
 mounts as executable trusted input. Docker Compose can grant devices, host
@@ -28,7 +39,7 @@ filesystem access, elevated privileges, or host networking exactly as requested.
 Review `npm run stack:config` before applying changes and do not run untrusted
 Compose projects with access to this stack's data roots.
 
-WSL2 is optimized for development interoperability, not maximum isolation from
+WSL2 (Windows Subsystem for Linux) is optimized for development interoperability, not maximum isolation from
 other software running under the same Windows user. For workloads that require a
 stronger boundary, evaluate Docker Desktop's Hyper-V backend or Enhanced
 Container Isolation, then separately validate GPU support, bind mounts, and
@@ -55,7 +66,7 @@ The host placement is also a recovery boundary: C: contains read-mostly assets, 
 
 `comfy-frontend` reaches `comfy-backend` through service DNS on `gaic-media`. Neither service receives a host-gateway mapping or publishes a host port. Trusted local clients use `https://localhost:8446` for the UI and `https://localhost:8447` for direct API access through the gateway.
 
-ComfyUI model files are mounted read-only. Input, output, user state, temporary files, and caches use narrowly scoped writable mounts; the container does not receive the Docker socket, source repository, home directory, or host credentials.
+ComfyUI model files are mounted read-only. Input, output, user state, temporary files, and caches use narrowly scoped writable mounts; the container does not receive the Docker socket, the hub's source tree, home directory, or host credentials.
 
 ## Gateway authentication follow-up
 
@@ -114,9 +125,9 @@ Do not commit `.env`, credentials, private keys, firewall exports, or VPN enroll
 
 | Proposed change              | Ready-to-change gate                                                                                       | Rollback trigger                                                                         |
 | ---------------------------- | ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| Private LAN                  | Stable host address, restricted private-profile firewall rules, and authenticated TLS proxy tested locally | An unintended LAN client can connect, or an intended client bypasses authentication      |
+| Private LAN                  | Stable host address, restricted private-profile firewall rules, and authenticated TLS gateway tested locally | An unintended LAN client can connect, or an intended client bypasses authentication      |
 | VPN-only                     | VPN interface and subnet confirmed, intended devices enrolled, and firewall limited to that subnet         | Traffic reaches the service outside the VPN, or device revocation does not remove access |
-| Segmented bridges            | Service dependency map complete and only the authenticated proxy intentionally multi-homed                 | A service can reach a network not required by its dependency map                         |
+| Segmented bridges            | Service dependency map complete and only the authenticated gateway intentionally multi-homed                 | A service can reach a network not required by its dependency map                         |
 | Egress-restricted or offline | Images, models, packages, backends, and update procedure available without runtime egress                  | Startup or an approved workflow requires an unplanned external endpoint                  |
 | External shared network      | Network owner, name, participating projects, and cleanup responsibility documented                         | An unapproved project or standalone container joins the trust zone                       |
 
@@ -166,7 +177,7 @@ The implemented topology uses multiple networks:
 
 Only the gateway joins more than one network. This reduces lateral movement but adds routing and troubleshooting overhead. Further split a zone if services within it are not mutually trusted; a bridge cannot provide per-service firewall isolation.
 
-**Setbacks:** Multiple networks make Compose configuration, service discovery, health checks, and debugging more complex. The multi-homed proxy becomes a high-value dependency, and incorrect network attachment can silently restore paths the segmentation was meant to remove. Segmentation also does not restrict outbound traffic by itself.
+**Setbacks:** Multiple networks make Compose configuration, service discovery, health checks, and debugging more complex. The multi-homed gateway becomes a high-value dependency, and incorrect network attachment can silently restore paths the segmentation was meant to remove. Segmentation also does not restrict outbound traffic by itself.
 
 ### 5. Egress-restricted or offline
 
