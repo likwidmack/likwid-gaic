@@ -121,9 +121,29 @@ Administrator elevation. Re-run the terminal as Administrator if it reports
 a permission error.
 
 Default target is 85% of the GPU's max power limit; override with
-`GAIC_GPU_POWER_LIMIT_PERCENT` in `.env` (1-100). `npm run stack --
-resources` reports the current `power.draw`/`power.limit`/`power.max_limit`
-and warns if the limit is still uncapped.
+`GAIC_GPU_POWER_LIMIT_PERCENT` (1-100), set only via the shell — no Node
+script in this repo loads `.env` (only Docker Compose auto-loads it, and
+`compose.yaml` never references this variable), so setting it in `.env` has
+no effect on this script:
+
+```powershell
+# PowerShell
+$env:GAIC_GPU_POWER_LIMIT_PERCENT=75; npm run gpu:cap-power
+```
+
+```bash
+# bash
+GAIC_GPU_POWER_LIMIT_PERCENT=75 npm run gpu:cap-power
+```
+
+`npm run stack -- resources` reports the current
+`power.draw`/`power.limit`/`power.max_limit` and warns if the limit is still
+uncapped. Preview the current, target, and minimum power limits without
+changing anything with:
+
+```powershell
+npm run gpu:cap-power -- --dry-run
+```
 
 ## Compose environment variables
 

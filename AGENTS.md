@@ -140,6 +140,11 @@ npx --yes prettier@3.6.2 --write README.md $docs
   conflicts unless `--allow-gpu-share` is passed. See
   [docs/resource-utilization.md](docs/resource-utilization.md).
 - `npm run stack -- resources` is a read-only GPU and service snapshot.
+- `npm run gpu:cap-power` (without `--dry-run`) writes host GPU power state
+  via `nvidia-smi -pl`. It affects the whole physical GPU, not a container,
+  and must never be run by an agent without the user's explicit,
+  in-the-moment consent. `nvidia-smi --query-gpu=...` reads and
+  `npm run gpu:cap-power -- --dry-run` are always safe.
 - Never set `LOCALAI_THREADS` (or other LocalAI integer env vars) to an empty
   string in Compose; LocalAI exits on `LOCALAI_THREADS=""`.
 - Caddy is the only service allowed to publish host ports. The default bind
