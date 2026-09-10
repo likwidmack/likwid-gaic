@@ -91,6 +91,17 @@ After editing, run `wsl --shutdown`, then restart Docker Desktop.
 - Keep the Docker disk image on a drive with adequate free space; D: scratch and
   E: durable data policies remain unchanged.
 
+### Thread budget
+
+| Layer                      | Setting                | Guidance                                               |
+| -------------------------- | ---------------------- | ------------------------------------------------------ |
+| LocalAI                    | `LOCALAI_THREADS`      | Physical cores minus 2–4                               |
+| PrivateGPT ingestion       | `GAIC_CPU_THREADS` | Same cap; sets `OMP_NUM_THREADS` and `MKL_NUM_THREADS` |
+| Stable Diffusion / ComfyUI | PyTorch defaults       | GPU-bound; optional `GAIC_CPU_THREADS` caps OpenMP |
+
+`npm run stack:doctor` reports physical core count and a suggested
+`LOCALAI_THREADS` value when the host tools are available.
+
 ## GPU power headroom
 
 Docker/NVIDIA have no per-container "utilization percentage" limit —
@@ -113,17 +124,6 @@ Default target is 85% of the GPU's max power limit; override with
 `GAIC_GPU_POWER_LIMIT_PERCENT` in `.env` (1-100). `npm run stack --
 resources` reports the current `power.draw`/`power.limit`/`power.max_limit`
 and warns if the limit is still uncapped.
-
-### Thread budget
-
-| Layer                      | Setting                | Guidance                                               |
-| -------------------------- | ---------------------- | ------------------------------------------------------ |
-| LocalAI                    | `LOCALAI_THREADS`      | Physical cores minus 2–4                               |
-| PrivateGPT ingestion       | `GAIC_CPU_THREADS` | Same cap; sets `OMP_NUM_THREADS` and `MKL_NUM_THREADS` |
-| Stable Diffusion / ComfyUI | PyTorch defaults       | GPU-bound; optional `GAIC_CPU_THREADS` caps OpenMP |
-
-`npm run stack:doctor` reports physical core count and a suggested
-`LOCALAI_THREADS` value when the host tools are available.
 
 ## Compose environment variables
 
