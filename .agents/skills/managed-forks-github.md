@@ -5,8 +5,6 @@
 - Hub repository: `likwidmack/likwid-gaic`
 - Managed forks: `tamaramack`
 
-## Supported commands
-
 ## Command behavior
 
 - `npm run repos:status` is read-only.

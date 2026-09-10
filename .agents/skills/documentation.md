@@ -21,6 +21,11 @@ guidance in their respective pages instead of repeating full procedures.
 
 Format maintained Markdown with:
 
+```powershell
+$docs = (Get-ChildItem docs/*.md | Where-Object Name -ne "inventory.generated.md").FullName
+npx --yes prettier@3.6.2 --write README.md $docs
+```
+
 ## Generated inventory
 
 Do not format or commit `docs/inventory.generated.md`.

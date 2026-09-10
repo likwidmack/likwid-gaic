@@ -34,5 +34,12 @@ Model manifests must use:
 
 ## Preferred model workflow
 
+```powershell
+npm run models -- plan ALIAS
+npm run models -- download ALIAS
+npm run models -- verify ALIAS
+npm run models -- sync-localai
+```
+
 Hugging Face may warn about unselected remote files and unrelated local files.
 The checksum result for the selected artifact is authoritative.

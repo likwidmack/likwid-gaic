@@ -24,6 +24,15 @@ On a single-GPU host, at most one of these services may hold the GPU:
 
 `up` refuses GPU conflicts unless `--allow-gpu-share` is passed.
 
+## GPU power cap
+
+- `npm run gpu:cap-power` (without `--dry-run`) writes host GPU power state via
+  `nvidia-smi -pl`. It affects the whole physical GPU, not a container.
+- Never run it without `--dry-run` unless the user gives explicit,
+  in-the-moment consent.
+- `nvidia-smi --query-gpu=...` reads and `npm run gpu:cap-power -- --dry-run`
+  are always safe.
+
 ## Safety rules
 
 - Never set `LOCALAI_THREADS` or other LocalAI integer env vars to an empty string.

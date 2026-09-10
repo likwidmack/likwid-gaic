@@ -10,5 +10,9 @@ Trust the Caddy development CA, then verify `https://localhost:8443`.
 
 Use this read-only storage check:
 
+```powershell
+npm run media -- status
+```
+
 For the full profile order, CA import commands, and optional `rag`, `media`, and
 `comfy` steps, see `docs/container-operations.md`.

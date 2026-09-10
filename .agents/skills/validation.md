@@ -5,6 +5,15 @@ change.
 
 ## Common checks
 
+```powershell
+npm test
+npm run stack:doctor
+npm run stack:config
+npm run repos:status
+npm run models -- list
+npm run media -- status
+```
+
 ## Rules
 
 - `npm test` is the main local parity gate.
