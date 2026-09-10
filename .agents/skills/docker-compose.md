@@ -2,8 +2,8 @@
 
 ## Preferred interface
 
-Prefer:`scripts/docker.mjs` injects canonical fork contexts and storage roots and
-appends `compose.cpu.yaml` when resolved mode is `cpu`.
+Prefer `scripts/docker.mjs`. It injects canonical fork contexts and storage roots
+and appends `compose.cpu.yaml` when the resolved mode is `cpu`.
 
 ## Compute modes
 
@@ -22,7 +22,7 @@ On a single-GPU host, at most one of these services may hold the GPU:
 - `comfy-backend`
 - `ollama`
 
-Use:`up` refuses GPU conflicts unless `--allow-gpu-share` is passed.
+`up` refuses GPU conflicts unless `--allow-gpu-share` is passed.
 
 ## Safety rules
 
@@ -32,7 +32,7 @@ Use:`up` refuses GPU conflicts unless `--allow-gpu-share` is passed.
 - Preserve health checks.
 - Preserve private backend ports.
 - Preserve segmented bridges.
-- Caddy is the only service allowed to publish host ports.
+- The gateway is the only service allowed to publish host ports.
 - Treat Compose files, overrides, Dockerfiles, build contexts, bind mounts,
   device grants, and remote includes as executable trusted input.
 - Inspect `npm run stack:config` before `up`.
@@ -45,8 +45,8 @@ The validated GPU declaration is the Compose Deploy reservation using:
 - `count: all`
 - `capabilities: [gpu]`
 
-CDI and `gpus: all` are alternatives, not additions. Do not combine declaration
-styles without a tested migration.
+CDI (the Container Device Interface) and `gpus: all` are alternatives, not
+additions. Do not combine declaration styles without a tested migration.
 
 ## Images and rebuilds
 

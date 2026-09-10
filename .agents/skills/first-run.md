@@ -8,5 +8,7 @@ managed-stack `LOCALAI_API_KEY` unless explicitly requested.
 ## Windows / PowerShell
 Trust the Caddy development CA, then verify `https://localhost:8443`.
 
-Use this read-only storage check:For the full profile order, CA import commands, and optional `rag`, `media`, and
+Use this read-only storage check:
+
+For the full profile order, CA import commands, and optional `rag`, `media`, and
 `comfy` steps, see `docs/container-operations.md`.

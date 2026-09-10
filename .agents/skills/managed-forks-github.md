@@ -5,7 +5,9 @@
 - Hub repository: `likwidmack/likwid-gaic`
 - Managed forks: `tamaramack`
 
-## Supported commands## Command behavior
+## Supported commands
+
+## Command behavior
 
 - `npm run repos:status` is read-only.
 - `npm run repos:fetch` refreshes remote references only.

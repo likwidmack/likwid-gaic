@@ -32,5 +32,7 @@ Model manifests must use:
 - Safe relative destination
 - Reviewed license and provenance
 
-## Preferred model workflowHugging Face may warn about unselected remote files and unrelated local files.
+## Preferred model workflow
+
+Hugging Face may warn about unselected remote files and unrelated local files.
 The checksum result for the selected artifact is authoritative.

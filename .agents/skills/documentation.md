@@ -14,12 +14,14 @@ guidance in their respective pages instead of repeating full procedures.
 - Use fenced code blocks with a language.
 - Use consistent tables.
 - Use descriptive relative links.
-- PowerShell examples run from the repository root.
+- PowerShell examples run from the hub root.
 - Label WSL examples as `bash`.
 
 ## Formatting
 
-Format maintained Markdown with:## Generated inventory
+Format maintained Markdown with:
+
+## Generated inventory
 
 Do not format or commit `docs/inventory.generated.md`.
 

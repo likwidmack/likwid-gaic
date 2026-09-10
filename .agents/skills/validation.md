@@ -3,7 +3,9 @@
 Use the smallest applicable verification set, then expand in proportion to the
 change.
 
-## Common checks## Rules
+## Common checks
+
+## Rules
 
 - `npm test` is the main local parity gate.
 - Pull requests to `development` and `main` run the GitHub Actions job named
