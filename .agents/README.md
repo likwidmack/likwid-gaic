@@ -26,9 +26,10 @@ installed as **user-scope Claude Code plugins** (`claude plugin list`), not
 copied into this repo, so they apply in every project on this workstation —
 this hub and the privateGPT, ComfyUI, and stable-diffusion-ui forks alike —
 not just here. Use `npm run repos:fetch` / `repos:update` to keep the fork
-clones current with upstream; the plugin installs point at those clones. A
-curated public spin-off of this catalog, with one original bundled skill, is
-published at
+clones current with upstream; the plugin installs point at those clones.
+
+A related public Claude Code marketplace — one original bundled skill plus
+curated links to the same upstream skill sources — is at
 [likwidmack/gaic-skills-directory](https://github.com/likwidmack/gaic-skills-directory).
 
 ## Repository purpose
