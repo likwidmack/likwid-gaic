@@ -1,0 +1,42 @@
+# Enforce LF line endings for all text files (Windows, macOS, Linux).
+# Do not use core.autocrlf=true in this repo — prefer: git config core.autocrlf false
+* text=auto eol=lf
+
+# Explicit text types (still LF)
+*.cjs text eol=lf
+*.css text eol=lf
+*.html text eol=lf
+*.js text eol=lf
+*.json text eol=lf
+*.jsx text eol=lf
+*.md text eol=lf
+*.mjs text eol=lf
+*.mts text eol=lf
+*.py text eol=lf
+*.scss text eol=lf
+*.sh text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.vue text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+
+# Binary — do not convert
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.pdf binary
+*.zip binary
+*.gz binary
+*.7z binary
+*.mp4 binary
+*.webm binary
+*.sqlite binary
+*.db binary
