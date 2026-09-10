@@ -287,6 +287,7 @@ Full daily-ops detail: [Container operations](docs/container-operations.md).
 | Data            | [Models and managed media](docs/models.md)                                                                                                                                                                                                       |
 | Security        | [Network security](docs/network-security.md) · [GitHub access](docs/github-access.md)                                                                                                                                                            |
 | Contributing    | [CONTRIBUTING.md](CONTRIBUTING.md) · [SECURITY.md](SECURITY.md)                                                                                                                                                                                  |
+| Agent skills    | [Public skills directory](https://github.com/likwidmack/gaic-skills-directory) (installable Claude Code marketplace)                                                                                                                             |
 
 </details>
 
