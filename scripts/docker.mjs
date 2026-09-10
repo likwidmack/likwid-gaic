@@ -16,6 +16,7 @@ import {
   gatewayProbeTargets,
   gpuSwitchPlan,
   inferActiveEngine,
+  isBuildableService,
   modelsRefreshProfiles,
   parseGatewayModelIds,
   parseProfileCommand,
@@ -404,8 +405,16 @@ if (command === "doctor") {
   }
 } else if (command === "resources") {
   console.log(`Compute mode: ${computeModeLabel}`);
-  const gpu = run("nvidia-smi", ["--query-gpu=index,name,memory.total,memory.used,memory.free,utilization.gpu,temperature.gpu", "--format=csv,noheader"], { capture: true, env: process.env });
+  const gpu = run("nvidia-smi", ["--query-gpu=index,name,memory.total,memory.used,memory.free,utilization.gpu,temperature.gpu,power.draw,power.limit,power.max_limit", "--format=csv,noheader"], { capture: true, env: process.env });
   console.log(gpu.ok ? `GPU\n${gpu.output}` : `GPU\nunavailable: ${gpu.output}`);
+  if (gpu.ok) {
+    const fields = gpu.output.split(",").map((part) => part.trim());
+    const powerLimit = Number.parseFloat(fields[8]);
+    const powerMax = Number.parseFloat(fields[9]);
+    if (Number.isFinite(powerLimit) && Number.isFinite(powerMax) && Math.round(powerLimit) >= Math.round(powerMax)) {
+      console.warn(`WARN  GPU power limit is uncapped (${fields[8]} = max). Run \`npm run gpu:cap-power\` for headroom.`);
+    }
+  }
   const activeGpu = runningGpuServices();
   console.log(`\nRunning GPU-labeled services: ${activeGpu.length ? activeGpu.join(", ") : "none"}`);
   if (activeGpu.length > 1) {
@@ -468,7 +477,7 @@ else if (command === "up") {
   if (service) {
     const metadata = stack.services.find((item) => item.name === service);
     if (!metadata) throw new Error(`Unknown service: ${service}`);
-    if (!metadata.repository) {
+    if (!isBuildableService(metadata)) {
       throw new Error(`Service "${service}" uses a registry image; use \`npm run stack -- pull\` instead of build.`);
     }
     assertCpuAllowsService(computeMode, service);

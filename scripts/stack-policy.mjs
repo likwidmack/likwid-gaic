@@ -3,6 +3,10 @@
 export const nvidiaOnlyProfiles = new Set(["media", "comfy"]);
 export const nvidiaOnlyServices = new Set(["stable-diffusion", "comfy-backend", "comfy-frontend"]);
 
+export function isBuildableService(metadata) {
+  return metadata?.buildable === true;
+}
+
 export function gpuServicesForProfile(gpuExclusive, profile) {
   const needed = new Set();
   for (const [service, profiles] of Object.entries(gpuExclusive.profilesByService ?? {})) {
@@ -186,4 +190,93 @@ export function inferActiveEngine({ runningLocalai, runningOllama, httpOk }) {
   if (runningOllama && !runningLocalai) return "ollama";
   if (runningLocalai && runningOllama) return "localai";
   return "none";
+}
+
+export function computePowerLimitWatts(maxWatts, percent) {
+  if (!Number.isFinite(percent) || percent < 1 || percent > 100) {
+    throw new Error(`Invalid power limit percent: ${percent} (must be 1-100)`);
+  }
+  return Math.floor(maxWatts * percent / 100);
+}
+
+/**
+ * Parses GAIC_GPU_POWER_LIMIT_PERCENT from the environment, defaulting to 85
+ * when unset OR when set to an empty/whitespace-only string (Compose and
+ * shells can both produce "").
+ */
+export function parsePercent(raw) {
+  const value = Number.parseInt(((raw && raw.trim()) || "85"), 10);
+  if (!Number.isFinite(value)) throw new Error(`Invalid GAIC_GPU_POWER_LIMIT_PERCENT: ${raw}`);
+  return value;
+}
+
+/**
+ * Parses a wattage value out of raw nvidia-smi CSV output and validates it.
+ * nvidia-smi can emit "[N/A]" or an empty field for power.max_limit / power.limit
+ * on some GPUs/driver states; Number.parseFloat would silently turn that into NaN,
+ * so we fail loudly here instead of letting NaN flow into computePowerLimitWatts
+ * or an `nvidia-smi -pl NaN` apply call.
+ */
+export function parsePowerWatts(raw, label) {
+  const value = Number.parseFloat(raw);
+  if (!Number.isFinite(value) || value <= 0) {
+    throw new Error(`nvidia-smi returned an unusable ${label} value: ${raw && raw.length ? raw : "(empty)"}`);
+  }
+  return value;
+}
+
+/**
+ * Pure decision logic for `gpu:cap-power`, given already-parsed nvidia-smi
+ * readings. Never calls nvidia-smi itself, so it is fully unit-testable
+ * without touching real GPU hardware.
+ * @param {{ maxWatts: number, currentWatts: number, minWatts: number, percent: number, dryRun: boolean }} input
+ * @returns {{ kind: "below-min" | "already-capped" | "dry-run-preview" | "apply", targetWatts: number, messages: string[], exitCode: number }}
+ */
+export function planPowerCapAction({ maxWatts, currentWatts, minWatts, percent, dryRun }) {
+  const targetWatts = computePowerLimitWatts(maxWatts, percent);
+
+  if (targetWatts < minWatts) {
+    const minPercent = Math.ceil((minWatts / maxWatts) * 100);
+    return {
+      kind: "below-min",
+      targetWatts,
+      exitCode: 1,
+      messages: [
+        `Target ${targetWatts}W is below this GPU's minimum power limit (${minWatts}W); ` +
+          `raise GAIC_GPU_POWER_LIMIT_PERCENT to at least ${minPercent}.`
+      ]
+    };
+  }
+
+  const alreadyCapped = Math.round(currentWatts) === targetWatts;
+
+  if (dryRun) {
+    return {
+      kind: "dry-run-preview",
+      targetWatts,
+      exitCode: 0,
+      messages: [
+        `[dry-run] Current: ${currentWatts}W  Target: ${targetWatts}W (${percent}% of ${maxWatts}W max)  Min: ${minWatts}W`,
+        alreadyCapped
+          ? "[dry-run] Already at target; would make no change."
+          : `[dry-run] Would apply: nvidia-smi -pl ${targetWatts}`
+      ]
+    };
+  }
+
+  if (alreadyCapped) {
+    return {
+      kind: "already-capped",
+      targetWatts,
+      exitCode: 0,
+      messages: [`Already capped at ${targetWatts}W (${percent}% of ${maxWatts}W max).`]
+    };
+  }
+
+  return {
+    kind: "apply",
+    targetWatts,
+    exitCode: 0,
+    messages: [`Applying power limit: ${currentWatts}W -> ${targetWatts}W (${percent}% of ${maxWatts}W max)`]
+  };
 }

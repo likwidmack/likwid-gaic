@@ -321,12 +321,16 @@ services:
   ollama:
     <<: *security-defaults
     profiles: ["ollama"]
-    image: ${OLLAMA_IMAGE:-ollama/ollama:0.32.6}
+    image: gaic/ollama:local
+    build:
+      context: ${HUB_CONTEXT:-.}
+      dockerfile: docker/ollama.Dockerfile
+      args:
+        OLLAMA_IMAGE: ${OLLAMA_IMAGE:-ollama/ollama:0.32.6}
     init: true
     restart: unless-stopped
-    # Official ollama/ollama images do not ship curl; use the CLI for health.
     healthcheck:
-      test: ["CMD", "ollama", "list"]
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:11434/api/tags"]
       interval: 10s
       timeout: 5s
       retries: 30

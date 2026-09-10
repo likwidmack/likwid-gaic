@@ -194,6 +194,7 @@ Scripts are defined in [`package.json`](package.json). Keywords:
 | `npm run stack:comfy`             | `switch comfy` — ComfyUI backend + frontend                                                       |
 | `npm run stack:ollama`            | `switch ollama` — Ollama library runtime (optional)                                               |
 | `npm run stack -- models-refresh` | Fetch `:8443/v1/models`; print active engine and model IDs (read-only)                            |
+| `npm run gpu:cap-power`           | Cap the host GPU power limit to a percentage of max (requires Administrator/sudo; `-- --dry-run` previews only) |
 
 Additional stack subcommands (no dedicated alias):
 

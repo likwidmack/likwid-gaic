@@ -17,14 +17,19 @@ import {
   assertCpuAllowsProfile,
   assertCpuAllowsService,
   assertGpuPreflight,
+  computePowerLimitWatts,
   gpuConflictsForProfile,
   gpuServicesForProfile,
   gpuSwitchPlan,
   gatewayModelsUrl,
   gatewayProbeTargets,
   inferActiveEngine,
+  isBuildableService,
   parseGatewayModelIds,
+  parsePercent,
+  parsePowerWatts,
   parseProfileCommand,
+  planPowerCapAction,
   assertSmokeRunAllowed,
   readinessAction,
   smokeMatrix
@@ -282,5 +287,86 @@ describe("stack GPU and CPU policy", () => {
     assert.equal(inferActiveEngine({ runningLocalai: false, runningOllama: true, httpOk: true }), "ollama");
     assert.equal(inferActiveEngine({ runningLocalai: true, runningOllama: true, httpOk: true }), "localai");
     assert.equal(inferActiveEngine({ runningLocalai: false, runningOllama: false, httpOk: false }), "none");
+  });
+
+  it("treats buildable as an explicit flag, not repository presence", () => {
+    assert.equal(isBuildableService({ buildable: true }), true);
+    assert.equal(isBuildableService({ buildable: true, repository: "LocalAI-Prt" }), true);
+    assert.equal(isBuildableService({ repository: "LocalAI-Prt" }), false);
+    assert.equal(isBuildableService({}), false);
+  });
+
+  it("computes a whole-watt power limit from a percentage of max", () => {
+    assert.equal(computePowerLimitWatts(320, 85), 272);
+    assert.equal(computePowerLimitWatts(450, 85), 382);
+    assert.equal(computePowerLimitWatts(320, 100), 320);
+    assert.equal(computePowerLimitWatts(320, 1), 3);
+  });
+
+  it("rejects an out-of-range percentage", () => {
+    assert.throws(() => computePowerLimitWatts(320, 0), /percent/i);
+    assert.throws(() => computePowerLimitWatts(320, 101), /percent/i);
+    assert.throws(() => computePowerLimitWatts(320, -5), /percent/i);
+  });
+
+  it("parses power watts from nvidia-smi CSV output", () => {
+    assert.equal(parsePowerWatts("320.00", "power.max_limit"), 320);
+    assert.throws(() => parsePowerWatts("[N/A]", "power.max_limit"), /unusable power\.max_limit/);
+    assert.throws(() => parsePowerWatts("", "power.limit"), /unusable power\.limit/);
+    assert.throws(() => parsePowerWatts("-5", "power.limit"), /unusable power\.limit/);
+    assert.throws(() => parsePowerWatts("abc", "power.limit"), /unusable power\.limit/);
+  });
+
+  it("parses GAIC_GPU_POWER_LIMIT_PERCENT with an 85 default", () => {
+    assert.equal(parsePercent("75"), 75);
+    assert.equal(parsePercent(undefined), 85);
+    assert.equal(parsePercent(""), 85);
+    assert.equal(parsePercent("   "), 85);
+  });
+
+  it("gpu:cap-power dry-run previews without ever suggesting an apply happened", () => {
+    const belowTarget = planPowerCapAction({ maxWatts: 600, currentWatts: 600, minWatts: 400, percent: 85, dryRun: true });
+    assert.equal(belowTarget.kind, "dry-run-preview");
+    assert.equal(belowTarget.targetWatts, 510);
+    assert.equal(belowTarget.exitCode, 0);
+    assert.ok(belowTarget.messages.some((m) => m.includes("Would apply: nvidia-smi -pl 510")));
+
+    const alreadyAtTarget = planPowerCapAction({ maxWatts: 600, currentWatts: 510, minWatts: 400, percent: 85, dryRun: true });
+    assert.equal(alreadyAtTarget.kind, "dry-run-preview");
+    assert.ok(alreadyAtTarget.messages.some((m) => m.includes("would make no change")));
+  });
+
+  it("gpu:cap-power refuses to plan an apply below the GPU's minimum power limit", () => {
+    // 300W target (50% of 600W) is below a 400W floor -- must fail closed, not call nvidia-smi -pl.
+    const plan = planPowerCapAction({ maxWatts: 600, currentWatts: 600, minWatts: 400, percent: 50, dryRun: false });
+    assert.equal(plan.kind, "below-min");
+    assert.equal(plan.exitCode, 1);
+    assert.ok(plan.messages.some((m) => /below this GPU's minimum power limit \(400W\)/.test(m)));
+    assert.ok(plan.messages.some((m) => /raise GAIC_GPU_POWER_LIMIT_PERCENT to at least 67/.test(m)));
+
+    // Same below-min check applies in dry-run mode too.
+    const dryPlan = planPowerCapAction({ maxWatts: 600, currentWatts: 600, minWatts: 400, percent: 50, dryRun: true });
+    assert.equal(dryPlan.kind, "below-min");
+  });
+
+  it("gpu:cap-power reports already-capped without an apply plan", () => {
+    const plan = planPowerCapAction({ maxWatts: 600, currentWatts: 510, minWatts: 400, percent: 85, dryRun: false });
+    assert.equal(plan.kind, "already-capped");
+    assert.equal(plan.exitCode, 0);
+  });
+
+  it("gpu:cap-power plans a real apply only outside dry-run and above the minimum", () => {
+    const plan = planPowerCapAction({ maxWatts: 600, currentWatts: 600, minWatts: 400, percent: 85, dryRun: false });
+    assert.equal(plan.kind, "apply");
+    assert.equal(plan.targetWatts, 510);
+    assert.equal(plan.exitCode, 0);
+  });
+
+  it("gpu-power-cap.mjs does not execute main() when merely imported (safe for tests)", async () => {
+    // Importing must never touch nvidia-smi or process.exitCode; this guards
+    // against a regression of the import.meta.url guard.
+    const before = process.exitCode;
+    await import("./gpu-power-cap.mjs");
+    assert.equal(process.exitCode, before);
   });
 });

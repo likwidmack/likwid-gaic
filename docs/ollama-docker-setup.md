@@ -34,7 +34,7 @@ Ollama weights use Ollama's blob format. They do not appear in
 | Item       | Value                                                                              |
 | ---------- | ---------------------------------------------------------------------------------- |
 | Profile    | `ollama`                                                                           |
-| Service    | `ollama` (registry image `ollama/ollama`)                                          |
+| Service    | `ollama` (built image `gaic/ollama:local`, base `ollama/ollama`)                   |
 | HTTPS      | `https://localhost:8443` (unified OpenAI `/v1`), `https://localhost:8448` (direct) |
 | Native API | `/api/*` and OpenAI-compatible `/v1/*`                                             |
 | GPU        | Optional — exclusive with LocalAI, SD, Comfy when `GAIC_COMPUTE=nvidia`        |
@@ -99,7 +99,10 @@ or `npm run stack:rag` when you need LocalAI or PrivateGPT again, then run
 
 ## Image and storage
 
-- Default image: `ollama/ollama:0.32.6` (override with `OLLAMA_IMAGE` in `.env`)
+- Built from `docker/ollama.Dockerfile`, which layers `curl` onto the pinned
+  base image (override the base with `OLLAMA_IMAGE` in `.env`, default
+  `ollama/ollama:0.32.6`). Rebuild after changing `OLLAMA_IMAGE` with
+  `npm run stack -- build ollama`.
 - Host port: `OLLAMA_HTTPS_PORT` (default `8448`)
 - Blob root: `MODEL_ROOT` → `/root/.ollama` in the container (npm runner resolves
   `pathWindows` / `pathWsl` / `pathPosix` from `config/storage.json`)
@@ -108,8 +111,9 @@ This whole-root read-write mount is the deliberate exception to the read-only
 shared model mounts, because Ollama manages its own blob store in place.
 
 The service uses the same NVIDIA Compose deploy reservation as LocalAI
-(`driver: nvidia`, `count: all`, `capabilities: [gpu]`). Health checks use
-`ollama list` because the official image does not ship `curl`.
+(`driver: nvidia`, `count: all`, `capabilities: [gpu]`). Health checks curl
+`http://127.0.0.1:11434/api/tags`, matching LocalAI's HTTP-based healthcheck
+style now that the image carries `curl`.
 
 ## GPU and memory tuning
 

@@ -192,6 +192,27 @@ for (const [variable, root] of Object.entries(storageBindings)) if (!compose.inc
 if (compose.includes(storage.roots.mediaBackup.pathWsl) || compose.includes("MEDIA_BACKUP_ROOT")) throw new Error("Media backup storage must remain host-only and must not be mounted by Compose");
 for (const service of stack.services) if (!compose.includes(`  ${service.name}:`)) throw new Error(`Compose is missing ${service.name}`);
 for (const service of gpuExclusive.services) if (!compose.includes(`  ${service}:`)) throw new Error(`GPU exclusive service ${service} is missing from Compose`);
+// Cross-check config/stack.json services[].buildable against whether the service actually has a
+// build: block in compose.yaml, so the flag docker.mjs/stack-policy.mjs relies on (isBuildableService)
+// can't silently drift from what `npm run stack -- build <service>` would really do.
+{
+  const servicesSectionStart = compose.indexOf("\nservices:");
+  const networksSectionStart = compose.indexOf("\nnetworks:");
+  if (servicesSectionStart === -1 || networksSectionStart === -1) throw new Error("Compose is missing services or networks section");
+  const servicesSection = compose.slice(servicesSectionStart, networksSectionStart);
+  const serviceHeaders = [...servicesSection.matchAll(/\n {2}([A-Za-z0-9_-]+):\s*\n/g)].map((match) => ({name: match[1], index: match.index}));
+  for (const service of stack.services) {
+    const headerIndex = serviceHeaders.findIndex((entry) => entry.name === service.name);
+    if (headerIndex === -1) throw new Error(`Compose is missing service block for ${service.name}`);
+    const start = serviceHeaders[headerIndex].index;
+    const end = headerIndex + 1 < serviceHeaders.length ? serviceHeaders[headerIndex + 1].index : servicesSection.length;
+    const block = servicesSection.slice(start, end);
+    const hasBuildBlock = /\n {4}build:\s*\n/.test(block);
+    if (Boolean(service.buildable) !== hasBuildBlock) {
+      throw new Error(`stack.json buildable flag for ${service.name} does not match compose.yaml: buildable=${Boolean(service.buildable)} but build: block present=${hasBuildBlock}`);
+    }
+  }
+}
 if (!compose.includes("  " + stack.gateway.service + ":")) throw new Error("Compose is missing the HTTPS gateway");
 for (const network of stack.networks) if (!compose.includes("  " + network.key + ":")) throw new Error("Compose is missing network " + network.key);
 for (const binding of ["LOCALAI_HTTPS_PORT:-8443", "PRIVATE_GPT_HTTPS_PORT:-8444", "STABLE_DIFFUSION_HTTPS_PORT:-8445", "COMFY_HTTPS_PORT:-8446", "COMFY_API_HTTPS_PORT:-8447", "OLLAMA_HTTPS_PORT:-8448"]) if (!compose.includes(binding)) throw new Error("Compose is missing HTTPS gateway binding " + binding);
@@ -201,6 +222,7 @@ for (const ollamaTuning of ["OLLAMA_MAX_LOADED_MODELS:-1", "OLLAMA_NUM_PARALLEL:
 }
 const ollamaBlock = compose.slice(compose.indexOf("\n  ollama:"), compose.indexOf("\nnetworks:"));
 if (!ollamaBlock.includes("driver: nvidia")) throw new Error("Ollama must keep the NVIDIA GPU device reservation");
+if (!ollamaBlock.includes("dockerfile: docker/ollama.Dockerfile")) throw new Error("Ollama must build from docker/ollama.Dockerfile");
 if ((compose.match(/^    ports:/gm) ?? []).length !== 1) throw new Error("Only the HTTPS gateway may publish host ports");
 if (!compose.includes("no-new-privileges:true")) throw new Error("Compose is missing the no-new-privileges baseline");
 for (const mount of ["shared-models", "shared-models-inbox", "shared-tensors", "shared-objects", "shared-plugins", "shared-plugins-inbox", "shared-tools"]) if (!compose.includes("&" + mount) || !compose.includes("*" + mount)) throw new Error("Compose is missing shared mount " + mount);
@@ -238,7 +260,7 @@ if (!dockerScript.includes("gpuSwitchPlan")) {
   throw new Error("docker.mjs switch must use gpuSwitchPlan for GPU stop/keep planning");
 }
 for (const endpoint of ["127.0.0.1:8080/v1/models", "127.0.0.1:7860/", "127.0.0.1:8188/system_stats", "127.0.0.1/"]) if (!compose.includes(endpoint)) throw new Error("Compose health checks are missing " + endpoint);
-if (!compose.includes('"ollama", "list"')) throw new Error('Compose ollama healthcheck must use CMD ollama list (image has no curl)');
+if (!compose.includes('"curl", "-fsS", "http://127.0.0.1:11434/api/tags"')) throw new Error('Compose ollama healthcheck must curl http://127.0.0.1:11434/api/tags (image now includes curl via docker/ollama.Dockerfile)');
 const caddyfile = readFileSync(new URL("../docker/Caddyfile", import.meta.url), "utf8");
 for (const route of ["{$GATEWAY_HOSTNAME:localhost}:8443", "{$GATEWAY_HOSTNAME:localhost}:8444", "{$GATEWAY_HOSTNAME:localhost}:8445", "{$GATEWAY_HOSTNAME:localhost}:8446", "{$GATEWAY_HOSTNAME:localhost}:8447", "{$GATEWAY_HOSTNAME:localhost}:8448"]) if (!caddyfile.includes(route)) throw new Error("Caddy is missing hostname route " + route);
 if (!caddyfile.includes("import /etc/caddy/snippets/gateway-auth.caddy")) throw new Error("Caddy must import the gateway-auth snippet");
