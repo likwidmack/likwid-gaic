@@ -6,6 +6,11 @@
 .DS_Store
 .idea
 
+# Personal AI-assistant profile (contains private/health info) - local only, this repo is public #
+.agents/rules/user_profile.md
+.agents/user_profile.md
+.aiassistant/
+
 # forkedAI local runtime, credentials, and private artifacts #
 .env
 .env.*
