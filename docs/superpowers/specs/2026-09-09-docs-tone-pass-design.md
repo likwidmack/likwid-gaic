@@ -9,9 +9,9 @@ without changing any documented behavior, command, path, or claim.
 
 ## Scope
 
-40 files across three categories, reviewed and updated in this order:
+41 files across three categories, reviewed and updated in this order:
 
-1. **`.agents/` (8 files)** — `README.md`, `rules/protected-branches.md`,
+1. **`.agents/` (9 files)** — `README.md`, `rules/protected-branches.md`,
    `rules/safety.md`, `skills/docker-compose.md`, `skills/documentation.md`,
    `skills/first-run.md`, `skills/managed-forks-github.md`,
    `skills/storage-models-media.md`, `skills/validation.md`
