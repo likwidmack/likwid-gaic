@@ -179,21 +179,21 @@ Scripts are defined in [`package.json`](package.json). Keywords:
 
 ### Stack (Compose)
 
-| Script                            | What it does                                                                                      |
-| --------------------------------- | ------------------------------------------------------------------------------------------------- |
-| `npm run stack`                   | Default status (`ps`) for all profiles                                                            |
-| `npm run stack:doctor`            | Read-only host checks (Node, Docker, GPU, paths, forks, soft profile readiness, gateway exposure) |
-| `npm run stack:config`            | Render Compose for all profiles without starting containers                                       |
-| `npm run stack:status`            | Show Compose service status                                                                       |
-| `npm run stack:up -- PROFILE`     | Start a profile (`up`; refuses GPU conflicts unless `--allow-gpu-share`)                          |
-| `npm run stack:down`              | Stop and remove stack services (`down`, never `--volumes`)                                        |
-| `npm run stack:build`             | Build all buildable images (optional: `npm run stack:build -- SERVICE`)                           |
-| `npm run stack:inference`         | `switch inference` — stop conflicting GPU services, then start LocalAI                            |
-| `npm run stack:rag`               | `switch rag` — LocalAI + PrivateGPT                                                               |
-| `npm run stack:media`             | `switch media` — Stable Diffusion WebUI                                                           |
-| `npm run stack:comfy`             | `switch comfy` — ComfyUI backend + frontend                                                       |
-| `npm run stack:ollama`            | `switch ollama` — Ollama library runtime (optional)                                               |
-| `npm run stack -- models-refresh` | Fetch `:8443/v1/models`; print active engine and model IDs (read-only)                            |
+| Script                            | What it does                                                                                                    |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `npm run stack`                   | Default status (`ps`) for all profiles                                                                          |
+| `npm run stack:doctor`            | Read-only host checks (Node, Docker, GPU, paths, forks, soft profile readiness, gateway exposure)               |
+| `npm run stack:config`            | Render Compose for all profiles without starting containers                                                     |
+| `npm run stack:status`            | Show Compose service status                                                                                     |
+| `npm run stack:up -- PROFILE`     | Start a profile (`up`; refuses GPU conflicts unless `--allow-gpu-share`)                                        |
+| `npm run stack:down`              | Stop and remove stack services (`down`, never `--volumes`)                                                      |
+| `npm run stack:build`             | Build all buildable images (optional: `npm run stack:build -- SERVICE`)                                         |
+| `npm run stack:inference`         | `switch inference` — stop conflicting GPU services, then start LocalAI                                          |
+| `npm run stack:rag`               | `switch rag` — LocalAI + PrivateGPT                                                                             |
+| `npm run stack:media`             | `switch media` — Stable Diffusion WebUI                                                                         |
+| `npm run stack:comfy`             | `switch comfy` — ComfyUI backend + frontend                                                                     |
+| `npm run stack:ollama`            | `switch ollama` — Ollama library runtime (optional)                                                             |
+| `npm run stack -- models-refresh` | Fetch `:8443/v1/models`; print active engine and model IDs (read-only)                                          |
 | `npm run gpu:cap-power`           | Cap the host GPU power limit to a percentage of max (requires Administrator/sudo; `-- --dry-run` previews only) |
 
 Additional stack subcommands (no dedicated alias):
@@ -244,11 +244,15 @@ see [Network security](docs/network-security.md).
 
 ### Ollama (optional CPU/NVIDIA profile)
 
-| Script                         | What it does                                           |
-| ------------------------------ | ------------------------------------------------------ |
-| `npm run ollama -- pull MODEL` | Pull a library model into the running Ollama container |
-| `npm run ollama -- list`       | List pulled tags                                       |
-| `npm run ollama -- status`     | Container state and tag list                           |
+| Script                         | What it does                                                                |
+| ------------------------------ | --------------------------------------------------------------------------- |
+| `npm run ollama -- pull MODEL` | Pull a library model into the running Ollama container                      |
+| `npm run ollama -- list`       | List pulled tags                                                            |
+| `npm run ollama -- status`     | Container state and tag list                                                |
+| `npm run ollama:host -- …`     | Optional host-native create/serve helpers (GPU preflight; see host-ollama/) |
+
+Prefer `npm run stack:ollama` for day-to-day use. Host helpers:
+[scripts/host-ollama/README.md](scripts/host-ollama/README.md).
 
 ### Managed forks
 

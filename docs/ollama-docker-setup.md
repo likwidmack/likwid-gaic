@@ -139,11 +139,26 @@ quality regressions on long-context workloads and have the VRAM to spare.
 ## Host helpers (optional)
 
 Optional scripts under [`scripts/host-ollama/`](../scripts/host-ollama/) create
-GPU-tuned Modelfile variants against a **host-installed** Ollama binary. They
-bypass Compose GPU exclusivity, the gateway, and Compose env defaults. Prefer
-`npm run stack -- switch ollama` for day-to-day use. See
-[scripts/host-ollama/README.md](../scripts/host-ollama/README.md) and
-[host-tuning.md](../scripts/host-ollama/host-tuning.md).
+GPU-tuned Modelfile variants against a **host-installed** Ollama binary. Prefer
+`npm run stack -- switch ollama` for day-to-day use.
+
+Use the npm wrapper so GPU preflight and storage alignment run first:
+
+```powershell
+npm run ollama:host -- create -m llama3.1 -v 8b
+npm run ollama:host -- serve
+```
+
+Important caveats:
+
+- `npm run ollama:host` refuses when Compose GPU-exclusive services are running
+  (unless `--allow-gpu-share` or `GAIC_GPU_EXCLUSIVE=false`). Direct `.sh`
+  invocation skips that check.
+- The wrapper sets `OLLAMA_MODELS` from hub `MODEL_ROOT` when unset so host and
+  Compose can share blobs. Host `serve` still listens on loopback `:11434` and
+  does **not** replace gateway `:8443` / `:8448`.
+- See [scripts/host-ollama/README.md](../scripts/host-ollama/README.md) and
+  [host-tuning.md](../scripts/host-ollama/host-tuning.md).
 
 ## Troubleshooting
 
@@ -151,8 +166,8 @@ bypass Compose GPU exclusivity, the gateway, and Compose env defaults. Prefer
   `GAIC_COMPUTE=nvidia` on a CUDA workstation for GPU acceleration.
 - **GPU conflict (NVIDIA hosts):** Run `npm run stack -- switch ollama` so
   conflicting GPU services stop first, or pass `--allow-gpu-share` only when you
-  accept VRAM contention. A host `ollama serve` competes with Compose GPU
-  profiles the same way — stop one before starting the other.
+  accept VRAM contention. `npm run ollama:host` refuses the same way when a
+  Compose GPU service is already up.
 - **`pull` fails with "not running":** Start the profile before pulling.
 - **502 on 8448 after recreate:** Restart or recreate the gateway if Caddy has a
   stale upstream dial (see [Troubleshooting](troubleshooting.md)).

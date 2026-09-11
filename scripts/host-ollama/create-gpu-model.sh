@@ -30,7 +30,11 @@ print_error() { echo -e "${RED}✗ $1${NC}" >&2; }
 print_success() { echo -e "${GREEN}✓ $1${NC}"; }
 print_info() { echo -e "${YELLOW}→ $1${NC}"; }
 print_header() { echo -e "${CYAN}▶ $1${NC}"; }
-print_debug() { [ "$VERBOSE" = true ] && echo -e "${BLUE}DEBUG: $1${NC}"; }
+print_debug() {
+  if [ "$VERBOSE" = true ]; then
+    echo -e "${BLUE}DEBUG: $1${NC}"
+  fi
+}
 
 detect_cpu_cores() {
   if command -v nproc >/dev/null 2>&1; then
@@ -51,10 +55,11 @@ detect_vram_gb() {
       return
     fi
   fi
-  echo "8"
+  echo ""
 }
 
 # Estimate GPU layers from usable VRAM after display overhead.
+# Heuristic only: 1.5GB/monitor reserve, 75% of remainder for weights, ~3.2 layers/GB, clamp 15–180.
 calculate_num_gpu() {
   local type="$1"
   local monitor_count="${2:-$MONITORS}"
@@ -135,8 +140,21 @@ EOF
 }
 
 CPU_CORES=$(detect_cpu_cores)
-VRAM_GB=$(detect_vram_gb)
+DETECTED_VRAM_GB=$(detect_vram_gb)
+VRAM_FROM_CLI=false
+if [ -n "$DETECTED_VRAM_GB" ]; then
+  VRAM_GB="$DETECTED_VRAM_GB"
+else
+  VRAM_GB="8"
+fi
 NUM_THREADS=$((CPU_CORES > 4 ? CPU_CORES - 4 : 1))
+
+if ! command -v ollama >/dev/null 2>&1; then
+  print_error "ollama not found on PATH"
+  echo "Install a host Ollama binary, or use the managed profile:" >&2
+  echo "  npm run stack -- switch ollama" >&2
+  exit 1
+fi
 
 while [[ $# -gt 0 ]]; do
   case $1 in
@@ -177,6 +195,7 @@ while [[ $# -gt 0 ]]; do
       ;;
     --vram)
       VRAM_GB="$2"
+      VRAM_FROM_CLI=true
       shift 2
       ;;
     --model-dir)
@@ -241,6 +260,9 @@ OFFLOAD_NUM_GPU=$(calculate_num_gpu "offload")
 
 print_header "Host Ollama GPU model creator"
 echo ""
+if [ "$VRAM_FROM_CLI" != true ] && [ -z "$DETECTED_VRAM_GB" ]; then
+  print_info "nvidia-smi unavailable or unreadable; using --vram default ${VRAM_GB}GB"
+fi
 echo "  • CPU cores: ${CPU_CORES}"
 echo "  • VRAM: ${VRAM_GB}GB"
 echo "  • Monitors: ${MONITORS} (${DISPLAY_VRAM_GB}GB reserved for display)"
@@ -248,8 +270,9 @@ echo "  • Available VRAM for AI: ${AVAILABLE_VRAM}GB"
 echo "  • Model: ${BASE_TAG}"
 echo "  • Context: ${CONTEXT_SIZE} tokens"
 echo "  • Threads: ${NUM_THREADS}"
-echo "  • Batch: ${BATCH_SIZE}"
+echo "  • Batch (num_batch): ${BATCH_SIZE}"
 echo "  • Model Dir: ${MODEL_DIR_FULL}"
+echo "  • Layer estimate is heuristic — verify with ollama ps / nvidia-smi"
 echo ""
 
 print_info "Checking for ${BASE_TAG}..."
@@ -257,7 +280,7 @@ print_info "Checking for ${BASE_TAG}..."
 if ! ollama list 2>/dev/null | awk -v tag="$BASE_TAG" 'NR > 1 && $1 == tag { found=1 } END { exit !found }'; then
   print_error "Model not found locally!"
   echo ""
-  print_info "Pull it first:"
+  print_info "Pull it first (host store — set OLLAMA_MODELS to MODEL_ROOT to share Compose blobs):"
   echo "  ollama pull ${BASE_TAG}"
   echo ""
   print_info "Managed Compose alternative:"
@@ -270,17 +293,6 @@ print_success "Base model found"
 mkdir -p "$MODEL_DIR_FULL"
 print_success "Created directory: ${MODEL_DIR_FULL}"
 
-estimate_model_size() {
-  local tag="$1"
-  local size_info
-  size_info=$(ollama list 2>/dev/null | awk -v tag="$tag" 'NR > 1 && $1 == tag { print $2; exit }')
-  if [ -n "$size_info" ]; then
-    echo "$size_info"
-  else
-    echo "unknown"
-  fi
-}
-
 print_info "GPU settings: optimized=${OPTIMIZED_NUM_GPU}, offload=${OFFLOAD_NUM_GPU}"
 
 create_modelfile() {
@@ -289,6 +301,7 @@ create_modelfile() {
   local model_file="${MODEL_DIR_FULL}/Modelfile-${suffix}"
   local new_model_name="${MODEL_NAME}-${suffix}:${MODEL_VERSION}"
   local effective_batch="$BATCH_SIZE"
+  local create_log
 
   print_info "Creating ${new_model_name}..."
   print_debug "Modelfile path: ${model_file}"
@@ -310,6 +323,7 @@ create_modelfile() {
     effective_batch=$(awk -v b="$BATCH_SIZE" 'BEGIN { printf "%d", b * 0.8 }')
   fi
 
+  # Only PARAMs accepted by current Ollama create (server env owns flash attn / KV type).
   cat >> "$model_file" << EOF
 
 # Host GPU optimizations
@@ -317,18 +331,14 @@ create_modelfile() {
 # Monitors: ${MONITORS} (${DISPLAY_VRAM_GB}GB reserved)
 # Available VRAM: ${AVAILABLE_VRAM}GB
 # Created: $(date -u +%Y-%m-%dT%H:%M:%SZ)
+# Server-side defaults (start-ollama.sh / Compose): OLLAMA_KV_CACHE_TYPE=q8_0, OLLAMA_FLASH_ATTENTION=1
 
 PARAMETER num_gpu ${num_gpu}
 PARAMETER num_thread ${NUM_THREADS}
 PARAMETER num_ctx ${CONTEXT_SIZE}
-PARAMETER batch_size ${effective_batch}
+PARAMETER num_batch ${effective_batch}
 PARAMETER seed 42
-PARAMETER numa true
 PARAMETER main_gpu 0
-PARAMETER flash_attn true
-PARAMETER kv_cache_type f16
-PARAMETER mmap true
-PARAMETER mlock false
 
 EOF
 
@@ -343,12 +353,16 @@ EOF
   fi
 
   print_debug "Creating with: ollama create ${new_model_name} -f ${model_file}"
-  if ollama create "${new_model_name}" -f "$model_file" >/dev/null 2>&1; then
+  create_log=$(mktemp)
+  if ollama create "${new_model_name}" -f "$model_file" >"$create_log" 2>&1; then
+    rm -f "$create_log"
     print_success "Created ${new_model_name}"
     return 0
   fi
 
   print_error "Failed to create ${new_model_name}"
+  sed 's/^/  /' "$create_log" >&2 || true
+  rm -f "$create_log"
   return 1
 }
 
