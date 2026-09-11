@@ -67,7 +67,7 @@ The checked-in manifest pins:
 | `sd15-starter`          | SD 1.5 pruned EMA fp16 safetensors    | Comfy `checkpoints/` and optional A1111 link |
 | `sdxl-base`             | SDXL base 1.0 safetensors             | Higher-quality image checkpoint (optional)   |
 
-Use-case mapping (finance, planning, research, image, audio):
+For use-case mapping (finance, planning, research, image, audio), see
 [Use cases and models](use-cases-and-models.md).
 
 Generate LocalAI YAML definitions after downloading:
@@ -76,8 +76,8 @@ Generate LocalAI YAML definitions after downloading:
 npm run models -- sync-localai
 ```
 
-The command writes registered YAML under the shared `localai` model directory for
-entries with `localAI` metadata. Chat and embedding use `llama-cpp`;
+The command writes LocalAI YAML definitions under the shared `localai` model
+directory for each entry that has `localAI` metadata. Chat and embedding use `llama-cpp`;
 transcription uses `whisper` (or the configured backend); TTS uses `piper` (or
 the configured backend). It does not download or delete weights. Optional
 `threads` in `config/models.json` or `GAIC_CPU_THREADS` /
@@ -86,7 +86,7 @@ tuning on single-GPU hosts, see [GPU and CPU resource utilization](resource-util
 
 ## Profile requirements
 
-Each Compose profile has a minimum artifact set before `npm run stack -- up PROFILE` succeeds in practice. The authoritative list is [config/profile-artifacts.json](../config/profile-artifacts.json). Overview of services and HTTPS endpoints: [Profiles](../README.md#profiles). Inspect presence on your workstation with:
+Each Compose profile has a minimum artifact set before `npm run stack -- up PROFILE` succeeds in practice. The authoritative list is [config/profile-artifacts.json](../config/profile-artifacts.json). For an overview of services and HTTPS endpoints, see [Profiles](../README.md#profiles). Inspect presence on your workstation with:
 
 ```powershell
 npm run models -- recommendations inference
@@ -97,6 +97,7 @@ npm run models -- recommendations comfy
 ```
 
 `ready` exits with status 1 when any **required** artifact is missing (recommended gaps are reported but non-blocking).
+
 | Profile | Required managed models / artifacts | Strongly recommended |
 | ----------- | --------------------------------------------- | ---------------------------------------------------------- |
 | `inference` | `chat-qwen2.5-3b`, LocalAI YAML, CUDA backend | 7B chat/coder, Whisper STT, Piper TTS |
@@ -145,7 +146,7 @@ Plugins stay **service-specific** under the shared plugins root (A1111 extension
 ### Shared checkpoint layout (media and comfy)
 
 Managed image pins download under `checkpoints/`. ComfyUI reads that tree
-directly. Stable Diffusion WebUI uses `--ckpt-dir Stable-diffusion`, so expose
+directly. Stable Diffusion WebUI uses `--ckpt-dir Stable-diffusion`. Expose
 the same bytes without duplicating the file.
 
 `npm run models -- download sd15-starter` (and `sdxl-base`) automatically creates
@@ -269,8 +270,8 @@ the catalog (not the inbox).
 
 ## Upscalers (not managed)
 
-RealESRGAN and similar Hub upscalers often ship as `.pth` checkpoints. Those
-formats are treated as executable content and are **not** managed pins in
+RealESRGAN and similar Hub upscalers often ship as `.pth` checkpoints. Treat
+those formats as executable content; they are **not** managed pins in
 `config/models.json`. Prefer reviewed safetensors placed manually under
 `upscale_models/` (Comfy) when you need an upscaler. See
 [Troubleshooting](troubleshooting.md).

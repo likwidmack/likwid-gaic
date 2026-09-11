@@ -1,7 +1,8 @@
 # Use cases and models
 
-Map personal and company workloads to Compose profiles, free/low-cost managed
-model pins, and Web UIs. Download workflow and provenance rules live in
+This guide maps personal and company workloads to Compose profiles,
+free/low-cost managed model pins, and Web UIs. Download workflow and
+provenance rules live in
 [Models and managed media](models.md). Profile lifecycle and GPU exclusivity
 live in [Container operations](container-operations.md) and
 [GPU and CPU resource utilization](resource-utilization.md).
@@ -74,13 +75,13 @@ in `.env` and recreate PrivateGPT. See [PrivateGPT Docker setup](privategpt-dock
 ### Software architecture and IoT
 
 Prefer `chat-qwen2.5-coder-7b` in LocalAI for code and architecture. For IoT
-runbooks and datasheets, ingest them with PrivateGPT (`rag`) and keep
+(Internet of Things) runbooks and datasheets, ingest them with PrivateGPT (`rag`) and keep
 `embed-nomic-v1.5` so `PGPT_EMBED_DIM=768` stays valid.
 
 ### Deep research and statistics
 
-PrivateGPT over your corpus is the primary path. Larger stretch models (14B+)
-are catalog-only: add them with `npm run models -- add` only after confirming
+PrivateGPT over your corpus is the primary path. Larger **stretch models**
+(14B+) are catalog-only: add them with `npm run models -- add` only after confirming
 VRAM headroom in [resource utilization](resource-utilization.md). Do not mark
 stretch models required.
 
@@ -88,7 +89,7 @@ stretch models required.
 
 Start with `sd15-starter` on `media` or `comfy`. Download `sdxl-base` for
 higher quality; hard-link the safetensors into `Stable-diffusion/` for A1111 as
-described in [models.md](models.md). Service how-tos:
+described in [Models and managed media](models.md). Service how-tos:
 [Stable Diffusion WebUI](stable-diffusion-docker-setup.md) and
 [ComfyUI](comfyui-docker-setup.md).
 
@@ -119,7 +120,7 @@ only. Cross-cutting notes: [Troubleshooting](troubleshooting.md).
 ### Video (out of scope)
 
 Managed pins do not include video checkpoints or Comfy video custom nodes.
-Treat video as a later, reviewed Comfy plugin workflow—not part of
+Treat video as a later, reviewed Comfy plugin workflow — not part of
 `npm run models -- recommendations`.
 
 ## Free / low-cost catalog (stretch, not pinned)
