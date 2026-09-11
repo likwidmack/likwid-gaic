@@ -118,7 +118,7 @@ git add docker/ollama.Dockerfile
 git commit -m "feat: add docker/ollama.Dockerfile with curl"
 ```
 
-(No automated test here — Docker build correctness is verified in Task 6's manual smoke step, consistent with how the other Dockerfiles in this repo are handled.)
+(No automated test here — Docker build correctness is verified in Task 6's manual smoke step, consistent with how the other Dockerfiles in this hub are handled.)
 
 ---
 
