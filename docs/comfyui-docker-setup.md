@@ -1,7 +1,7 @@
 # ComfyUI Docker setup
 
 This guide covers the requirements, recommended configuration, initial setup,
-and routine operation of the ComfyUI Docker profile managed by this repository.
+and routine operation of the ComfyUI Docker profile managed by the hub.
 
 ## Services and endpoints
 
@@ -12,7 +12,7 @@ The `comfy` profile runs two services:
 | `comfy-backend`  | ComfyUI Python backend with NVIDIA GPU support | `https://localhost:8447` |
 | `comfy-frontend` | Standalone ComfyUI frontend and backend proxy  | `https://localhost:8446` |
 
-The Caddy gateway is the only service that publishes host ports. Both HTTPS
+The gateway is the only service that publishes host ports. Both HTTPS
 ports bind only to the local computer by default; backend container ports remain
 private.
 
@@ -25,15 +25,17 @@ private.
 - WSL 2.1.5 or newer, preferably updated with `wsl --update`.
 - WSL 2 integration with access to the configured `C:`, `D:`, and `E:` storage drives.
 - A current NVIDIA Windows driver with Docker GPU support.
-- Node.js 20 or newer for the repository management scripts.
+- Node.js 20 or newer for the hub's management scripts.
 - Internet access during the first build.
 
 A separate CUDA toolkit installation on the host is not required. The backend
 image supplies its own CUDA runtime through the official PyTorch base image.
 Do not install a Linux NVIDIA display driver or a second Docker Engine inside
-the integrated WSL distribution. If Docker behaves differently between
-PowerShell and WSL, compare `Get-Command docker -All` with `type -a docker`;
-a separately installed WSL client can shadow Docker Desktop's CLI.
+the integrated WSL distribution.
+
+If Docker behaves differently between PowerShell and WSL, compare
+`Get-Command docker -All` with `type -a docker`. A separately installed WSL
+client can shadow Docker Desktop's CLI.
 
 ### Repository layout
 
@@ -202,9 +204,11 @@ plugin changes. Never place credentials in the shared plugin directory.
 The backend starts with `--disable-api-nodes`. To enable remote API-backed nodes,
 remove that argument from `docker/comfyui.Dockerfile`, rebuild the image, and
 provide required credentials with a service-scoped Compose secret when the node
-supports a file-based credential. Otherwise inject them from a protected session
-or operating-system secret store rather than committing them to `.env`.
-Never commit credentials to either ComfyUI repository or this operations hub.
+supports a file-based credential.
+
+Otherwise inject them from a protected session or operating-system secret store
+rather than committing them to `.env`. Never commit credentials to either the
+ComfyUI repository or the hub.
 
 ## Updates and rebuilds
 
@@ -223,7 +227,7 @@ docker compose --project-name gaic --file compose.yaml --profile comfy build --p
 npm run stack -- up comfy
 ```
 
-Validate the repository configuration before starting:
+Validate the hub's configuration before starting:
 
 ```powershell
 npm test

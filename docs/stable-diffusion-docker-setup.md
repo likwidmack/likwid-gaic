@@ -1,7 +1,7 @@
 # Stable Diffusion WebUI Docker setup
 
 This guide covers the managed `media` profile: Automatic1111 Stable Diffusion
-WebUI behind the Caddy HTTPS gateway. NVIDIA compute is required
+WebUI behind the HTTPS gateway. NVIDIA compute is required
 (`GAIC_COMPUTE=nvidia`).
 
 ## Service and endpoint

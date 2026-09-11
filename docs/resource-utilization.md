@@ -1,7 +1,8 @@
 # GPU and CPU resource utilization
 
-This guide covers single-GPU profile switching, host sizing for WSL2 and Docker
-Desktop, Compose environment tuning, model VRAM settings, and read-only
+This guide covers single-GPU profile switching, host sizing for WSL2 (Windows
+Subsystem for Linux) and Docker Desktop, Compose environment tuning, model
+VRAM settings, and read-only
 monitoring commands. GPU exclusivity metadata lives in `config/stack.json`
 under `gpuExclusive`.
 
@@ -122,7 +123,7 @@ a permission error.
 
 Default target is 85% of the GPU's max power limit; override with
 `GAIC_GPU_POWER_LIMIT_PERCENT` (1-100), set only via the shell — no Node
-script in this repo loads `.env` (only Docker Compose auto-loads it, and
+script in the hub loads `.env` (only Docker Compose auto-loads it, and
 `compose.yaml` never references this variable), so setting it in `.env` has
 no effect on this script:
 
