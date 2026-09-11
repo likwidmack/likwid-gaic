@@ -128,7 +128,7 @@ install `whisper` / `piper` only. Details:
 
 ## Upscalers / RealESRGAN
 
-There is no managed RealESRGAN pin. Hub `.pth` artifacts are treated as
+There is no managed RealESRGAN pin. Hugging Face Hub `.pth` artifacts are treated as
 executable content and must not be added to `config/models.json`. Place
 reviewed safetensors manually under `upscale_models/` if needed.
 

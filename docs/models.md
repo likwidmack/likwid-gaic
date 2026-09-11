@@ -52,7 +52,7 @@ new entries cannot fail `npm test` validation. After `add`, still review
 - add LocalAI metadata only when LocalAI should load the artifact;
 - keep the include list minimal and explicit.
 
-`npm test` rejects floating revisions, empty include lists, duplicate aliases, paths that escape the model root, and unsafe LocalAI configuration filenames. `plan` performs an `hf download --dry-run`; `verify` checks selected local files against Hub metadata. Because multiple managed models share the `localai` directory and each manifest intentionally selects only a subset of its Hub repository, `hf` can warn about extra local files and unselected remote files; the checksum result for the selected artifact is the integrity result that matters.
+`npm test` rejects floating revisions, empty include lists, duplicate aliases, paths that escape the model root, and unsafe LocalAI configuration filenames. `plan` performs an `hf download --dry-run`; `verify` checks selected local files against Hugging Face Hub metadata. Because multiple managed models share the `localai` directory and each manifest intentionally selects only a subset of its Hugging Face Hub repository, `hf` can warn about extra local files and unselected remote files; the checksum result for the selected artifact is the integrity result that matters.
 
 The checked-in manifest pins:
 
@@ -98,13 +98,13 @@ npm run models -- recommendations comfy
 
 `ready` exits with status 1 when any **required** artifact is missing (recommended gaps are reported but non-blocking).
 
-| Profile | Required managed models / artifacts | Strongly recommended |
+| Profile     | Required managed models / artifacts           | Strongly recommended                                       |
 | ----------- | --------------------------------------------- | ---------------------------------------------------------- |
-| `inference` | `chat-qwen2.5-3b`, LocalAI YAML, CUDA backend | 7B chat/coder, Whisper STT, Piper TTS |
-| `rag` | Both LocalAI starter pins, YAML, documents | Sample docs; optional `chat-qwen2.5-7b` |
-| `media` | `sd15-starter` plus WebUI checkpoint path | `sdxl-base` + hard link; reviewed extensions |
-| `comfy` | `sd15-starter`, Comfy model layout dirs | `sdxl-base`; optional VAE/upscalers; reviewed custom nodes |
-| `ollama` | `MODEL_ROOT` directory | Pull library models with `npm run ollama -- pull MODEL` |
+| `inference` | `chat-qwen2.5-3b`, LocalAI YAML, CUDA backend | 7B chat/coder, Whisper STT, Piper TTS                      |
+| `rag`       | Both LocalAI starter pins, YAML, documents    | Sample docs; optional `chat-qwen2.5-7b`                    |
+| `media`     | `sd15-starter` plus WebUI checkpoint path     | `sdxl-base` + hard link; reviewed extensions               |
+| `comfy`     | `sd15-starter`, Comfy model layout dirs       | `sdxl-base`; optional VAE/upscalers; reviewed custom nodes |
+| `ollama`    | `MODEL_ROOT` directory                        | Pull library models with `npm run ollama -- pull MODEL`    |
 
 Upstream fork quickstarts may suggest larger models (for example PrivateGPT with Ollama Qwen 35B or Comfy partner API nodes). This hub keeps smaller local GGUF starters, optional 7B upgrades, and disables Comfy API nodes by default for loopback privacy.
 
@@ -227,10 +227,10 @@ The canonical catalog (`/shared/models`, `/shared/plugins`) stays **read-only**
 in containers so one backend cannot overwrite the shared library. A nested
 writable overlay exists only under `inbox`:
 
-| Host path             | Container path                                       | Access     |
-| --------------------- | ---------------------------------------------------- | ---------- |
-| `MODEL_ROOT/inbox/…`  | `/shared/models/inbox`                               | Read-write |
-| `PLUGIN_ROOT/inbox/…` | `/shared/plugins/inbox`                              | Read-write |
+| Host path             | Container path          | Access     |
+| --------------------- | ----------------------- | ---------- |
+| `MODEL_ROOT/inbox/…`  | `/shared/models/inbox`  | Read-write |
+| `PLUGIN_ROOT/inbox/…` | `/shared/plugins/inbox` | Read-write |
 
 Preferred flow when a UI offers auto-download, or you stage a one-off file:
 
@@ -265,12 +265,12 @@ npm run models -- promote-plugin stable-diffusion my-extension
 Restart or recreate the affected profile after promote. Extensions remain
 executable content.
 
-Managed Hub pins still use `download` / `verify` / `sync-localai` directly into
+Managed Hugging Face Hub pins still use `download` / `verify` / `sync-localai` directly into
 the catalog (not the inbox).
 
 ## Upscalers (not managed)
 
-RealESRGAN and similar Hub upscalers often ship as `.pth` checkpoints. Treat
+RealESRGAN and similar Hugging Face Hub upscalers often ship as `.pth` checkpoints. Treat
 those formats as executable content; they are **not** managed pins in
 `config/models.json`. Prefer reviewed safetensors placed manually under
 `upscale_models/` (Comfy) when you need an upscaler. See

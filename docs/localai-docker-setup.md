@@ -117,9 +117,9 @@ Mounting all four persistent locations is recommended:
 
 Container files outside persistent volumes can be lost when the container is recreated or upgraded.
 
-### On this hub
+### On this hub: managed profile
 
-The hub's managed profile does not use the standalone configuration above. Instead, it:
+The hub's managed profile differs from the standalone configuration above in several ways. It:
 
 - Uses the pinned CUDA 13 image declared by `LOCALAI_IMAGE`.
 - Publishes only the gateway's HTTPS endpoint at `https://localhost:8443`.
@@ -162,7 +162,7 @@ docker run --rm --gpus all \
 
 If that test fails, fix Docker/NVIDIA GPU passthrough before troubleshooting LocalAI.
 
-### On this hub
+### On this hub: NVIDIA configuration
 
 The hub's managed profile already requests the GPU and defaults to the versioned CUDA 13 image. It uses Docker's standard `driver: nvidia` device reservation instead of the CDI example above, because that configuration is validated on this Docker Desktop workstation.
 
@@ -172,7 +172,7 @@ Compose also pins these environment variables, in addition to the Deploy reserva
 | --------------------------------------- | ---------------------------------------------------- |
 | `LOCALAI_FORCE_META_BACKEND_CAPABILITY` | Force `nvidia-cuda-13` backends under Docker Desktop |
 | `LOCALAI_F16`                           | Prefer half-precision where backends support it      |
-| `NVIDIA_VISIBLE_DEVICES`                | Expose all GPUs to the container                     |
+| `NVIDIA_VISIBLE_DEVICES`                | Pin the primary GPU (defaults to `0`)                |
 | `NVIDIA_DRIVER_CAPABILITIES`            | `compute,utility` for CUDA and `nvidia-smi`          |
 
 ## AMD configuration
@@ -224,7 +224,7 @@ LocalAI documents a known SYCL issue with memory mapping. If an Intel model hang
 See [Container operations](container-operations.md) for the platform matrix and
 first-run commands.
 
-### On this hub
+### On this hub: platform notes
 
 - **Windows:** the hub deliberately uses `C:\gaic\models` as the canonical
   Windows model collection; expect the first scan to be slower on
@@ -249,9 +249,11 @@ first-run commands.
 - Pin an image digest when an audited deployment requires immutable image bytes;
   review digest updates as dependency changes.
 
-> **On this hub:** for the managed stack on loopback, gateway authentication
-> and `LOCALAI_API_KEY` remain deferred; see
-> [Network security](network-security.md).
+### On this hub: security
+
+For the managed stack on loopback, gateway authentication and
+`LOCALAI_API_KEY` remain deferred; see
+[Network security](network-security.md).
 
 ## Validation checklist
 

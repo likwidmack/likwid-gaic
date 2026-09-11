@@ -4,15 +4,15 @@ This is a local AI development stack, not an internet-facing deployment. Its def
 
 ## Baseline implemented here
 
-| Control               | Default                                                                   | Why                                                                    |
-| --------------------- | ------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| Control               | Default                                                       | Why                                                                    |
+| --------------------- | ------------------------------------------------------------- | ---------------------------------------------------------------------- |
 | Networks              | Named bridges `gaic-edge`, `gaic-inference`, and `gaic-media` | Service-name DNS with inference/media trust-zone separation            |
-| Host publishing       | Caddy HTTPS gateway on IPv4 loopback ports 8443-8448                      | One reviewed ingress service without intentional LAN exposure          |
-| Standalone attachment | Not enabled by Compose                                                    | Reduces accidental attachment of unrelated containers                  |
-| Privilege escalation  | `no-new-privileges:true`                                                  | Blocks gaining additional privileges through setuid/setgid executables |
-| Docker socket         | Never mounted                                                             | Prevents a compromised AI service from controlling the Docker daemon   |
-| Model/document mounts | Read-only where practical                                                 | Limits modification of source assets and private documents             |
-| Secrets               | Outside Git and Compose manifests                                         | Avoids leaking Hugging Face, GitHub, or application credentials        |
+| Host publishing       | Caddy HTTPS gateway on IPv4 loopback ports 8443-8448          | One reviewed ingress service without intentional LAN exposure          |
+| Standalone attachment | Not enabled by Compose                                        | Reduces accidental attachment of unrelated containers                  |
+| Privilege escalation  | `no-new-privileges:true`                                      | Blocks gaining additional privileges through setuid/setgid executables |
+| Docker socket         | Never mounted                                                 | Prevents a compromised AI service from controlling the Docker daemon   |
+| Model/document mounts | Read-only where practical                                     | Limits modification of source assets and private documents             |
+| Secrets               | Outside Git and Compose manifests                             | Avoids leaking Hugging Face, GitHub, or application credentials        |
 
 Each bridge is a trust boundary, not a per-service firewall. Containers sharing one bridge can reach one another’s container ports even when those ports are not published. Treat every container on the same bridge as mutually trusted. The multi-homed gateway is a high-value dependency because it can reach both workload zones. Anyone who controls the Docker daemon is already an administrator and can change network membership.
 
@@ -29,7 +29,7 @@ Generated media and prompts can also contain private data.
 
 Mitigate these risks:
 
-- Use GGUF or safetensors artifacts when possible, pin Hub revisions, verify checksums, and review extensions before enabling them.
+- Use GGUF or safetensors artifacts when possible, pin Hugging Face Hub revisions, verify checksums, and review extensions before enabling them.
 - Do not give model containers the Docker socket, SSH agent, browser profile, home directory, cloud credentials, or broad writable host mounts.
 - Keep Docker Desktop, the NVIDIA driver, base images, and application forks patched.
 
@@ -123,13 +123,13 @@ Keep the localhost default until the controls required by the selected option ar
 
 Do not commit `.env`, credentials, private keys, firewall exports, or VPN enrollment material. Record only non-secret architecture decisions and sanitized test results in Git.
 
-| Proposed change              | Ready-to-change gate                                                                                       | Rollback trigger                                                                         |
-| ---------------------------- | ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Proposed change              | Ready-to-change gate                                                                                         | Rollback trigger                                                                         |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
 | Private LAN                  | Stable host address, restricted private-profile firewall rules, and authenticated TLS gateway tested locally | An unintended LAN client can connect, or an intended client bypasses authentication      |
-| VPN-only                     | VPN interface and subnet confirmed, intended devices enrolled, and firewall limited to that subnet         | Traffic reaches the service outside the VPN, or device revocation does not remove access |
+| VPN-only                     | VPN interface and subnet confirmed, intended devices enrolled, and firewall limited to that subnet           | Traffic reaches the service outside the VPN, or device revocation does not remove access |
 | Segmented bridges            | Service dependency map complete and only the authenticated gateway intentionally multi-homed                 | A service can reach a network not required by its dependency map                         |
-| Egress-restricted or offline | Images, models, packages, backends, and update procedure available without runtime egress                  | Startup or an approved workflow requires an unplanned external endpoint                  |
-| External shared network      | Network owner, name, participating projects, and cleanup responsibility documented                         | An unapproved project or standalone container joins the trust zone                       |
+| Egress-restricted or offline | Images, models, packages, backends, and update procedure available without runtime egress                    | Startup or an approved workflow requires an unplanned external endpoint                  |
+| External shared network      | Network owner, name, participating projects, and cleanup responsibility documented                           | An unapproved project or standalone container joins the trust zone                       |
 
 ## Exposure choices
 
