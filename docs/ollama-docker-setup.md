@@ -37,7 +37,7 @@ Ollama weights use Ollama's blob format. They do not appear in
 | Service    | `ollama` (built image `gaic/ollama:local`, base `ollama/ollama`)                   |
 | HTTPS      | `https://localhost:8443` (unified OpenAI `/v1`), `https://localhost:8448` (direct) |
 | Native API | `/api/*` and OpenAI-compatible `/v1/*`                                             |
-| GPU        | Optional — exclusive with LocalAI, SD, Comfy when `GAIC_COMPUTE=nvidia`        |
+| GPU        | Optional — exclusive with LocalAI, SD, Comfy when `GAIC_COMPUTE=nvidia`            |
 | PrivateGPT | Not wired to Ollama in this hub                                                    |
 
 ## Start Ollama
@@ -122,12 +122,12 @@ defaults, overridable in `.env` (see [GPU and CPU resource
 utilization](resource-utilization.md#compose-environment-variables) for the
 full tuning table):
 
-| Variable                  | Default | Effect                                                                 |
-| -------------------------- | ------- | ----------------------------------------------------------------------- |
-| `OLLAMA_MAX_LOADED_MODELS` | `1`     | Keeps only one model resident in VRAM, avoiding contention with a second large model |
-| `OLLAMA_NUM_PARALLEL`      | `1`     | Limits concurrent request slots; each slot adds its own KV-cache allocation |
-| `OLLAMA_FLASH_ATTENTION`   | `1`     | Enables flash attention on supported NVIDIA GPUs, reducing attention memory |
-| `OLLAMA_KV_CACHE_TYPE`     | `q8_0`  | Quantizes the KV cache to roughly halve context memory versus `f16`, with minor quality impact |
+| Variable                   | Default | Effect                                                                                                      |
+| -------------------------- | ------- | ----------------------------------------------------------------------------------------------------------- |
+| `OLLAMA_MAX_LOADED_MODELS` | `1`     | Keeps only one model resident in VRAM, avoiding contention with a second large model                        |
+| `OLLAMA_NUM_PARALLEL`      | `1`     | Limits concurrent request slots; each slot adds its own KV-cache allocation                                 |
+| `OLLAMA_FLASH_ATTENTION`   | `1`     | Enables flash attention on supported NVIDIA GPUs, reducing attention memory                                 |
+| `OLLAMA_KV_CACHE_TYPE`     | `q8_0`  | Quantizes the KV cache to roughly halve context memory versus `f16`, with minor quality impact              |
 | `OLLAMA_KEEP_ALIVE`        | `5m`    | How long an idle model stays loaded; lower it (e.g. `0`) to free VRAM immediately before switching profiles |
 
 These defaults assume the same single-GPU, one-model-at-a-time posture as the
@@ -136,13 +136,38 @@ rest of this hub's GPU-exclusive switching. Raise `OLLAMA_NUM_PARALLEL` or
 VRAM after loading your usual model; set `OLLAMA_KV_CACHE_TYPE=f16` if you hit
 quality regressions on long-context workloads and have the VRAM to spare.
 
+## Host helpers (optional)
+
+Optional scripts under [`scripts/host-ollama/`](../scripts/host-ollama/) create
+GPU-tuned Modelfile variants against a **host-installed** Ollama binary. Prefer
+`npm run stack -- switch ollama` for day-to-day use.
+
+Use the npm wrapper so GPU preflight and storage alignment run first:
+
+```powershell
+npm run ollama:host -- create -m llama3.1 -v 8b
+npm run ollama:host -- serve
+```
+
+Important caveats:
+
+- `npm run ollama:host` refuses when Compose GPU-exclusive services are running
+  (unless `--allow-gpu-share` or `GAIC_GPU_EXCLUSIVE=false`). Direct `.sh`
+  invocation skips that check.
+- The wrapper sets `OLLAMA_MODELS` from hub `MODEL_ROOT` when unset so host and
+  Compose can share blobs. Host `serve` still listens on loopback `:11434` and
+  does **not** replace gateway `:8443` / `:8448`.
+- See [scripts/host-ollama/README.md](../scripts/host-ollama/README.md) and
+  [host-tuning.md](../scripts/host-ollama/host-tuning.md).
+
 ## Troubleshooting
 
 - **Slow on CPU:** Prefer smaller models (for example `llama3.2`) or set
   `GAIC_COMPUTE=nvidia` on a CUDA workstation for GPU acceleration.
 - **GPU conflict (NVIDIA hosts):** Run `npm run stack -- switch ollama` so
   conflicting GPU services stop first, or pass `--allow-gpu-share` only when you
-  accept VRAM contention.
+  accept VRAM contention. `npm run ollama:host` refuses the same way when a
+  Compose GPU service is already up.
 - **`pull` fails with "not running":** Start the profile before pulling.
 - **502 on 8448 after recreate:** Restart or recreate the gateway if Caddy has a
   stale upstream dial (see [Troubleshooting](troubleshooting.md)).
@@ -152,3 +177,4 @@ quality regressions on long-context workloads and have the VRAM to spare.
 - [LocalAI Docker setup](localai-docker-setup.md) — default inference engine
 - [Models and managed media](models.md) — Hugging Face pins and LocalAI YAML
 - [Network security](network-security.md) — loopback gateway and bridges
+- [Host Ollama helpers](../scripts/host-ollama/README.md) — optional host-native scripts

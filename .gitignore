@@ -20,6 +20,7 @@ outputs/
 generated/
 /shared/
 docs/inventory.generated.md
+/modelfiles/
 *.local.json
 *.local.yaml
 *.local.yml
