@@ -71,6 +71,20 @@ export function assertGpuPreflight(gpuExclusive, computeMode, profile, runningGp
   }
 }
 
+/**
+ * Host-native Ollama competes with every Compose GPU-exclusive service.
+ * Refuse when any are running unless share is explicitly allowed.
+ */
+export function assertHostOllamaGpuPreflight(runningGpuServices, { allowShare = false, gpuExclusiveEnabled = true } = {}) {
+  if (!gpuExclusiveEnabled || allowShare) return;
+  const running = [...new Set((runningGpuServices ?? []).filter(Boolean))];
+  if (running.length === 0) return;
+  throw new Error(
+    `Host Ollama refused: Compose GPU service(s) already running (${running.join(", ")}). ` +
+      `Stop them (\`npm run stack -- down\` or \`npm run stack -- switch ollama\` then stop ollama), or pass --allow-gpu-share.`
+  );
+}
+
 export function parseProfileCommand(argv, startIndex = 3) {
   const flags = new Set();
   const positional = [];

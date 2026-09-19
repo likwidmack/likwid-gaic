@@ -17,6 +17,7 @@ import {
   assertCpuAllowsProfile,
   assertCpuAllowsService,
   assertGpuPreflight,
+  assertHostOllamaGpuPreflight,
   computePowerLimitWatts,
   gpuConflictsForProfile,
   gpuServicesForProfile,
@@ -226,6 +227,20 @@ describe("stack GPU and CPU policy", () => {
     assert.doesNotThrow(() =>
       assertGpuPreflight(gpuExclusive, "nvidia", "media", ["localai"], { allowShare: true })
     );
+  });
+
+  it("refuses host Ollama when Compose GPU services are running", () => {
+    assert.throws(
+      () => assertHostOllamaGpuPreflight(["localai"], { allowShare: false }),
+      /Host Ollama refused/
+    );
+    assert.doesNotThrow(() =>
+      assertHostOllamaGpuPreflight(["localai"], { allowShare: true })
+    );
+    assert.doesNotThrow(() =>
+      assertHostOllamaGpuPreflight(["localai"], { gpuExclusiveEnabled: false })
+    );
+    assert.doesNotThrow(() => assertHostOllamaGpuPreflight([], { allowShare: false }));
   });
 
   it("allows whisper/piper backends on CPU but not CUDA ids", () => {

@@ -27,6 +27,7 @@ pages when building or troubleshooting a profile.
 - [Stable Diffusion WebUI Docker setup](stable-diffusion-docker-setup.md)
 - [ComfyUI Docker setup](comfyui-docker-setup.md)
 - [Ollama Docker setup](ollama-docker-setup.md) — optional CPU/NVIDIA profile
+- [Host Ollama helpers](../scripts/host-ollama/README.md) — optional host-native Modelfile tools
 - [Use cases and models](use-cases-and-models.md) — workload → profile → pins → UI
 
 ## Data and security

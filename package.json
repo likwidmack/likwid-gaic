@@ -47,6 +47,7 @@
     "models:bootstrap-optional": "bash scripts/bootstrap-optional-models.sh",
     "media": "node scripts/media.mjs",
     "ollama": "node scripts/ollama.mjs",
+    "ollama:host": "node scripts/host-ollama.mjs",
     "repos:status": "node scripts/repos.mjs status",
     "repos:fetch": "node scripts/repos.mjs fetch",
     "repos:update": "node scripts/repos.mjs update",
