@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.19
-ARG OLLAMA_IMAGE=ollama/ollama:0.32.6
+ARG OLLAMA_IMAGE=ollama/ollama:0.35.1
 FROM ${OLLAMA_IMAGE}
 
 RUN apt-get update \

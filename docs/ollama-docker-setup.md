@@ -101,7 +101,7 @@ or `npm run stack:rag` when you need LocalAI or PrivateGPT again, then run
 
 - Built from `docker/ollama.Dockerfile`, which layers `curl` onto the pinned
   base image (override the base with `OLLAMA_IMAGE` in `.env`, default
-  `ollama/ollama:0.32.6`). Rebuild after changing `OLLAMA_IMAGE` with
+  `ollama/ollama:0.35.1`). Rebuild after changing `OLLAMA_IMAGE` with
   `npm run stack -- build ollama`.
 - Host port: `OLLAMA_HTTPS_PORT` (default `8448`)
 - Blob root: `MODEL_ROOT` → `/root/.ollama` in the container (npm runner resolves

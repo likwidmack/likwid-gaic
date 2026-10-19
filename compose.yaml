@@ -326,7 +326,7 @@ services:
       context: ${HUB_CONTEXT:-.}
       dockerfile: docker/ollama.Dockerfile
       args:
-        OLLAMA_IMAGE: ${OLLAMA_IMAGE:-ollama/ollama:0.32.6}
+        OLLAMA_IMAGE: ${OLLAMA_IMAGE:-ollama/ollama:0.35.1}
     init: true
     restart: unless-stopped
     healthcheck:
