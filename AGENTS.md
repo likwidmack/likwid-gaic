@@ -1,8 +1,10 @@
 # likwid-gaic agent guide
 
-This file records repository-specific skills, workflows, and safety rules for
-agents working on likwid-gaic. Apply these instructions to the repository root
-and all descendants.
+Global rules: read `E:\git\_ha\agent-system\agent\GLOBAL.md` first; this file adds project rules on top.
+
+This file records repository-specific boundaries, workflows, and safety rules for
+agents working on likwid-gaic. Procedures live in `.agents/skills/`. Apply these
+instructions to the repository root and all descendants.
 
 ## Repository purpose
 
@@ -50,187 +52,56 @@ or derived from these files.
   or `cpu`. Pin `nvidia` or `cpu` to skip the probe. `media` and `comfy` require
   `nvidia` after resolution.
 
-## Skill: first run
+## Workflow: first run
 
-Use this sequence on a new workstation before starting profiles. Do not broaden
-`GAIC_BIND_ADDRESS`, add gateway authentication, or configure managed-stack
-`LOCALAI_API_KEY` unless explicitly requested.
+Skill: [`gaic-first-run`](.agents/skills/gaic-first-run/SKILL.md). Use it on a
+new workstation before starting profiles. Do not broaden `GAIC_BIND_ADDRESS`, add
+gateway authentication, or configure managed-stack `LOCALAI_API_KEY` unless
+explicitly requested.
 
-```powershell
-Copy-Item .env.example .env -ErrorAction SilentlyContinue
-npm run media -- init
-npm test
-npm run stack:doctor
-npm run stack:config
-npm run models -- download chat-qwen2.5-3b
-npm run models -- download embed-nomic-v1.5
-npm run models -- verify chat-qwen2.5-3b
-npm run models -- verify embed-nomic-v1.5
-npm run models -- sync-localai
-npm run stack -- up inference
-npm run stack -- backend
-```
+## Workflow: repository validation
 
-Trust the Caddy development CA, then verify `https://localhost:8443`. Use
-`npm run media -- status` for a read-only storage check. The full profile order,
-CA import commands, and optional `rag`, `media`, and `comfy` steps are in
-[docs/container-operations.md](docs/container-operations.md).
+Skill: [`gaic-validation`](.agents/skills/gaic-validation/SKILL.md). Use the
+smallest applicable verification set, then expand in proportion to the change.
+`npm test` is the local parity gate and runs as the `Local parity` CI job on
+pull requests to `development` and `main` ([docs/cicd.md](docs/cicd.md)). Do not
+add CD workflows unless explicitly requested. Always run `git diff --check` and
+inspect `git status --short --branch` before handoff.
 
-## Skill: repository validation
+## Workflow: documentation
 
-Use the smallest applicable verification set, then expand in proportion to the
-change:
+Skill: [`gaic-docs-maintenance`](.agents/skills/gaic-docs-maintenance/SKILL.md).
+Keep maintained documentation under `docs/`, update `docs/README.md` when
+guides change, and never format or commit `docs/inventory.generated.md`.
 
-```powershell
-npm test
-npm run stack:doctor
-npm run stack:config
-npm run repos:status
-npm run models -- list
-npm run media -- status
-```
+## Workflow: Docker and Compose
 
-- `npm test` validates configuration, storage defaults, immutable model pins,
-  privacy rules, Docker artifacts, Compose topology, environment coverage, and
-  local Markdown links. Pull requests to `development` (the default integration
-  branch) and `main` (the release branch) run the same command as the GitHub
-  Actions job named `Local parity` ([docs/cicd.md](docs/cicd.md)). Do not add
-  CD workflows unless explicitly requested.
-- `stack:doctor` is read-only and checks Node.js, Docker, Compose, NVIDIA, the
-  Hugging Face CLI, storage roots, and fork contexts.
-- `stack:config` renders all profiles without starting or recreating services.
-- Syntax-check changed JavaScript with `node --check`.
-- Always run `git diff --check` and inspect `git status --short --branch`
-  before handoff. If changes are staged, also run `git diff --cached --check`.
+Skill: [`gaic-stack-ops`](.agents/skills/gaic-stack-ops/SKILL.md). Prefer
+`npm run stack -- ...`. Caddy is the only service allowed to publish host ports,
+and the default bind address stays `127.0.0.1`. Never add automatic volume
+deletion, `docker system prune`, or destructive cleanup to repository scripts.
+Do not recreate, pull, build, or restart services unless the user requests an
+operational change. Never run `npm run gpu:cap-power` without `--dry-run`
+unless the user explicitly consents in the moment.
 
-## Skill: documentation
+## Workflow: storage, models, and media
 
-- Keep maintained documentation under `docs/`; keep the root `README.md`
-  concise and navigational.
-- Update `docs/README.md` when adding, moving, or removing a guide.
-- Use sentence-case headings, fenced code blocks with a language, consistent
-  tables, and descriptive relative links.
-- PowerShell examples run from the repository root. Label WSL examples as
-  `bash`.
-- Format maintained Markdown with:
+Skill: [`gaic-model-storage`](.agents/skills/gaic-model-storage/SKILL.md). Storage
+roots are defined in `config/storage.json`; the skill holds the role table and
+model workflow. D: is non-redundant, and `E:\VIMG` is never mounted into a
+container. Never commit model weights, generated media, private documents,
+databases, runtime state, local inventories, caches, `.env`, keys, or tokens.
 
-```powershell
-$docs = (Get-ChildItem docs/*.md | Where-Object Name -ne "inventory.generated.md").FullName
-npx --yes prettier@3.6.2 --write README.md $docs
-```
+## Workflow: managed forks and GitHub
 
-- Do not format or commit `docs/inventory.generated.md`; it is local,
-  generated, and may expose machine details.
-- `scripts/validate.mjs` automatically discovers maintained Markdown under
-  `docs/` and excludes only the generated inventory.
-- Verify current Docker, NVIDIA, LocalAI, and other mutable technical
-  recommendations against official primary documentation before changing them.
-- Keep architecture, operations, service setup, security, and troubleshooting
-  guidance in their respective pages instead of repeating full procedures.
-
-## Skill: Docker and Compose
-
-- Prefer `npm run stack -- ...`; `scripts/docker.mjs` injects canonical fork
-  contexts and storage roots and appends `compose.cpu.yaml` when resolved mode is
-  `cpu`. In CPU mode `inference`, `rag`, and `ollama` are allowed; `media` and
-  `comfy` require `nvidia`.
-- On a single-GPU host, at most one of `localai`, `stable-diffusion`,
-  `comfy-backend`, or `ollama` may run. Use `npm run stack -- switch PROFILE` to stop
-  conflicting GPU services before starting another profile. `up` refuses GPU
-  conflicts unless `--allow-gpu-share` is passed. See
-  [docs/resource-utilization.md](docs/resource-utilization.md).
-- `npm run stack -- resources` is a read-only GPU and service snapshot.
-- `npm run gpu:cap-power` (without `--dry-run`) writes host GPU power state
-  via `nvidia-smi -pl`. It affects the whole physical GPU, not a container,
-  and must never be run by an agent without the user's explicit,
-  in-the-moment consent. `nvidia-smi --query-gpu=...` reads and
-  `npm run gpu:cap-power -- --dry-run` are always safe.
-- Never set `LOCALAI_THREADS` (or other LocalAI integer env vars) to an empty
-  string in Compose; LocalAI exits on `LOCALAI_THREADS=""`.
-- Caddy is the only service allowed to publish host ports. The default bind
-  address is `127.0.0.1`; do not broaden it without hostname, certificate,
-  authentication, firewall, and rollback planning.
-- Preserve `no-new-privileges:true`, read-only source mounts, health checks,
-  private backend ports, and segmented bridges.
-- The validated GPU declaration is the Compose Deploy reservation using
-  `driver: nvidia`, `count: all`, and `capabilities: [gpu]`. CDI and
-  `gpus: all` are alternatives, not additions. Do not combine declaration
-  styles without a tested migration.
-- Use reviewed version tags for planned workstation upgrades. Use image digests
-  when immutable bytes are required, and review each digest update.
-- `npm run stack -- pull` refreshes registry-backed, non-buildable services.
-  Use direct `docker compose build --pull` with the ignored `.env` only for
-  a deliberate base-image refresh. Reserve `--no-cache` for clean rebuilds or
-  cache diagnosis.
-- Treat Compose files, overrides, Dockerfiles, build contexts, bind mounts,
-  device grants, and remote includes as executable trusted input. Inspect
-  `npm run stack:config` before `up`.
-- Prefer service-scoped Compose secrets when an application supports file-based
-  credentials. Otherwise inject environment-only secrets from a protected
-  process or operating-system secret store. Never commit or print credentials.
-- Never add automatic volume deletion, `docker system prune`, or destructive
-  cleanup to repository scripts.
-- Rendering configuration does not update a running container. Do not recreate,
-  pull, build, or restart services unless the user requests an operational
-  change.
-
-## Skill: storage, models, and media
-
-Storage policy:
-
-| Role               | Root               | Rule                                                   |
-| ------------------ | ------------------ | ------------------------------------------------------ |
-| Read-mostly assets | `C:\gaic`          | Models, plugins, tools, and shared tensor exchange     |
-| Rebuildable data   | `D:\forkedAI`      | Hugging Face / Torch caches and Comfy temp only        |
-| Durable state      | `E:\data\forkedAI` | Media, documents, objects, runtime state, and Caddy CA |
-| Host-only backup   | `E:\VIMG`          | Never mount into a container                           |
-
-- D: is non-redundant. Never place the only durable copy of an artifact there.
-- Do not create a second unmanaged model tree to work around Windows bind-mount
-  performance.
-- Model manifests must use a full 40-character revision, explicit include list,
-  safe relative destination, and reviewed license/provenance.
-- Preferred model workflow:
-
-```powershell
-npm run models -- plan ALIAS
-npm run models -- download ALIAS
-npm run models -- verify ALIAS
-npm run models -- sync-localai
-```
-
-- Multiple managed models share `C:\gaic\models\localai`. Hugging Face may
-  warn about unselected remote files and unrelated local files; the checksum
-  result for the selected artifact is authoritative.
-- Media initialization and indexing are non-destructive. No media command may
-  delete user content.
-- Never commit model weights, generated media, private documents, databases,
-  runtime state, local inventories, caches, `.env`, keys, or tokens.
-- Treat pickle, PyTorch checkpoints, plugins, extensions, and custom nodes as
-  executable content. Prefer GGUF or safetensors from reviewed sources.
-
-## Skill: managed forks and GitHub
-
-- The hub belongs to `likwidmack/likwid-gaic`; managed forks belong to
-  `tamaramack`.
-- `npm run repos:status` is read-only.
-- `npm run repos:fetch` refreshes remote references only.
-- `npm run repos:update` performs fetch plus fast-forward-only upstream
-  updates and must refuse dirty or detached worktrees.
-- Never reset, rebase, force-push, delete branches, discard dirty fork changes,
-  rewrite remotes, or automatically push managed forks.
-- Preserve mixed remote transports; the Comfy forks may use HTTPS while the
-  other forks use SSH.
-- The hub's raw origin should remain the canonical
-  `git@github.com:likwidmack/likwid-gaic.git`. A workstation `insteadOf` rule
-  may display the `github.com-lkpc` alias. Do not store an already rewritten
-  alias as the raw remote because it can be rewritten twice.
-- Git SSH identity and GitHub CLI API identity are separate. Check
-  `gh auth status --hostname github.com` before GitHub API writes.
-- Do not commit, stage unrelated changes, push, create a pull request, or mutate
-  GitHub state unless explicitly requested. Before an authorized commit or push,
-  review staged and unstaged diffs, run verification, confirm the branch and
-  destination account, and report exactly what changed.
+Skill: [`gaic-managed-forks`](.agents/skills/gaic-managed-forks/SKILL.md). The hub
+belongs to `likwidmack/likwid-gaic`; managed forks belong to `tamaramack`.
+Never reset, rebase, force-push, delete branches, discard dirty fork changes,
+rewrite remotes, or automatically push managed forks. Do not commit, push,
+create a pull request, or mutate GitHub state unless explicitly requested.
+Branch policy: never commit or push directly on `development` or `main`; use a
+topic branch and a pull request into `development` (global rules and user
+rules apply).
 
 ## Editing and safety rules
 
